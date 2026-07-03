@@ -1,8 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { MaskedInput } from "@/components/shared/MaskedInput";
@@ -17,16 +16,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCEP, formatDocument, formatPhone, formatUF } from "@/lib/masks";
 
-import { createCustomer, getCustomer, updateCustomer } from "../api";
-import { CUSTOMER_TYPE_OPTIONS } from "../constants";
-import { lookupCep } from "../cepService";
-import { customerSchema, type CustomerFormValues } from "../schemas";
-import type { Customer, CustomerType } from "../types";
+import { createCustomer, getCustomer, updateCustomer } from "./api";
+import { lookupCep } from "./cepService";
+import { CUSTOMER_TYPE_OPTIONS } from "./constants";
+import { customerSchema, type CustomerFormValues } from "./schemas";
+import type { Customer, CustomerType } from "./types";
 
 const EMPTY_VALUES: CustomerFormValues = {
   name: "",
@@ -64,43 +71,66 @@ function toFormValues(customer: Customer): CustomerFormValues {
   };
 }
 
-export function CustomerFormPage() {
-  const { id } = useParams();
-  const customerId = id ? Number(id) : null;
+interface CustomerFormSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  customerId: number | null;
+}
+
+export function CustomerFormSheet({ open, onOpenChange, customerId }: CustomerFormSheetProps) {
   const isEditMode = customerId !== null;
 
-  const { data: customer, isLoading } = useQuery({
+  const { data: customer } = useQuery({
     queryKey: ["customers", customerId],
     queryFn: () => getCustomer(customerId as number),
-    enabled: isEditMode,
+    enabled: isEditMode && open,
   });
 
-  if (isEditMode && isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
-  }
+  // Gate on the data itself rather than `isLoading`: TanStack Query can
+  // report isLoading=false for one render right after a query is enabled
+  // (fetch hasn't started yet), which would let CustomerForm mount once
+  // with empty defaultValues before the real data arrives -- and since it
+  // never remounts afterward (stable `key`), it would stay empty.
+  const isWaitingForData = isEditMode && !customer;
 
   return (
-    <CustomerForm
-      key={customerId ?? "new"}
-      customerId={customerId}
-      defaultValues={customer ? toFormValues(customer) : EMPTY_VALUES}
-    />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
+        <SheetHeader className="shrink-0 border-b">
+          <SheetTitle>{isEditMode ? "Editar cliente" : "Novo cliente"}</SheetTitle>
+          <SheetDescription>
+            Apenas o nome é obrigatório -- os demais dados podem ser completados depois.
+          </SheetDescription>
+        </SheetHeader>
+
+        {isWaitingForData ? (
+          <div className="flex-1 space-y-4 overflow-y-auto p-6">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+        ) : (
+          <CustomerForm
+            key={customerId ?? "create"}
+            customerId={customerId}
+            defaultValues={customer ? toFormValues(customer) : EMPTY_VALUES}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 
 function CustomerForm({
   customerId,
   defaultValues,
+  onClose,
 }: {
   customerId: number | null;
   defaultValues: CustomerFormValues;
+  onClose: () => void;
 }) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEditMode = customerId !== null;
 
@@ -125,7 +155,7 @@ function CustomerForm({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success(isEditMode ? "Cliente atualizado." : "Cliente criado.");
-      navigate("/customers");
+      onClose();
     },
     onError: (error) => {
       toast.error(extractErrorMessage(error, "Não foi possível salvar o cliente."));
@@ -164,25 +194,12 @@ function CustomerForm({
   }
 
   return (
-    <div className="space-y-6">
-      <Link
-        to="/customers"
-        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Clientes
-      </Link>
-
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {isEditMode ? "Editar cliente" : "Novo cliente"}
-        </h1>
-        <p className="text-muted-foreground">
-          Apenas o nome é obrigatório -- os demais dados podem ser completados depois.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="space-y-6" noValidate>
+    <form
+      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      className="flex flex-1 flex-col overflow-hidden"
+      noValidate
+    >
+      <div className="flex-1 space-y-6 overflow-y-auto p-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Dados básicos</CardTitle>
@@ -280,7 +297,7 @@ function CustomerForm({
           <CardHeader>
             <CardTitle className="text-base">Endereço</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="zip_code">CEP</Label>
               <Controller
@@ -302,7 +319,7 @@ function CustomerForm({
               )}
             </div>
 
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="street">Rua/Logradouro</Label>
               <Input id="street" {...register("street")} />
             </div>
@@ -360,17 +377,17 @@ function CustomerForm({
             <Textarea id="notes" rows={4} {...register("notes")} />
           </CardContent>
         </Card>
+      </div>
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => navigate("/customers")}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting || mutation.isPending}>
-            {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
-            Salvar
-          </Button>
-        </div>
-      </form>
-    </div>
+      <SheetFooter className="flex-row justify-end gap-2 border-t">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+          {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
+          Salvar
+        </Button>
+      </SheetFooter>
+    </form>
   );
 }

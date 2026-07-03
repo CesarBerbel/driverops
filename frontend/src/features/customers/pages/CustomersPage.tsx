@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Search, Users, X } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +18,7 @@ import { formatPhone } from "@/lib/masks";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { listCustomers } from "../api";
+import { CustomerFormSheet } from "../CustomerFormSheet";
 import { CUSTOMER_TYPE_LABELS } from "../constants";
 
 export function CustomersPage() {
@@ -27,6 +27,9 @@ export function CustomersPage() {
   // Bypass the debounce when the box is empty, so "Limpar pesquisa" (and
   // deleting the text manually) restores the full list instantly.
   const effectiveSearch = searchInput === "" ? "" : debouncedSearch;
+
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingCustomerId, setEditingCustomerId] = useState<number | null>(null);
 
   const {
     data: customers,
@@ -40,6 +43,16 @@ export function CustomersPage() {
 
   const isEmpty = (customers?.length ?? 0) === 0;
 
+  function openCreateSheet() {
+    setEditingCustomerId(null);
+    setSheetOpen(true);
+  }
+
+  function openEditSheet(id: number) {
+    setEditingCustomerId(id);
+    setSheetOpen(true);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -47,9 +60,7 @@ export function CustomersPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
           <p className="text-muted-foreground">Gerencie os clientes cadastrados no sistema.</p>
         </div>
-        <Button asChild>
-          <Link to="/customers/new">Novo cliente</Link>
-        </Button>
+        <Button onClick={openCreateSheet}>Novo cliente</Button>
       </div>
 
       <div className="flex items-center gap-2">
@@ -99,8 +110,8 @@ export function CustomersPage() {
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">Nenhum cliente cadastrado ainda.</p>
-                <Button size="sm" asChild>
-                  <Link to="/customers/new">Novo cliente</Link>
+                <Button size="sm" onClick={openCreateSheet}>
+                  Novo cliente
                 </Button>
               </>
             )}
@@ -134,8 +145,12 @@ export function CustomersPage() {
                     {customer.city ? `${customer.city}${customer.state ? `/${customer.state}` : ""}` : "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/customers/${customer.id}/edit`}>Editar</Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditSheet(customer.id)}
+                    >
+                      Editar
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -144,6 +159,12 @@ export function CustomersPage() {
           </Table>
         </Card>
       )}
+
+      <CustomerFormSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        customerId={editingCustomerId}
+      />
     </div>
   );
 }

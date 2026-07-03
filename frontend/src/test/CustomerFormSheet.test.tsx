@@ -1,40 +1,35 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Toaster } from "@/components/ui/sonner";
 import * as customersApi from "@/features/customers/api";
 import * as cepService from "@/features/customers/cepService";
-import { CustomerFormPage } from "@/features/customers/pages/CustomerFormPage";
+import { CustomerFormSheet } from "@/features/customers/CustomerFormSheet";
 
 vi.mock("@/features/customers/api");
 vi.mock("@/features/customers/cepService");
 
-function renderPage() {
+function renderSheet(onOpenChange = vi.fn()) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/customers/new"]}>
-        <Routes>
-          <Route path="/customers/new" element={<CustomerFormPage />} />
-          <Route path="/customers" element={<div>Customers list page</div>} />
-        </Routes>
-      </MemoryRouter>
+      <CustomerFormSheet open customerId={null} onOpenChange={onOpenChange} />
       <Toaster />
     </QueryClientProvider>,
   );
+  return { onOpenChange };
 }
 
-describe("CustomerFormPage", () => {
+describe("CustomerFormSheet", () => {
   beforeEach(() => {
     vi.mocked(customersApi.createCustomer).mockReset();
     vi.mocked(cepService.lookupCep).mockReset();
   });
 
   it("defaults customer type to Pessoa Física and labels the document field as CPF", async () => {
-    renderPage();
+    renderSheet();
     await waitFor(() =>
       expect(screen.getByRole("combobox")).toHaveTextContent("Pessoa Física"),
     );
@@ -43,7 +38,7 @@ describe("CustomerFormPage", () => {
 
   it("switches the document field to CNPJ when the type changes to Pessoa Jurídica", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderSheet();
 
     await user.click(screen.getByRole("combobox"));
     await user.click(screen.getByRole("option", { name: "Pessoa Jurídica" }));
@@ -51,7 +46,7 @@ describe("CustomerFormPage", () => {
     expect(await screen.findByText("Documento (CNPJ)")).toBeInTheDocument();
   });
 
-  it("submits with only the name filled in", async () => {
+  it("submits with only the name filled in and closes the sheet", async () => {
     vi.mocked(customersApi.createCustomer).mockResolvedValue({
       id: 1,
       name: "John Doe",
@@ -72,7 +67,7 @@ describe("CustomerFormPage", () => {
       updated_at: "2026-01-01T00:00:00Z",
     });
     const user = userEvent.setup();
-    renderPage();
+    const { onOpenChange } = renderSheet();
 
     await user.type(screen.getByLabelText("Nome"), "John Doe");
     await user.click(screen.getByRole("button", { name: "Salvar" }));
@@ -82,16 +77,21 @@ describe("CustomerFormPage", () => {
         expect.objectContaining({ name: "John Doe", customer_type: "individual" }),
       ),
     );
-    await screen.findByText("Customers list page");
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });
 
   it("auto-fills the address when a full CEP is typed and found", async () => {
     vi.mocked(cepService.lookupCep).mockResolvedValue({
       status: "found",
-      address: { street: "Avenida Paulista", neighborhood: "Bela Vista", city: "São Paulo", state: "SP" },
+      address: {
+        street: "Avenida Paulista",
+        neighborhood: "Bela Vista",
+        city: "São Paulo",
+        state: "SP",
+      },
     });
     const user = userEvent.setup();
-    renderPage();
+    renderSheet();
 
     await user.type(screen.getByLabelText("CEP"), "01310100");
 
@@ -105,7 +105,7 @@ describe("CustomerFormPage", () => {
   it("shows a friendly message and does not block the form when the CEP is not found", async () => {
     vi.mocked(cepService.lookupCep).mockResolvedValue({ status: "not_found" });
     const user = userEvent.setup();
-    renderPage();
+    renderSheet();
 
     await user.type(screen.getByLabelText("CEP"), "00000000");
 

@@ -1,14 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Toaster } from "@/components/ui/sonner";
 import * as customersApi from "@/features/customers/api";
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import type { Customer } from "@/features/customers/types";
 
 vi.mock("@/features/customers/api");
+vi.mock("@/features/customers/cepService");
 
 function customer(overrides: Partial<Customer> = {}): Customer {
   return {
@@ -37,12 +38,8 @@ function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/customers"]}>
-        <Routes>
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/customers/new" element={<div>Novo cliente page</div>} />
-        </Routes>
-      </MemoryRouter>
+      <CustomersPage />
+      <Toaster />
     </QueryClientProvider>,
   );
 }
@@ -50,6 +47,7 @@ function renderPage() {
 describe("CustomersPage", () => {
   beforeEach(() => {
     vi.mocked(customersApi.listCustomers).mockReset();
+    vi.mocked(customersApi.createCustomer).mockReset();
   });
 
   it("shows the empty state when there are no customers", async () => {
@@ -106,5 +104,41 @@ describe("CustomersPage", () => {
       await screen.findByText("Não foi possível carregar os clientes. Tente novamente."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /tentar novamente/i })).toBeInTheDocument();
+  });
+
+  it("opens the create sheet from the header button and creates a customer", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([]);
+    vi.mocked(customersApi.createCustomer).mockResolvedValue(customer({ name: "New Customer" }));
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText("Nenhum cliente cadastrado ainda.");
+    // Both the header button and the empty-state CTA share this label.
+    const [createButton] = screen.getAllByRole("button", { name: "Novo cliente" });
+    await user.click(createButton);
+
+    expect(await screen.findByText("Novo cliente", { selector: "[data-slot=sheet-title]" })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Nome"), "New Customer");
+    await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() =>
+      expect(customersApi.createCustomer).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "New Customer" }),
+      ),
+    );
+  });
+
+  it("opens the edit sheet with the selected customer's data", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
+    vi.mocked(customersApi.getCustomer).mockResolvedValue(customer());
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText("Alice Wonderland");
+    await user.click(screen.getByRole("button", { name: "Editar" }));
+
+    expect(await screen.findByText("Editar cliente")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("Alice Wonderland")).toBeInTheDocument();
   });
 });

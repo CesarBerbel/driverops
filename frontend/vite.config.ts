@@ -15,6 +15,14 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Bind-mounted source on Windows/Docker doesn't always propagate native
+    // filesystem events into the Linux container, which can leave the dev
+    // server silently serving a stale bundle after edits. Polling trades a
+    // little CPU for HMR that's actually reliable in this setup.
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
   },
   test: {
     environment: 'jsdom',
