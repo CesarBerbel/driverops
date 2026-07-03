@@ -83,16 +83,14 @@ describe("VehiclesPage", () => {
     expect(within(table).getByText("2021")).toBeInTheDocument();
   });
 
-  it("renders the customer's WhatsApp as a clickable wa.me link next to the name", async () => {
+  it("renders the customer's WhatsApp number as a clickable wa.me link next to the name", async () => {
     vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([
       vehicle({ customer_whatsapp: "11912345678" }),
     ]);
     renderPage();
 
     const table = await screen.findByRole("table");
-    const link = within(table).getByRole("link", {
-      name: "Abrir conversa no WhatsApp com Alice Wonderland",
-    });
+    const link = within(table).getByRole("link", { name: /\(11\) 91234-5678/ });
     expect(link).toHaveAttribute("href", "https://wa.me/5511912345678");
     expect(link).toHaveAttribute("target", "_blank");
   });

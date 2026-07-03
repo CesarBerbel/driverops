@@ -223,18 +223,17 @@ export function VehiclesPage() {
                     {formatPlateForDisplay(vehicle.license_plate)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <span>{vehicle.customer_name}</span>
                       {vehicle.customer_whatsapp && (
                         <a
                           href={buildWhatsAppUrl(vehicle.customer_whatsapp)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-success hover:underline"
-                          aria-label={`Abrir conversa no WhatsApp com ${vehicle.customer_name}`}
-                          title={formatPhone(vehicle.customer_whatsapp)}
+                          className="inline-flex items-center gap-1 text-success hover:underline"
                         >
                           <MessageCircle className="size-4" />
+                          {formatPhone(vehicle.customer_whatsapp)}
                         </a>
                       )}
                     </div>
