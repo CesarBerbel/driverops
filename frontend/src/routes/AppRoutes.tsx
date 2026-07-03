@@ -7,6 +7,7 @@ import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 import { CategoriesPage } from "@/features/categories/pages/CategoriesPage";
+import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
@@ -29,6 +30,7 @@ export function AppRoutes() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/categories" element={<CategoriesPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
         </Route>
       </Route>
 

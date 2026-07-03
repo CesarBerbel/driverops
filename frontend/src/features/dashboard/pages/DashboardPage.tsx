@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { ChevronRight, Settings, ShieldCheck, Sparkles } from "lucide-react";
+import { ChevronRight, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -28,6 +28,21 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link to="/customers">
+          <Card className="h-full transition-colors hover:bg-accent/50">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <Users className="size-4 text-primary" />
+                  Clientes
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </CardTitle>
+              <CardDescription>Cadastre e gerencie os clientes do sistema.</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
         <Link to="/settings">
           <Card className="h-full transition-colors hover:bg-accent/50">
             <CardHeader>

@@ -38,5 +38,6 @@ A documentação completa está organizada por assunto em [`docs/`](docs/README.
 | [Build de produção](docs/build.md) | Geração do bundle de produção do frontend |
 | [CI](docs/ci.md) | Como o workflow do GitHub Actions funciona e por que é rápido |
 | [Arquitetura e estrutura do projeto](docs/architecture.md) | Organização de pastas do backend e frontend |
+| [Clientes](docs/customers.md) | Fluxo de cadastro, campos, máscaras e integração com CEP (ViaCEP) |
 | [Segurança (escopo v1)](docs/security.md) | Decisões de segurança tomadas nesta primeira versão |
 | [Troubleshooting](docs/troubleshooting.md) | Problemas comuns e como resolvê-los |
