@@ -57,13 +57,14 @@ def test_create_rejects_malformed_email(auth_client):
     assert "email" in response.data
 
 
-def test_create_normalizes_masked_phone_document_zip(auth_client):
+def test_create_normalizes_masked_phone_whatsapp_document_zip(auth_client):
     response = auth_client.post(
         "/api/customers/",
         data={
             "name": "Jane Corp",
             "customer_type": "company",
             "phone": "(11) 98765-4321",
+            "whatsapp": "(11) 91234-5678",
             "document": "12.345.678/0001-95",
             "zip_code": "01310-100",
         },
@@ -71,8 +72,19 @@ def test_create_normalizes_masked_phone_document_zip(auth_client):
     )
     assert response.status_code == 201
     assert response.data["phone"] == "11987654321"
+    assert response.data["whatsapp"] == "11912345678"
     assert response.data["document"] == "12345678000195"
     assert response.data["zip_code"] == "01310100"
+
+
+def test_create_rejects_invalid_whatsapp_length(auth_client):
+    response = auth_client.post(
+        "/api/customers/",
+        data={"name": "Bad WhatsApp", "whatsapp": "123"},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "whatsapp" in response.data
 
 
 def test_create_uppercases_state(auth_client):

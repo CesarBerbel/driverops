@@ -6,6 +6,7 @@ export interface Customer {
   customer_type: CustomerType;
   email: string;
   phone: string;
+  whatsapp: string;
   document: string;
   zip_code: string;
   street: string;

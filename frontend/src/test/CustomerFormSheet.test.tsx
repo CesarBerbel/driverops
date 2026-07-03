@@ -53,6 +53,7 @@ describe("CustomerFormSheet", () => {
       customer_type: "individual",
       email: "",
       phone: "",
+      whatsapp: "",
       document: "",
       zip_code: "",
       street: "",
@@ -100,6 +101,21 @@ describe("CustomerFormSheet", () => {
     expect(screen.getByDisplayValue("Bela Vista")).toBeInTheDocument();
     expect(screen.getByDisplayValue("São Paulo")).toBeInTheDocument();
     expect(screen.getByDisplayValue("SP")).toBeInTheDocument();
+  });
+
+  it("shows an 'open in WhatsApp' link once a valid number is entered", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    expect(
+      screen.queryByRole("link", { name: "Abrir conversa no WhatsApp" }),
+    ).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("WhatsApp"), "11912345678");
+
+    const link = screen.getByRole("link", { name: "Abrir conversa no WhatsApp" });
+    expect(link).toHaveAttribute("href", "https://wa.me/5511912345678");
+    expect(link).toHaveAttribute("target", "_blank");
   });
 
   it("shows a friendly message and does not block the form when the CEP is not found", async () => {

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCEP, formatDocument, formatPhone, formatUF } from "@/lib/masks";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { createCustomer, getCustomer, updateCustomer } from "./api";
 import { lookupCep } from "./cepService";
@@ -40,6 +41,7 @@ const EMPTY_VALUES: CustomerFormValues = {
   customer_type: "individual",
   email: "",
   phone: "",
+  whatsapp: "",
   document: "",
   zip_code: "",
   street: "",
@@ -58,6 +60,7 @@ function toFormValues(customer: Customer): CustomerFormValues {
     customer_type: customer.customer_type,
     email: customer.email,
     phone: customer.phone,
+    whatsapp: customer.whatsapp,
     document: customer.document,
     zip_code: customer.zip_code,
     street: customer.street,
@@ -289,6 +292,46 @@ function CustomerForm({
                 )}
               />
               {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp</Label>
+              <Controller
+                control={control}
+                name="whatsapp"
+                render={({ field }) => (
+                  <div className="flex items-center gap-2">
+                    <MaskedInput
+                      id="whatsapp"
+                      value={field.value}
+                      onChange={field.onChange}
+                      format={formatPhone}
+                      maxDigits={11}
+                      aria-invalid={Boolean(errors.whatsapp)}
+                    />
+                    {field.value.length >= 10 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Abrir conversa no WhatsApp"
+                        asChild
+                      >
+                        <a
+                          href={buildWhatsAppUrl(field.value)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <MessageCircle className="size-4 text-success" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              />
+              {errors.whatsapp && (
+                <p className="text-sm text-destructive">{errors.whatsapp.message}</p>
+              )}
             </div>
           </CardContent>
         </Card>

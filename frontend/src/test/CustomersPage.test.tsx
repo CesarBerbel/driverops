@@ -18,6 +18,7 @@ function customer(overrides: Partial<Customer> = {}): Customer {
     customer_type: "individual",
     email: "alice@example.com",
     phone: "11987654321",
+    whatsapp: "",
     document: "",
     zip_code: "",
     street: "",
@@ -66,6 +67,25 @@ describe("CustomersPage", () => {
     expect(screen.getByText("(11) 98765-4321")).toBeInTheDocument();
     expect(screen.getByText("São Paulo/SP")).toBeInTheDocument();
     expect(screen.getByText("Pessoa Física")).toBeInTheDocument();
+  });
+
+  it("renders the WhatsApp number as a wa.me link when present", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([
+      customer({ whatsapp: "11912345678" }),
+    ]);
+    renderPage();
+
+    const link = await screen.findByRole("link", { name: /\(11\) 91234-5678/ });
+    expect(link).toHaveAttribute("href", "https://wa.me/5511912345678");
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("shows a dash instead of a link when there is no WhatsApp number", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ whatsapp: "" })]);
+    const { container } = renderPage();
+
+    await screen.findByText("Alice Wonderland");
+    expect(container.querySelector('a[href*="wa.me"]')).not.toBeInTheDocument();
   });
 
   it("debounces the search box and queries by name", async () => {

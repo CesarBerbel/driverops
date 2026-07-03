@@ -11,9 +11,10 @@ class Customer(models.Model):
         max_length=20, choices=CustomerType.choices, default=CustomerType.INDIVIDUAL
     )
     email = models.EmailField(blank=True)
-    # phone/document/zip_code are always stored digits-only -- see
+    # phone/whatsapp/document/zip_code are always stored digits-only -- see
     # CustomerSerializer's validate_* methods, which normalize on the way in.
     phone = models.CharField(max_length=11, blank=True)
+    whatsapp = models.CharField(max_length=11, blank=True)
     document = models.CharField(max_length=14, blank=True)
     zip_code = models.CharField(max_length=8, blank=True)
     street = models.CharField(max_length=200, blank=True)

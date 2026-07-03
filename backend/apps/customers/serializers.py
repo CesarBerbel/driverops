@@ -11,6 +11,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     # first -- the model's real, tighter max_length still applies to the
     # normalized value once it's written back into attrs.
     phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    whatsapp = serializers.CharField(required=False, allow_blank=True, max_length=20)
     document = serializers.CharField(required=False, allow_blank=True, max_length=20)
     zip_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
 
@@ -22,6 +23,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             "customer_type",
             "email",
             "phone",
+            "whatsapp",
             "document",
             "zip_code",
             "street",
@@ -48,6 +50,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         if digits and len(digits) not in (10, 11):
             raise serializers.ValidationError(
                 "Telefone inválido. Informe um número com DDD (10 ou 11 dígitos)."
+            )
+        return digits
+
+    def validate_whatsapp(self, value):
+        digits = only_digits(value)
+        if digits and len(digits) not in (10, 11):
+            raise serializers.ValidationError(
+                "WhatsApp inválido. Informe um número com DDD (10 ou 11 dígitos)."
             )
         return digits
 

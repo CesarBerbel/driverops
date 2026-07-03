@@ -10,6 +10,11 @@ export const customerSchema = z
       .refine((value) => !value || value.length === 10 || value.length === 11, {
         message: "Telefone inválido. Informe DDD + número.",
       }),
+    whatsapp: z
+      .string()
+      .refine((value) => !value || value.length === 10 || value.length === 11, {
+        message: "WhatsApp inválido. Informe DDD + número.",
+      }),
     document: z.string(),
     zip_code: z.string().refine((value) => !value || value.length === 8, {
       message: "CEP inválido. Informe 8 dígitos.",

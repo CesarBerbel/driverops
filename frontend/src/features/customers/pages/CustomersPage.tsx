@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Search, Users, X } from "lucide-react";
+import { AlertCircle, MessageCircle, Search, Users, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { formatPhone } from "@/lib/masks";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { listCustomers } from "../api";
 import { CustomerFormSheet } from "../CustomerFormSheet";
@@ -126,6 +127,7 @@ export function CustomersPage() {
                 <TableHead>Tipo</TableHead>
                 <TableHead>E-mail</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead>WhatsApp</TableHead>
                 <TableHead>Cidade/UF</TableHead>
                 <TableHead className="w-0 text-right">Ações</TableHead>
               </TableRow>
@@ -140,6 +142,21 @@ export function CustomersPage() {
                   <TableCell className="text-muted-foreground">{customer.email || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {customer.phone ? formatPhone(customer.phone) : "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {customer.whatsapp ? (
+                      <a
+                        href={buildWhatsAppUrl(customer.whatsapp)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-success hover:underline"
+                      >
+                        <MessageCircle className="size-4" />
+                        {formatPhone(customer.whatsapp)}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {customer.city ? `${customer.city}${customer.state ? `/${customer.state}` : ""}` : "—"}
