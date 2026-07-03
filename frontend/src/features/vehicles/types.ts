@@ -40,6 +40,7 @@ export interface Vehicle {
   id: number;
   customer: number;
   customer_name: string;
+  customer_whatsapp: string;
   license_plate: string;
   brand: string;
   model: string;
@@ -67,5 +68,5 @@ export interface Vehicle {
 
 export type VehiclePayload = Omit<
   Vehicle,
-  "id" | "customer_name" | "created_at" | "updated_at"
+  "id" | "customer_name" | "customer_whatsapp" | "created_at" | "updated_at"
 >;

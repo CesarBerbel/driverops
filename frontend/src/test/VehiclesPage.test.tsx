@@ -16,6 +16,7 @@ function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
     id: 1,
     customer: 1,
     customer_name: "Alice Wonderland",
+    customer_whatsapp: "",
     license_plate: "ABC1234",
     brand: "Fiat",
     model: "Uno",
@@ -80,6 +81,28 @@ describe("VehiclesPage", () => {
     expect(within(table).getByText("Alice Wonderland")).toBeInTheDocument();
     expect(within(table).getByText("Fiat Uno")).toBeInTheDocument();
     expect(within(table).getByText("2021")).toBeInTheDocument();
+  });
+
+  it("renders the customer's WhatsApp as a clickable wa.me link next to the name", async () => {
+    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([
+      vehicle({ customer_whatsapp: "11912345678" }),
+    ]);
+    renderPage();
+
+    const table = await screen.findByRole("table");
+    const link = within(table).getByRole("link", {
+      name: "Abrir conversa no WhatsApp com Alice Wonderland",
+    });
+    expect(link).toHaveAttribute("href", "https://wa.me/5511912345678");
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("does not render a WhatsApp link when the customer has none", async () => {
+    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle({ customer_whatsapp: "" })]);
+    const { container } = renderPage();
+
+    await screen.findByText("Alice Wonderland");
+    expect(container.querySelector('a[href*="wa.me"]')).not.toBeInTheDocument();
   });
 
   it("debounces the search box and queries by plate/customer/brand/model", async () => {

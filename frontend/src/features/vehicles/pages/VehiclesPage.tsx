@@ -1,5 +1,16 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { AlertCircle, Car, Info, Pencil, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
+import {
+  AlertCircle,
+  Car,
+  Info,
+  MessageCircle,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -27,7 +38,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { extractErrorMessage } from "@/lib/api-client";
+import { formatPhone } from "@/lib/masks";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { deleteVehicle, listVehicles, reactivateVehicle } from "../api";
 import { VEHICLE_STATUS_OPTIONS } from "../constants";
@@ -209,7 +222,23 @@ export function VehiclesPage() {
                   <TableCell className="font-medium">
                     {formatPlateForDisplay(vehicle.license_plate)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{vehicle.customer_name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span>{vehicle.customer_name}</span>
+                      {vehicle.customer_whatsapp && (
+                        <a
+                          href={buildWhatsAppUrl(vehicle.customer_whatsapp)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-success hover:underline"
+                          aria-label={`Abrir conversa no WhatsApp com ${vehicle.customer_name}`}
+                          title={formatPhone(vehicle.customer_whatsapp)}
+                        >
+                          <MessageCircle className="size-4" />
+                        </a>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || "—"}
                   </TableCell>

@@ -18,6 +18,7 @@ function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
     id: 1,
     customer: 1,
     customer_name: "Alice Wonderland",
+    customer_whatsapp: "",
     license_plate: "ABC1234",
     brand: "Fiat",
     model: "Uno",

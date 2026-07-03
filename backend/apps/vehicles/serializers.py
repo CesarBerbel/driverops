@@ -29,6 +29,9 @@ class VehicleSerializer(serializers.ModelSerializer):
     renavam = serializers.CharField(required=False, allow_blank=True, max_length=30)
 
     customer_name = serializers.CharField(source="customer.name", read_only=True)
+    customer_whatsapp = serializers.CharField(
+        source="customer.whatsapp", read_only=True
+    )
 
     class Meta:
         model = Vehicle
@@ -36,6 +39,7 @@ class VehicleSerializer(serializers.ModelSerializer):
             "id",
             "customer",
             "customer_name",
+            "customer_whatsapp",
             "license_plate",
             "brand",
             "model",

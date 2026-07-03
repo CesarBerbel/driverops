@@ -100,6 +100,7 @@ describe("VehicleFormSheet", () => {
       id: 1,
       customer: 1,
       customer_name: "Alice Wonderland",
+      customer_whatsapp: "",
       license_plate: "ABC1234",
       brand: "",
       model: "",

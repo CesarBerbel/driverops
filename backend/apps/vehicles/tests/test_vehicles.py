@@ -53,6 +53,20 @@ def test_create_with_only_customer_and_plate(auth_client, customer):
     assert response.data["manufacture_year"] is None
 
 
+def test_list_includes_customer_whatsapp(auth_client, customer):
+    customer.whatsapp = "11912345678"
+    customer.save(update_fields=["whatsapp"])
+    auth_client.post(
+        "/api/vehicles/",
+        data={"customer": customer.id, "license_plate": "ABC1234"},
+        content_type="application/json",
+    )
+
+    response = auth_client.get("/api/vehicles/")
+
+    assert response.data[0]["customer_whatsapp"] == "11912345678"
+
+
 @pytest.mark.parametrize(
     "raw_plate,expected",
     [
