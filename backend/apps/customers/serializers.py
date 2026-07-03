@@ -15,6 +15,11 @@ class CustomerSerializer(serializers.ModelSerializer):
     document = serializers.CharField(required=False, allow_blank=True, max_length=20)
     zip_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
 
+    # Populated via an annotation on CustomerViewSet.get_queryset(); falls
+    # back to 0 for any code path that builds this serializer off a plain
+    # (non-annotated) Customer instance, since create/update don't need it.
+    vehicle_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Customer
         fields = [
@@ -34,10 +39,14 @@ class CustomerSerializer(serializers.ModelSerializer):
             "state",
             "country",
             "notes",
+            "vehicle_count",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_vehicle_count(self, obj):
+        return getattr(obj, "vehicle_count", 0)
 
     def validate_name(self, value):
         value = value.strip()

@@ -138,6 +138,13 @@ Comportamento:
   tela -- a consulta só ocorre quando o usuário efetivamente digita/altera o campo CEP, evitando
   sobrescrever um endereço já salvo só por abrir a tela de edição.
 
+## Veículos vinculados
+
+A listagem de clientes tem uma coluna "Veículos" com um ícone de carro e a contagem de veículos
+ativos de cada cliente. Clicar no ícone abre o veículo diretamente (quando há só 1) ou um seletor
+(quando há 2 ou mais) -- comportamento completo documentado em
+[Veículos → Vínculo com o cliente](vehicles.md#vínculo-com-o-cliente).
+
 ## Autenticação
 
 A rota de clientes (`/customers` no frontend; `/api/customers/...` no backend) exige usuário

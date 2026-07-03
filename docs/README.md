@@ -15,6 +15,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [CI](ci.md) | Como o workflow do GitHub Actions funciona e por que é rápido |
 | [Arquitetura e estrutura do projeto](architecture.md) | Organização de pastas do backend e frontend |
 | [Clientes](customers.md) | Fluxo de cadastro, campos, máscaras e integração com CEP (ViaCEP) |
+| [Veículos](vehicles.md) | Cadastro vinculado a clientes, placa (formatos antigo/Mercosul), soft delete |
 | [Segurança (escopo v1)](security.md) | Decisões de segurança tomadas nesta primeira versão |
 | [Troubleshooting](troubleshooting.md) | Problemas comuns e como resolvê-los |
 

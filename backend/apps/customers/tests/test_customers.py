@@ -178,3 +178,19 @@ def test_delete_is_not_exposed(auth_client):
     response = auth_client.delete(f"/api/customers/{customer.id}/")
     assert response.status_code == 405
     assert Customer.objects.filter(pk=customer.pk).exists()
+
+
+def test_list_includes_vehicle_count_of_active_vehicles_only(auth_client):
+    from apps.vehicles.models import Vehicle
+
+    customer = Customer.objects.create(name="Vehicle Owner")
+    Vehicle.objects.create(customer=customer, license_plate="AAA1111", is_active=True)
+    Vehicle.objects.create(customer=customer, license_plate="BBB2222", is_active=True)
+    Vehicle.objects.create(customer=customer, license_plate="CCC3333", is_active=False)
+
+    other = Customer.objects.create(name="No Vehicles")
+
+    response = auth_client.get("/api/customers/")
+    by_id = {item["id"]: item["vehicle_count"] for item in response.data}
+    assert by_id[customer.id] == 2
+    assert by_id[other.id] == 0

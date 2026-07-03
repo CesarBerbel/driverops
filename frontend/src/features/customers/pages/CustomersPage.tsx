@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, MessageCircle, Search, Users, X } from "lucide-react";
+import { AlertCircle, Car, MessageCircle, Search, Users, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,13 +15,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { listVehicles } from "@/features/vehicles/api";
+import { VehicleFormSheet } from "@/features/vehicles/VehicleFormSheet";
+import { VehicleSelectorDialog } from "@/features/vehicles/VehicleSelectorDialog";
+import type { Vehicle } from "@/features/vehicles/types";
 import { formatPhone } from "@/lib/masks";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { cn } from "@/lib/utils";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { listCustomers } from "../api";
 import { CustomerFormSheet } from "../CustomerFormSheet";
 import { CUSTOMER_TYPE_LABELS } from "../constants";
+import type { Customer } from "../types";
 
 export function CustomersPage() {
   const [searchInput, setSearchInput] = useState("");
@@ -31,6 +38,12 @@ export function CustomersPage() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingCustomerId, setEditingCustomerId] = useState<number | null>(null);
+
+  const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [selectorVehicles, setSelectorVehicles] = useState<Vehicle[]>([]);
+  const [loadingVehiclesFor, setLoadingVehiclesFor] = useState<number | null>(null);
 
   const {
     data: customers,
@@ -52,6 +65,31 @@ export function CustomersPage() {
   function openEditSheet(id: number) {
     setEditingCustomerId(id);
     setSheetOpen(true);
+  }
+
+  async function handleCarIconClick(customer: Customer) {
+    if (customer.vehicle_count === 0 || loadingVehiclesFor !== null) return;
+    setLoadingVehiclesFor(customer.id);
+    try {
+      const vehicles = await listVehicles({ customerId: customer.id });
+      if (vehicles.length === 1) {
+        setSelectedVehicleId(vehicles[0].id);
+        setVehicleSheetOpen(true);
+      } else if (vehicles.length > 1) {
+        setSelectorVehicles(vehicles);
+        setSelectorOpen(true);
+      }
+    } catch {
+      toast.error("Não foi possível carregar os veículos deste cliente.");
+    } finally {
+      setLoadingVehiclesFor(null);
+    }
+  }
+
+  function handleSelectVehicleFromDialog(vehicle: Vehicle) {
+    setSelectorOpen(false);
+    setSelectedVehicleId(vehicle.id);
+    setVehicleSheetOpen(true);
   }
 
   return (
@@ -129,6 +167,7 @@ export function CustomersPage() {
                 <TableHead>Telefone</TableHead>
                 <TableHead>WhatsApp</TableHead>
                 <TableHead>Cidade/UF</TableHead>
+                <TableHead>Veículos</TableHead>
                 <TableHead className="w-0 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -161,6 +200,23 @@ export function CustomersPage() {
                   <TableCell className="text-muted-foreground">
                     {customer.city ? `${customer.city}${customer.state ? `/${customer.state}` : ""}` : "—"}
                   </TableCell>
+                  <TableCell>
+                    <button
+                      type="button"
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm",
+                        customer.vehicle_count > 0
+                          ? "text-foreground hover:bg-accent"
+                          : "cursor-default text-muted-foreground",
+                      )}
+                      disabled={customer.vehicle_count === 0 || loadingVehiclesFor === customer.id}
+                      onClick={() => handleCarIconClick(customer)}
+                      aria-label={`${customer.vehicle_count} veículo(s) vinculados`}
+                    >
+                      <Car className="size-4" />
+                      {customer.vehicle_count}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
@@ -181,6 +237,19 @@ export function CustomersPage() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         customerId={editingCustomerId}
+      />
+
+      <VehicleFormSheet
+        open={vehicleSheetOpen}
+        onOpenChange={setVehicleSheetOpen}
+        vehicleId={selectedVehicleId}
+      />
+
+      <VehicleSelectorDialog
+        open={selectorOpen}
+        onOpenChange={setSelectorOpen}
+        vehicles={selectorVehicles}
+        onSelect={handleSelectVehicleFromDialog}
       />
     </div>
   );
