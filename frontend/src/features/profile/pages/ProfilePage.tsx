@@ -63,7 +63,7 @@ export function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Perfil</h1>
         <p className="text-muted-foreground">Gerencie suas informações e sua senha.</p>

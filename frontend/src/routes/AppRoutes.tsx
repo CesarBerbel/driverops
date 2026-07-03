@@ -6,9 +6,11 @@ import { PublicOnlyRoute } from "@/features/auth/PublicOnlyRoute";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { CategoriesPage } from "@/features/categories/pages/CategoriesPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
+import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 
 export function AppRoutes() {
   return (
@@ -25,6 +27,8 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/categories" element={<CategoriesPage />} />
         </Route>
       </Route>
 

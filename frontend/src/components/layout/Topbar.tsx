@@ -1,37 +1,32 @@
-import { Menu, Truck } from "lucide-react";
-import { useState } from "react";
+import { LayoutDashboard, Truck } from "lucide-react";
+import { Link, NavLink } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
-import { SidebarNav } from "./Sidebar";
 import { UserMenu } from "./UserMenu";
 
 export function Topbar() {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
-      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setMobileNavOpen(true)}
-          aria-label="Abrir menu"
-        >
-          <Menu className="size-5" />
-        </Button>
-        <SheetContent side="left" className="w-64 p-0">
-          <SheetHeader className="border-b">
-            <SheetTitle className="flex items-center gap-2">
-              <Truck className="size-5 text-primary" />
-              DriverOps
-            </SheetTitle>
-          </SheetHeader>
-          <SidebarNav onNavigate={() => setMobileNavOpen(false)} />
-        </SheetContent>
-      </Sheet>
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-6 border-b bg-background px-4 md:px-6">
+      <Link to="/dashboard" className="flex items-center gap-2 font-semibold">
+        <Truck className="size-5 text-primary" />
+        <span className="hidden sm:inline">DriverOps</span>
+      </Link>
+
+      <NavLink
+        to="/dashboard"
+        className={({ isActive }) =>
+          cn(
+            "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            isActive
+              ? "bg-secondary text-secondary-foreground"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+          )
+        }
+      >
+        <LayoutDashboard className="size-4" />
+        Dashboard
+      </NavLink>
 
       <div className="flex-1" />
 
