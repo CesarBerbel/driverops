@@ -14,6 +14,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Build de produção](build.md) | Geração do bundle de produção do frontend |
 | [CI](ci.md) | Como o workflow do GitHub Actions funciona e por que é rápido |
 | [Arquitetura e estrutura do projeto](architecture.md) | Organização de pastas do backend e frontend |
+| [Clientes](customers.md) | Fluxo de cadastro, campos, máscaras e integração com CEP (ViaCEP) |
 | [Segurança (escopo v1)](security.md) | Decisões de segurança tomadas nesta primeira versão |
 | [Troubleshooting](troubleshooting.md) | Problemas comuns e como resolvê-los |
 
