@@ -1,0 +1,59 @@
+name: driverops
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-driverops}
+      POSTGRES_USER: ${POSTGRES_USER:-driverops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-driverops}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-driverops}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025" # web UI
+      - "1025:1025" # SMTP
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: dev
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - ./scripts:/app/scripts:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
