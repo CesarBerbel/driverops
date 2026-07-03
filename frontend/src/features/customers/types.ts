@@ -17,6 +17,7 @@ export interface Customer {
   state: string;
   country: string;
   notes: string;
+  vehicle_count: number;
   created_at: string;
   updated_at: string;
 }

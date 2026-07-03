@@ -7,8 +7,44 @@ import { Toaster } from "@/components/ui/sonner";
 import * as customersApi from "@/features/customers/api";
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import type { Customer } from "@/features/customers/types";
+import * as vehiclesApi from "@/features/vehicles/api";
+import type { Vehicle } from "@/features/vehicles/types";
 
 vi.mock("@/features/customers/api");
+vi.mock("@/features/vehicles/api");
+
+function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
+  return {
+    id: 1,
+    customer: 1,
+    customer_name: "Alice Wonderland",
+    customer_whatsapp: "",
+    license_plate: "ABC1234",
+    brand: "Fiat",
+    model: "Uno",
+    version: "",
+    manufacture_year: null,
+    model_year: null,
+    color: "",
+    mileage: null,
+    fuel_type: "",
+    transmission: "",
+    steering: "",
+    doors: null,
+    air_conditioning: null,
+    is_modified: null,
+    modification_notes: "",
+    vehicle_type: "",
+    usage_category: "",
+    chassis: "",
+    renavam: "",
+    fipe_code: "",
+    notes: "",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
 vi.mock("@/features/customers/cepService");
 
 function customer(overrides: Partial<Customer> = {}): Customer {
@@ -29,6 +65,7 @@ function customer(overrides: Partial<Customer> = {}): Customer {
     state: "SP",
     country: "Brasil",
     notes: "",
+    vehicle_count: 0,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
@@ -160,5 +197,55 @@ describe("CustomersPage", () => {
 
     expect(await screen.findByText("Editar cliente")).toBeInTheDocument();
     expect(await screen.findByDisplayValue("Alice Wonderland")).toBeInTheDocument();
+  });
+
+  it("shows a disabled car icon with a zero count and does not fetch vehicles on click", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ vehicle_count: 0 })]);
+    const user = userEvent.setup();
+    renderPage();
+
+    const carButton = await screen.findByLabelText("0 veículo(s) vinculados");
+    expect(carButton).toBeDisabled();
+
+    await user.click(carButton);
+    expect(vehiclesApi.listVehicles).not.toHaveBeenCalled();
+  });
+
+  it("opens the vehicle directly when the customer has exactly one vehicle", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ vehicle_count: 1 })]);
+    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    vi.mocked(vehiclesApi.getVehicle).mockResolvedValue(vehicle());
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByLabelText("1 veículo(s) vinculados"));
+
+    await waitFor(() =>
+      expect(vehiclesApi.listVehicles).toHaveBeenCalledWith({ customerId: 1 }),
+    );
+    expect(await screen.findByText("Editar veículo")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("ABC1234")).toBeInTheDocument();
+  });
+
+  it("shows a picker dialog when the customer has more than one vehicle", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ vehicle_count: 2 })]);
+    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([
+      vehicle({ id: 1, license_plate: "ABC1234" }),
+      vehicle({ id: 2, license_plate: "XYZ9876" }),
+    ]);
+    vi.mocked(vehiclesApi.getVehicle).mockResolvedValue(vehicle({ id: 2, license_plate: "XYZ9876" }));
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByLabelText("2 veículo(s) vinculados"));
+
+    expect(await screen.findByText("Selecione um veículo")).toBeInTheDocument();
+    expect(screen.getByText("ABC-1234")).toBeInTheDocument();
+    expect(screen.getByText("XYZ-9876")).toBeInTheDocument();
+
+    await user.click(screen.getByText("XYZ-9876"));
+
+    expect(await screen.findByText("Editar veículo")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("XYZ9876")).toBeInTheDocument();
   });
 });

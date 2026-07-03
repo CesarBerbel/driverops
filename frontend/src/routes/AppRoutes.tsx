@@ -12,6 +12,7 @@ import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
+import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";
 
 export function AppRoutes() {
   return (
@@ -31,6 +32,7 @@ export function AppRoutes() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/categories" element={<CategoriesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/vehicles" element={<VehiclesPage />} />
         </Route>
       </Route>
 
