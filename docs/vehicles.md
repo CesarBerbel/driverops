@@ -100,7 +100,7 @@ nenhum dos dois formatos.
 ### Unicidade
 
 A placa é única **apenas entre veículos ativos** (mesmo padrão de unicidade escopada usado por
-[Categorias](architecture.md) e reaproveitado aqui via `Vehicle.has_active_plate_conflict`). Isso
+[Categorias](categories.md) e reaproveitado aqui via `Vehicle.has_active_plate_conflict`). Isso
 significa que, depois de um veículo ser excluído (soft delete), sua placa pode ser reutilizada em um
 novo cadastro -- o histórico do veículo antigo é preservado, apenas desabilitado.
 
@@ -128,7 +128,7 @@ O backend normaliza antes de persistir:
 
 ## Exclusão (soft delete)
 
-Segue exatamente o mesmo padrão de [Categorias](architecture.md): o campo `is_active` nunca é exposto
+Segue exatamente o mesmo padrão de [Categorias](categories.md): o campo `is_active` nunca é exposto
 na API como um campo de "status" editável -- ele só controla se o veículo aparece na listagem padrão
 e se pode ser reativado.
 

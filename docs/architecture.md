@@ -12,7 +12,7 @@ driverops/
 │   └── apps/
 │       ├── accounts/          # User customizado, autenticação JWT via cookies,
 │       │                      # perfil, troca/recuperação de senha, seed_admin
-│       ├── categories/         # CRUD de categorias com soft delete
+│       ├── categories/         # CRUD de categorias (clientes, peças, serviços) com soft delete
 │       ├── customers/           # cadastro de clientes com endereço completo
 │       ├── vehicles/             # cadastro de veículos vinculado a clientes, soft delete
 │       └── core/               # health check e concerns compartilhados
@@ -22,7 +22,7 @@ driverops/
         │   ├── auth/           # contexto de autenticação, guardas de rota, páginas
         │   ├── dashboard/      # página do dashboard
         │   ├── settings/       # página de Configurações (ponto de entrada administrativo)
-        │   ├── categories/     # CRUD de categorias (consome apps.categories)
+        │   ├── categories/     # CRUD de categorias (clientes/peças/serviços, consome apps.categories)
         │   ├── customers/       # cadastro de clientes (consome apps.customers, cepService.ts)
         │   ├── vehicles/         # cadastro de veículos (consome apps.vehicles)
         │   ├── profile/        # página de perfil
@@ -39,9 +39,12 @@ driverops/
 ## Backend
 
 Cinco apps Django: `accounts` (User customizado, autenticação JWT via cookies httpOnly, perfil,
-troca/recuperação de senha, permissão de superusuário, comando `seed_admin`), `categories` (CRUD de
-categorias com soft delete -- `is_active` nunca é exposto como um campo de "status" na API pública,
-apenas usado para filtrar a listagem e decidir se a categoria pode ser reativada), `customers`
+troca/recuperação de senha, permissão de superusuário, comando `seed_admin`), `categories` (um único
+modelo `Category` genérico com um discriminador `category_type` (`client`/`part`/`service`) atende
+as categorias de clientes, peças e serviços -- a unicidade do nome é escopada por
+`(category_type, name)`, e `is_active` nunca é exposto como um campo de "status" na API pública,
+apenas usado para filtrar a listagem e decidir se a categoria pode ser reativada; ver
+[Categorias](categories.md)), `customers`
 (cadastro de clientes com endereço completo, sem exclusão -- ver [Clientes](customers.md)), `vehicles`
 (cadastro de veículos com soft delete, obrigatoriamente vinculado a um cliente -- ver
 [Veículos](vehicles.md)) e `core` (health check e concerns compartilhados futuros). Ver também
@@ -65,10 +68,14 @@ reutilizadas via o componente `components/shared/MaskedInput.tsx`. `CustomerComb
 formulário de veículos para selecionar o cliente responsável.
 
 Navegação administrativa é toda por drill-down de cards, sem menus/submenus dedicados: Dashboard →
-card "Configurações" → card "Categorias" → CRUD, Dashboard → card "Clientes" → CRUD, e Dashboard →
-card "Veículos" → CRUD. Isso é deliberado -- ver o card "Configurações" em
-`features/settings/pages/SettingsPage.tsx` para o padrão a seguir ao adicionar novas áreas
-administrativas.
+card "Configurações" → cards "Categorias de Clientes"/"de Peças"/"de Serviços" → CRUD, Dashboard →
+card "Clientes" → CRUD, e Dashboard → card "Veículos" → CRUD. Isso é deliberado -- ver o card
+"Configurações" em `features/settings/pages/SettingsPage.tsx` para o padrão a seguir ao adicionar
+novas áreas administrativas. As três telas de categorias são a mesma tela
+(`features/categories/components/CategoryManager.tsx`) parametrizada por tipo/título/descrição,
+renderizada por três componentes de página finos -- esse é o padrão a seguir sempre que uma "nova
+área administrativa" for na verdade uma variação de algo que já existe, em vez de duplicar o
+CRUD inteiro.
 
 `features/vehicles` depende de `features/customers` (a página de clientes renderiza o
 `VehicleFormSheet` e o `VehicleSelectorDialog` para o ícone de carro por linha -- ver

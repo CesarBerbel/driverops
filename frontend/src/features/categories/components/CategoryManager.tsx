@@ -37,21 +37,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
 
 import { createCategory, deleteCategory, listCategories, reactivateCategory, updateCategory } from "../api";
 import { categorySchema, type CategoryFormValues } from "../schemas";
-import type { Category, CategoryStatusFilter } from "../types";
+import type { Category, CategoryStatusFilter, CategoryType } from "../types";
 
 const STATUS_OPTIONS: { value: CategoryStatusFilter; label: string }[] = [
-  { value: "active", label: "Categorias ativas" },
+  { value: "active", label: "Categorias habilitadas" },
   { value: "inactive", label: "Categorias desabilitadas" },
   { value: "all", label: "Todas" },
 ];
 
 const CATEGORIES_QUERY_KEY = ["categories"];
 
-export function CategoriesPage() {
+interface CategoryManagerProps {
+  categoryType: CategoryType;
+  title: string;
+  description: string;
+}
+
+export function CategoryManager({ categoryType, title, description }: CategoryManagerProps) {
   const [statusFilter, setStatusFilter] = useState<CategoryStatusFilter>("active");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -60,8 +67,8 @@ export function CategoriesPage() {
   const queryClient = useQueryClient();
 
   const { data: categories, isLoading } = useQuery({
-    queryKey: [...CATEGORIES_QUERY_KEY, statusFilter],
-    queryFn: () => listCategories(statusFilter),
+    queryKey: [...CATEGORIES_QUERY_KEY, categoryType, statusFilter],
+    queryFn: () => listCategories(categoryType, statusFilter),
   });
 
   const deleteMutation = useMutation({
@@ -112,8 +119,8 @@ export function CategoriesPage() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Categorias</h1>
-          <p className="text-muted-foreground">Gerencie as categorias do sistema.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <p className="text-muted-foreground">{description}</p>
         </div>
         <Button onClick={openCreateDialog}>
           <Plus />
@@ -235,6 +242,7 @@ export function CategoriesPage() {
           <CategoryForm
             key={editingCategory?.id ?? "create"}
             category={editingCategory}
+            categoryType={categoryType}
             onSuccess={() => setDialogOpen(false)}
           />
         </DialogContent>
@@ -268,9 +276,11 @@ export function CategoriesPage() {
 
 function CategoryForm({
   category,
+  categoryType,
   onSuccess,
 }: {
   category: Category | null;
+  categoryType: CategoryType;
   onSuccess: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -284,6 +294,7 @@ function CategoryForm({
     defaultValues: {
       name: category?.name ?? "",
       description: category?.description ?? "",
+      notes: category?.notes ?? "",
     },
   });
 
@@ -293,7 +304,7 @@ function CategoryForm({
         await updateCategory(category.id, values);
         toast.success("Categoria atualizada.");
       } else {
-        await createCategory(values);
+        await createCategory({ ...values, category_type: categoryType });
         toast.success("Categoria criada.");
       }
       await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
@@ -317,6 +328,11 @@ function CategoryForm({
         {errors.description && (
           <p className="text-sm text-destructive">{errors.description.message}</p>
         )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="notes">Observações (opcional)</Label>
+        <Textarea id="notes" {...register("notes")} />
+        {errors.notes && <p className="text-sm text-destructive">{errors.notes.message}</p>}
       </div>
       <DialogFooter>
         <Button type="submit" disabled={isSubmitting}>

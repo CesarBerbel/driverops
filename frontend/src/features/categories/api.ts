@@ -1,15 +1,22 @@
 import { apiClient } from "@/lib/api-client";
 
-import type { Category, CategoryStatusFilter } from "./types";
+import type { Category, CategoryStatusFilter, CategoryType } from "./types";
 
-export async function listCategories(status: CategoryStatusFilter): Promise<Category[]> {
-  const { data } = await apiClient.get<Category[]>("/categories/", { params: { status } });
+export async function listCategories(
+  categoryType: CategoryType,
+  status: CategoryStatusFilter,
+): Promise<Category[]> {
+  const { data } = await apiClient.get<Category[]>("/categories/", {
+    params: { category_type: categoryType, status },
+  });
   return data;
 }
 
 export async function createCategory(payload: {
+  category_type: CategoryType;
   name: string;
   description?: string;
+  notes?: string;
 }): Promise<Category> {
   const { data } = await apiClient.post<Category>("/categories/", payload);
   return data;
@@ -17,7 +24,7 @@ export async function createCategory(payload: {
 
 export async function updateCategory(
   id: number,
-  payload: { name: string; description?: string },
+  payload: { name: string; description?: string; notes?: string },
 ): Promise<Category> {
   const { data } = await apiClient.patch<Category>(`/categories/${id}/`, payload);
   return data;

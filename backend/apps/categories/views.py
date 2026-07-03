@@ -12,6 +12,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Category.objects.all()
 
+        category_type = self.request.query_params.get("category_type")
+        if category_type:
+            queryset = queryset.filter(category_type=category_type)
+
         # The active/inactive status filter only makes sense for the listing
         # -- detail routes (retrieve/update/destroy/reactivate) must be able
         # to find a category regardless of its current state, otherwise an
@@ -36,7 +40,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def reactivate(self, request, pk=None):
         category = self.get_object()
-        if Category.has_active_conflict(category.name, exclude_pk=category.pk):
+        if Category.has_active_conflict(
+            category.category_type, category.name, exclude_pk=category.pk
+        ):
             return Response(
                 {"name": [DUPLICATE_NAME_MESSAGE]}, status=status.HTTP_400_BAD_REQUEST
             )

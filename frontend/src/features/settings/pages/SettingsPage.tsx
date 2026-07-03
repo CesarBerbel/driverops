@@ -1,7 +1,28 @@
-import { ChevronRight, Tag } from "lucide-react";
+import { ChevronRight, Package, Tag, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+const SETTINGS_CARDS = [
+  {
+    to: "/settings/categories",
+    icon: Tag,
+    title: "Categorias de Clientes",
+    description: "Gerencie as categorias de clientes do sistema.",
+  },
+  {
+    to: "/settings/categories/parts",
+    icon: Package,
+    title: "Categorias de Peças",
+    description: "Gerencie as categorias de peças do sistema.",
+  },
+  {
+    to: "/settings/categories/services",
+    icon: Wrench,
+    title: "Categorias de Serviços",
+    description: "Gerencie as categorias de serviços do sistema.",
+  },
+] as const;
 
 export function SettingsPage() {
   return (
@@ -12,20 +33,22 @@ export function SettingsPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link to="/settings/categories">
-          <Card className="h-full transition-colors hover:bg-accent/50">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-base">
-                <span className="flex items-center gap-2">
-                  <Tag className="size-4 text-primary" />
-                  Categorias
-                </span>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </CardTitle>
-              <CardDescription>Gerencie as categorias do sistema.</CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
+        {SETTINGS_CARDS.map(({ to, icon: Icon, title, description }) => (
+          <Link key={to} to={to}>
+            <Card className="h-full transition-colors hover:bg-accent/50">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between text-base">
+                  <span className="flex items-center gap-2">
+                    <Icon className="size-4 text-primary" />
+                    {title}
+                  </span>
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </CardTitle>
+                <CardDescription>{description}</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   );
