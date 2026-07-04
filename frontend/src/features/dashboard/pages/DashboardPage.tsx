@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  Wrench,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -93,6 +94,23 @@ export function DashboardPage() {
                 <ChevronRight className="size-4 text-muted-foreground" />
               </CardTitle>
               <CardDescription>Cadastre e controle as peças em estoque.</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link to="/services">
+          <Card className="h-full transition-colors hover:bg-accent/50">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <Wrench className="size-4 text-primary" />
+                  Serviços
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </CardTitle>
+              <CardDescription>
+                Cadastre serviços, peças padrão e pacotes de serviços.
+              </CardDescription>
             </CardHeader>
           </Card>
         </Link>

@@ -14,6 +14,8 @@ import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { PartsPage } from "@/features/parts/pages/PartsPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
+import { ServicePackagesPage } from "@/features/services/pages/ServicePackagesPage";
+import { ServicesPage } from "@/features/services/pages/ServicesPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { SuppliersPage } from "@/features/suppliers/pages/SuppliersPage";
 import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";
@@ -41,6 +43,8 @@ export function AppRoutes() {
           <Route path="/vehicles" element={<VehiclesPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/parts" element={<PartsPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/services/packages" element={<ServicePackagesPage />} />
         </Route>
       </Route>
 

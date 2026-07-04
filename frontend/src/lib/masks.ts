@@ -108,3 +108,25 @@ export function formatNCM(digits: string): string {
   if (value.length <= 6) return `${value.slice(0, 4)}.${value.slice(4)}`;
   return `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6)}`;
 }
+
+// --- Percent (0-100, comma decimal) ---
+
+// Tolerates digits + one comma; returns a plain number (0-100 not enforced
+// here -- the form schema clamps/validates the range).
+export function parsePercent(input: string): number | null {
+  const cleaned = (input ?? "").replace(/[^\d,]/g, "");
+  if (!cleaned) return null;
+  const parsed = Number(cleaned.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// --- Duration (integer minutes -> friendly "1h 30min") ---
+
+export function formatMinutes(totalMinutes: number): string {
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return "";
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours && minutes) return `${hours}h ${minutes}min`;
+  if (hours) return `${hours}h`;
+  return `${minutes}min`;
+}
