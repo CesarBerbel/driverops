@@ -1,9 +1,21 @@
-import { ChevronRight, Package, Tag, Wrench } from "lucide-react";
+import { Building2, ChevronRight, ClipboardList, Package, Tag, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const SETTINGS_CARDS = [
+  {
+    to: "/settings/workshop",
+    icon: Building2,
+    title: "Dados da Oficina",
+    description: "Dados institucionais, contato e endereço usados nos documentos e PDFs.",
+  },
+  {
+    to: "/settings/orders",
+    icon: ClipboardList,
+    title: "Configurações da OS",
+    description: "Prazo padrão de entrega e termos padrão das Ordens de Serviço.",
+  },
   {
     to: "/settings/categories",
     icon: Tag,

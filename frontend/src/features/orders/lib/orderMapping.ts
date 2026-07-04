@@ -57,6 +57,16 @@ export function todayISO(): string {
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
+// yyyy-mm-dd + N days, computed in UTC to avoid DST/timezone drift. Used to
+// prefill the expected delivery from the global default deadline.
+export function addDaysISO(iso: string, days: number): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  const base = new Date(Date.UTC(y, m - 1, d));
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
 export function toFormValues(order: WorkOrder): OrderFormValues {
   return {
     customer_id: order.customer,

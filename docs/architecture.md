@@ -19,6 +19,7 @@ driverops/
 │       ├── parts/                 # cadastro de peças em estoque vinculado a categorias/fornecedores, soft delete
 │       ├── services/              # catálogo de serviços, peças padrão (through) e pacotes de serviços, soft delete
 │       ├── orders/               # ordens de serviço (OS): veículo/cliente, itens cadastrados e avulsos, soft delete
+│       ├── workshop/             # singletons de configuração: dados da oficina e configurações da OS
 │       └── core/               # health check e concerns compartilhados
 └── frontend/                 # React + Vite + TS + Tailwind + shadcn/ui
     └── src/
@@ -33,6 +34,7 @@ driverops/
         │   ├── parts/             # cadastro de peças em estoque (consome apps.parts e apps.suppliers)
         │   ├── services/          # serviços e pacotes de serviços (consome apps.services, apps.categories, apps.parts)
         │   ├── orders/            # ordens de serviço (consome apps.orders + clientes/veículos/serviços/peças)
+        │   ├── settings/          # Configurações: dados da oficina e configurações da OS (consome apps.workshop)
         │   ├── profile/        # página de perfil
         │   └── landing/        # página pública
         ├── components/
@@ -46,7 +48,7 @@ driverops/
 
 ## Backend
 
-Oito apps Django: `accounts` (User customizado, autenticação JWT via cookies httpOnly, perfil,
+Nove apps Django: `accounts` (User customizado, autenticação JWT via cookies httpOnly, perfil,
 troca/recuperação de senha, permissão de superusuário, comando `seed_admin`), `categories` (um único
 modelo `Category` genérico com um discriminador `category_type` (`client`/`part`/`service`) atende
 as categorias de clientes, peças e serviços -- a unicidade do nome é escopada por
@@ -81,7 +83,12 @@ nunca o contrário. Cada OS tem linhas (`WorkOrderService`, `WorkOrderPackage`, 
 podem referenciar um cadastro (FK opcional) ou ser **avulsas** (FK nula + texto livre) -- o nome e o
 valor são congelados na linha (snapshot) para preservar o histórico. Os totais (serviços, pacotes,
 peças, bruto e final com desconto) são calculados no serializer, nunca persistidos, e o veículo é
-validado como pertencente ao cliente. Ver [Ordens de Serviço](orders.md).
+validado como pertencente ao cliente. Ver [Ordens de Serviço](orders.md). `apps.workshop` guarda dois
+**singletons** de configuração (`WorkshopProfile` = Dados da Oficina; `OrderSettings` = Configurações
+da OS), cada um com um único registro (`pk=1`). A escrita exige superusuário (`IsSuperUser`); a
+leitura, apenas autenticação. `apps.orders` depende de `apps.workshop` para preencher a previsão de
+entrega de novas OS (data de abertura + prazo padrão), aplicado só na criação -- alterar o prazo
+global nunca altera uma OS existente. Ver [Configurações](configuracoes.md).
 
 ## Frontend
 
@@ -108,7 +115,8 @@ aceita um cliente padrão) para devolver o registro recém-criado à OS e seleci
 dados já preenchidos.
 
 Navegação administrativa é toda por drill-down de cards, sem menus/submenus dedicados: Dashboard →
-card "Configurações" → cards "Categorias de Clientes"/"de Peças"/"de Serviços" → CRUD, Dashboard →
+card "Configurações" → cards "Dados da Oficina"/"Configurações da OS" (singletons de `apps.workshop`,
+edição só para superusuário) e "Categorias de Clientes"/"de Peças"/"de Serviços" → CRUD, Dashboard →
 card "Clientes" → CRUD, Dashboard → card "Veículos" → CRUD, Dashboard → card "Fornecedores" → CRUD,
 Dashboard → card "Estoque" → CRUD de peças, Dashboard → card "Serviços" → CRUD de serviços (com um
 controle segmentado interno para alternar entre Serviços e Pacotes de Serviços, já que não há

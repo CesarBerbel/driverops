@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apps.suppliers",
     "apps.services",
     "apps.orders",
+    "apps.workshop",
 ]
 
 MIDDLEWARE = [
@@ -114,6 +115,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Uploaded media (e.g. the workshop logo). Served by Django in dev (see
+# config/urls.py); a real deployment would front this with the web server / CDN.
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

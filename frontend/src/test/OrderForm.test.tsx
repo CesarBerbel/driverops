@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,12 +14,30 @@ import type { Vehicle } from "@/features/vehicles/types";
 import * as servicesApi from "@/features/services/api";
 import type { Service } from "@/features/services/types";
 import * as partsApi from "@/features/parts/api";
+import * as settingsApi from "@/features/settings/api";
+import type { OrderSettings } from "@/features/settings/types";
 
 vi.mock("@/features/orders/api");
 vi.mock("@/features/customers/api");
 vi.mock("@/features/vehicles/api");
 vi.mock("@/features/services/api");
 vi.mock("@/features/parts/api");
+vi.mock("@/features/settings/api");
+
+function orderSettings(days: number): OrderSettings {
+  return {
+    default_delivery_days: days,
+    warranty_terms: "",
+    quote_terms: "",
+    service_authorization_terms: "",
+    customer_acknowledgment_terms: "",
+    default_os_notes: "",
+    pdf_footer_text: "",
+    print_instructions: "",
+    general_conditions: "",
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+}
 
 function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   return {
@@ -93,6 +111,7 @@ describe("OrderForm", () => {
     vi.mocked(servicesApi.listServices).mockReset().mockResolvedValue([]);
     vi.mocked(servicesApi.listServicePackages).mockReset().mockResolvedValue([]);
     vi.mocked(partsApi.listParts).mockReset().mockResolvedValue([]);
+    vi.mocked(settingsApi.getOrderSettings).mockReset().mockResolvedValue(orderSettings(7));
   });
 
   it("blocks submit and shows required-field errors when empty", async () => {
@@ -152,6 +171,20 @@ describe("OrderForm", () => {
       ),
     );
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+  });
+
+  it("prefills the expected delivery from the default deadline on a new OS", async () => {
+    vi.mocked(settingsApi.getOrderSettings).mockResolvedValue(orderSettings(7));
+    renderForm();
+    await waitFor(() => expect(settingsApi.getOrderSettings).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText("Data de abertura"), {
+      target: { value: "2026-08-01" },
+    });
+    // 2026-08-01 + 7 dias = 2026-08-08.
+    await waitFor(() =>
+      expect(screen.getByLabelText("Previsão de entrega")).toHaveValue("2026-08-08"),
+    );
   });
 
   it("adds a custom (avulso) service line requiring a description", async () => {

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from rest_framework import serializers
@@ -6,6 +7,7 @@ from apps.customers.models import Customer
 from apps.parts.models import Part
 from apps.services.models import Service, ServicePackage
 from apps.vehicles.models import Vehicle
+from apps.workshop.models import OrderSettings
 
 from .models import (
     WorkOrder,
@@ -339,6 +341,15 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         service_items = validated_data.pop("service_items", [])
         package_items = validated_data.pop("package_items", [])
         part_items = validated_data.pop("part_items", [])
+        # Auto-fill the expected delivery from the global default deadline when
+        # the caller didn't provide one -- data de abertura + prazo padrão. Only
+        # applied at creation, so editing the global default never touches an
+        # existing OS.
+        if "expected_delivery" not in validated_data:
+            opened_at = validated_data.get("opened_at")
+            if opened_at is not None:
+                days = OrderSettings.get_solo().default_delivery_days
+                validated_data["expected_delivery"] = opened_at + timedelta(days=days)
         order = WorkOrder.objects.create(**validated_data)
         self._write_lines(order, service_items, package_items, part_items)
         return order

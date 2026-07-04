@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Car, Loader2, MessageCircle, Plus, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -35,6 +35,7 @@ import { formatPlateForDisplay } from "@/features/vehicles/plate";
 import type { Vehicle } from "@/features/vehicles/types";
 import { VehicleFormSheet } from "@/features/vehicles/VehicleFormSheet";
 import { VehicleSelectorDialog } from "@/features/vehicles/VehicleSelectorDialog";
+import { getOrderSettings } from "@/features/settings/api";
 import { extractErrorMessage } from "@/lib/api-client";
 import {
   formatCurrencyBRL,
@@ -49,6 +50,7 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { createWorkOrder, updateWorkOrder } from "../api";
 import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS } from "../constants";
 import {
+  addDaysISO,
   EMPTY_ORDER_VALUES,
   lineSubtotal,
   toFormValues,
@@ -117,6 +119,22 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   const watchedParts = useWatch({ control, name: "part_items" });
   const discountType = useWatch({ control, name: "discount_type" });
   const discountValue = useWatch({ control, name: "discount_value" });
+  const openedAt = useWatch({ control, name: "opened_at" });
+
+  // Prefill the expected delivery from the global default deadline (data de
+  // abertura + prazo padrão) on new OS, until the user edits it by hand. Editing
+  // the global default never touches an existing OS (fetch is create-only).
+  const [deliveryTouched, setDeliveryTouched] = useState(isEditMode);
+  const orderSettingsQuery = useQuery({
+    queryKey: ["order-settings"],
+    queryFn: getOrderSettings,
+    enabled: !isEditMode,
+  });
+  const defaultDeliveryDays = orderSettingsQuery.data?.default_delivery_days;
+  useEffect(() => {
+    if (isEditMode || deliveryTouched || defaultDeliveryDays == null || !openedAt) return;
+    setValue("expected_delivery", addDaysISO(openedAt, defaultDeliveryDays));
+  }, [isEditMode, deliveryTouched, defaultDeliveryDays, openedAt, setValue]);
 
   const servicesTotal = (watchedServices ?? []).reduce((sum, l) => sum + lineSubtotal(l), 0);
   const packagesTotal = (watchedPackages ?? []).reduce((sum, l) => sum + lineSubtotal(l), 0);
@@ -270,7 +288,22 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="expected_delivery">Previsão de entrega</Label>
-            <Input id="expected_delivery" type="date" {...register("expected_delivery")} />
+            <Controller
+              control={control}
+              name="expected_delivery"
+              render={({ field }) => (
+                <Input
+                  id="expected_delivery"
+                  type="date"
+                  value={field.value ?? ""}
+                  onChange={(event) => {
+                    // A manual edit stops the automatic prefill from overriding it.
+                    setDeliveryTouched(true);
+                    field.onChange(event.target.value);
+                  }}
+                />
+              )}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="current_mileage">Quilometragem atual</Label>
