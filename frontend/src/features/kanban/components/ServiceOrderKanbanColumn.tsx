@@ -40,7 +40,7 @@ export function ServiceOrderKanbanColumn({
   return (
     <section
       aria-label={`Coluna ${statusLabel(status)}`}
-      className="flex h-full w-72 shrink-0 snap-start flex-col rounded-lg border bg-muted/30"
+      className="flex h-full w-64 shrink-0 snap-start flex-col rounded-lg border bg-muted/30"
       onDragOver={(event) => {
         if (canReceive) {
           event.preventDefault();

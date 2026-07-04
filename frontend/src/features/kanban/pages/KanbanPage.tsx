@@ -159,7 +159,7 @@ export function KanbanPage() {
         {loading ? (
           <div className="flex h-full gap-3 overflow-hidden p-4 md:px-6">
             {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-full w-72 shrink-0" />
+              <Skeleton key={i} className="h-full w-64 shrink-0" />
             ))}
           </div>
         ) : !settingsLoading && visibleColumns.length === 0 ? (
