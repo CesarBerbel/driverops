@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import * as React from "react";
 
 import { fetchMe, login as apiLogin, logout as apiLogout } from "./api";
@@ -14,8 +15,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryFn: async () => {
       try {
         return await fetchMe();
-      } catch {
-        return null;
+      } catch (error) {
+        // Only a genuine 401 (the interceptor already tried to refresh and
+        // failed) means "not authenticated". Any other failure -- a network
+        // blip, a 5xx, or the backend restarting -- must NOT drop the session:
+        // re-throw so React Query keeps the previous user instead of logging
+        // the user out mid-work.
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          return null;
+        }
+        throw error;
       }
     },
     staleTime: 60_000,

@@ -36,8 +36,17 @@ apiClient.interceptors.response.use(
       try {
         await refreshAccessToken();
         return apiClient(config);
-      } catch {
-        window.dispatchEvent(new CustomEvent("auth:session-expired"));
+      } catch (refreshError) {
+        // Only end the session when the refresh is rejected as unauthorized
+        // (401 = the refresh token is gone/invalid). A transient failure --
+        // network blip, 5xx, or the backend restarting mid-request -- must not
+        // log the user out; the original request just fails and can be retried.
+        if (
+          axios.isAxiosError(refreshError) &&
+          refreshError.response?.status === 401
+        ) {
+          window.dispatchEvent(new CustomEvent("auth:session-expired"));
+        }
         return Promise.reject(error);
       }
     }
