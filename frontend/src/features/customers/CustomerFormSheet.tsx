@@ -78,9 +78,17 @@ interface CustomerFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customerId: number | null;
+  // Fired with the saved customer -- lets a caller (e.g. inline creation from
+  // an Ordem de Serviço) grab the new record and auto-select it.
+  onCreated?: (customer: Customer) => void;
 }
 
-export function CustomerFormSheet({ open, onOpenChange, customerId }: CustomerFormSheetProps) {
+export function CustomerFormSheet({
+  open,
+  onOpenChange,
+  customerId,
+  onCreated,
+}: CustomerFormSheetProps) {
   const isEditMode = customerId !== null;
 
   const { data: customer } = useQuery({
@@ -118,6 +126,7 @@ export function CustomerFormSheet({ open, onOpenChange, customerId }: CustomerFo
             customerId={customerId}
             defaultValues={customer ? toFormValues(customer) : EMPTY_VALUES}
             onClose={() => onOpenChange(false)}
+            onCreated={onCreated}
           />
         )}
       </SheetContent>
@@ -129,10 +138,12 @@ function CustomerForm({
   customerId,
   defaultValues,
   onClose,
+  onCreated,
 }: {
   customerId: number | null;
   defaultValues: CustomerFormValues;
   onClose: () => void;
+  onCreated?: (customer: Customer) => void;
 }) {
   const queryClient = useQueryClient();
   const isEditMode = customerId !== null;
@@ -155,9 +166,10 @@ function CustomerForm({
   const mutation = useMutation({
     mutationFn: (values: CustomerFormValues) =>
       isEditMode ? updateCustomer(customerId, values) : createCustomer(values),
-    onSuccess: async () => {
+    onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success(isEditMode ? "Cliente atualizado." : "Cliente criado.");
+      onCreated?.(saved);
       onClose();
     },
     onError: (error) => {

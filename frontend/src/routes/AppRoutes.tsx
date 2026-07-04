@@ -12,6 +12,8 @@ import { ServiceCategoriesPage } from "@/features/categories/pages/ServiceCatego
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
+import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
+import { OrdersPage } from "@/features/orders/pages/OrdersPage";
 import { PartsPage } from "@/features/parts/pages/PartsPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { ServicePackagesPage } from "@/features/services/pages/ServicePackagesPage";
@@ -45,6 +47,10 @@ export function AppRoutes() {
           <Route path="/parts" element={<PartsPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/services/packages" element={<ServicePackagesPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/new" element={<OrderEditorPage />} />
+          <Route path="/orders/:id" element={<OrderEditorPage />} />
+
         </Route>
       </Route>
 

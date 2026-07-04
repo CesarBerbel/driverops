@@ -129,9 +129,23 @@ interface VehicleFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicleId: number | null;
+  // Fired with the saved vehicle -- lets a caller (e.g. inline creation from an
+  // Ordem de Serviço) grab the new record and auto-select it.
+  onCreated?: (vehicle: Vehicle) => void;
+  // When creating, pre-link (and lock) the customer -- used when the OS already
+  // knows which customer the new vehicle belongs to.
+  defaultCustomerId?: number | null;
+  defaultCustomerName?: string;
 }
 
-export function VehicleFormSheet({ open, onOpenChange, vehicleId }: VehicleFormSheetProps) {
+export function VehicleFormSheet({
+  open,
+  onOpenChange,
+  vehicleId,
+  onCreated,
+  defaultCustomerId,
+  defaultCustomerName,
+}: VehicleFormSheetProps) {
   const isEditMode = vehicleId !== null;
 
   const { data: vehicle } = useQuery({
@@ -143,6 +157,11 @@ export function VehicleFormSheet({ open, onOpenChange, vehicleId }: VehicleFormS
   // Gate on the data itself, not `isLoading` -- see CustomerFormSheet for why:
   // isLoading can read false for one render right after `enabled` flips true.
   const isWaitingForData = isEditMode && !vehicle;
+
+  const createDefaults: VehicleFormValues =
+    defaultCustomerId != null
+      ? { ...EMPTY_VALUES, customer_id: defaultCustomerId }
+      : EMPTY_VALUES;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -165,9 +184,10 @@ export function VehicleFormSheet({ open, onOpenChange, vehicleId }: VehicleFormS
           <VehicleForm
             key={vehicleId ?? "create"}
             vehicleId={vehicleId}
-            defaultValues={vehicle ? toFormValues(vehicle) : EMPTY_VALUES}
-            defaultCustomerName={vehicle?.customer_name ?? ""}
+            defaultValues={vehicle ? toFormValues(vehicle) : createDefaults}
+            defaultCustomerName={vehicle?.customer_name ?? defaultCustomerName ?? ""}
             onClose={() => onOpenChange(false)}
+            onCreated={onCreated}
           />
         )}
       </SheetContent>
@@ -180,11 +200,13 @@ function VehicleForm({
   defaultValues,
   defaultCustomerName,
   onClose,
+  onCreated,
 }: {
   vehicleId: number | null;
   defaultValues: VehicleFormValues;
   defaultCustomerName: string;
   onClose: () => void;
+  onCreated?: (vehicle: Vehicle) => void;
 }) {
   const queryClient = useQueryClient();
   const isEditMode = vehicleId !== null;
@@ -209,10 +231,11 @@ function VehicleForm({
       const payload = toPayload(values);
       return isEditMode ? updateVehicle(vehicleId, payload) : createVehicle(payload);
     },
-    onSuccess: async () => {
+    onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success(isEditMode ? "Veículo atualizado." : "Veículo criado.");
+      onCreated?.(saved);
       onClose();
     },
     onError: (error) => {
