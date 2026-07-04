@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -19,14 +20,26 @@ interface CategoryFormProps {
   category: Category | null;
   categoryType: CategoryType;
   onSuccess: (category: Category) => void;
+  // Show a "Salvar e adicionar outro" action (standalone create only).
+  allowAddAnother?: boolean;
 }
 
-export function CategoryForm({ category, categoryType, onSuccess }: CategoryFormProps) {
+const EMPTY_VALUES: CategoryFormValues = { name: "", description: "", notes: "" };
+
+export function CategoryForm({
+  category,
+  categoryType,
+  onSuccess,
+  allowAddAnother,
+}: CategoryFormProps) {
   const queryClient = useQueryClient();
+  const addAnotherRef = useRef(false);
   const {
     register,
     handleSubmit,
     setError,
+    setFocus,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
@@ -48,7 +61,13 @@ export function CategoryForm({ category, categoryType, onSuccess }: CategoryForm
         toast.success("Categoria criada.");
       }
       await queryClient.invalidateQueries({ queryKey: ["categories"] });
-      onSuccess(saved);
+      if (addAnotherRef.current) {
+        addAnotherRef.current = false;
+        reset(EMPTY_VALUES);
+        setFocus("name");
+      } else {
+        onSuccess(saved);
+      }
     } catch (error) {
       const message = extractErrorMessage(error, "Não foi possível salvar a categoria.");
       setError("name", { message });
@@ -92,7 +111,25 @@ export function CategoryForm({ category, categoryType, onSuccess }: CategoryForm
         {errors.notes && <p className="text-sm text-destructive">{errors.notes.message}</p>}
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={isSubmitting}>
+        {allowAddAnother && (
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={isSubmitting}
+            onClick={() => {
+              addAnotherRef.current = true;
+            }}
+          >
+            Salvar e adicionar outra
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          onClick={() => {
+            addAnotherRef.current = false;
+          }}
+        >
           {isSubmitting && <Loader2 className="animate-spin" />}
           Salvar
         </Button>

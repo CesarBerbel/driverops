@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircle } from "lucide-react";
+import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -127,6 +128,7 @@ export function CustomerFormSheet({
             defaultValues={customer ? toFormValues(customer) : EMPTY_VALUES}
             onClose={() => onOpenChange(false)}
             onCreated={onCreated}
+            allowAddAnother={!isEditMode && !onCreated}
           />
         )}
       </SheetContent>
@@ -139,14 +141,17 @@ function CustomerForm({
   defaultValues,
   onClose,
   onCreated,
+  allowAddAnother,
 }: {
   customerId: number | null;
   defaultValues: CustomerFormValues;
   onClose: () => void;
   onCreated?: (customer: Customer) => void;
+  allowAddAnother?: boolean;
 }) {
   const queryClient = useQueryClient();
   const isEditMode = customerId !== null;
+  const addAnotherRef = useRef(false);
 
   const {
     control,
@@ -155,6 +160,7 @@ function CustomerForm({
     watch,
     setValue,
     getValues,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
@@ -169,6 +175,11 @@ function CustomerForm({
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success(isEditMode ? "Cliente atualizado." : "Cliente criado.");
+      if (addAnotherRef.current) {
+        addAnotherRef.current = false;
+        reset(EMPTY_VALUES);
+        return;
+      }
       onCreated?.(saved);
       onClose();
     },
@@ -444,7 +455,25 @@ function CustomerForm({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+        {allowAddAnother && (
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={isSubmitting || mutation.isPending}
+            onClick={() => {
+              addAnotherRef.current = true;
+            }}
+          >
+            Salvar e adicionar outro
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={isSubmitting || mutation.isPending}
+          onClick={() => {
+            addAnotherRef.current = false;
+          }}
+        >
           {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
           Salvar
         </Button>

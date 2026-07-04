@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -102,20 +102,24 @@ interface PartFormProps {
   part: Part | null;
   onSuccess: (part: Part) => void;
   onCancel?: () => void;
+  // Show a "Salvar e adicionar outro" action (standalone create only).
+  allowAddAnother?: boolean;
 }
 
-export function PartForm({ part, onSuccess, onCancel }: PartFormProps) {
+export function PartForm({ part, onSuccess, onCancel, allowAddAnother }: PartFormProps) {
   const queryClient = useQueryClient();
   const isEditMode = part !== null;
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [supplierName, setSupplierName] = useState(part?.supplier_name ?? "");
+  const addAnotherRef = useRef(false);
 
   const {
     control,
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PartFormValues>({
     resolver: zodResolver(partSchema),
@@ -135,7 +139,13 @@ export function PartForm({ part, onSuccess, onCancel }: PartFormProps) {
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["parts"] });
       toast.success(isEditMode ? "Peça atualizada." : "Peça criada.");
-      onSuccess(saved);
+      if (addAnotherRef.current) {
+        addAnotherRef.current = false;
+        reset(EMPTY_VALUES);
+        setSupplierName("");
+      } else {
+        onSuccess(saved);
+      }
     },
     onError: (error) => {
       toast.error(extractErrorMessage(error, "Não foi possível salvar a peça."));
@@ -461,7 +471,25 @@ export function PartForm({ part, onSuccess, onCancel }: PartFormProps) {
             Cancelar
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+        {allowAddAnother && (
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={isSubmitting || mutation.isPending}
+            onClick={() => {
+              addAnotherRef.current = true;
+            }}
+          >
+            Salvar e adicionar outro
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={isSubmitting || mutation.isPending}
+          onClick={() => {
+            addAnotherRef.current = false;
+          }}
+        >
           {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
           Salvar
         </Button>
