@@ -23,9 +23,11 @@ interface ServiceOrderPlateCardProps {
   order: WorkOrder;
   onSelect: (order: WorkOrder) => void;
   onMove: (order: WorkOrder, status: OrderStatus) => void;
-  onDragStart: (order: WorkOrder) => void;
-  onDragEnd: () => void;
-  isDragging: boolean;
+  onDragStart?: (order: WorkOrder) => void;
+  onDragEnd?: () => void;
+  isDragging?: boolean;
+  // Disabled in the mobile/tablet accordion, where the "Mover" menu is used.
+  draggable?: boolean;
 }
 
 // Card em formato de placa de carro: a placa (padrão Mercosul) é o elemento mais
@@ -37,7 +39,8 @@ export function ServiceOrderPlateCard({
   onMove,
   onDragStart,
   onDragEnd,
-  isDragging,
+  isDragging = false,
+  draggable = true,
 }: ServiceOrderPlateCardProps) {
   const overdue = isOverdue(order);
   const targets = allowedTargets(order.status);
@@ -46,13 +49,17 @@ export function ServiceOrderPlateCard({
     <div
       role="button"
       tabIndex={0}
-      draggable
-      onDragStart={(event) => {
-        event.dataTransfer.setData("text/plain", String(order.id));
-        event.dataTransfer.effectAllowed = "move";
-        onDragStart(order);
-      }}
-      onDragEnd={onDragEnd}
+      draggable={draggable}
+      onDragStart={
+        draggable
+          ? (event) => {
+              event.dataTransfer.setData("text/plain", String(order.id));
+              event.dataTransfer.effectAllowed = "move";
+              onDragStart?.(order);
+            }
+          : undefined
+      }
+      onDragEnd={draggable ? onDragEnd : undefined}
       onClick={() => onSelect(order)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -62,7 +69,8 @@ export function ServiceOrderPlateCard({
       }}
       aria-label={`Ordem de serviço ${formatOrderNumber(order.number)} — ${order.vehicle_plate}`}
       className={cn(
-        "group relative cursor-grab rounded-lg border bg-card p-2.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:cursor-grabbing",
+        "group relative rounded-lg border bg-card p-2.5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        draggable && "cursor-grab active:cursor-grabbing",
         overdue && "border-destructive/60",
         isDragging && "rotate-1 opacity-50 shadow-lg ring-2 ring-primary",
       )}

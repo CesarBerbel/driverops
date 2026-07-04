@@ -7,7 +7,9 @@ import { moveWorkOrder } from "@/features/orders/api";
 import { statusLabel } from "@/features/orders/constants";
 import type { OrderStatus, WorkOrder } from "@/features/orders/types";
 import { extractErrorMessage } from "@/lib/api-client";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
+import { ServiceOrderKanbanAccordion } from "./ServiceOrderKanbanAccordion";
 import { ServiceOrderKanbanColumn } from "./ServiceOrderKanbanColumn";
 
 interface ServiceOrderKanbanProps {
@@ -20,6 +22,8 @@ interface ServiceOrderKanbanProps {
 
 export function ServiceOrderKanban({ orders, columns, queryKey }: ServiceOrderKanbanProps) {
   const queryClient = useQueryClient();
+  // Below lg the board becomes a stacked accordion (no touch drag-and-drop).
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [draggingOrder, setDraggingOrder] = useState<WorkOrder | null>(null);
   const [selected, setSelected] = useState<WorkOrder | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -78,21 +82,30 @@ export function ServiceOrderKanban({ orders, columns, queryKey }: ServiceOrderKa
 
   return (
     <>
-      <div className="flex h-full min-h-0 snap-x snap-mandatory gap-3 overflow-x-auto p-4 md:px-6">
-        {columns.map((status) => (
-          <ServiceOrderKanbanColumn
-            key={status}
-            status={status}
-            orders={byStatus(status)}
-            draggingOrder={draggingOrder}
-            onSelect={openModal}
-            onMove={move}
-            onDragStart={setDraggingOrder}
-            onDragEnd={() => setDraggingOrder(null)}
-            onDrop={handleDrop}
-          />
-        ))}
-      </div>
+      {isDesktop ? (
+        <div className="flex h-full min-h-0 gap-3 overflow-x-auto p-4 md:px-6">
+          {columns.map((status) => (
+            <ServiceOrderKanbanColumn
+              key={status}
+              status={status}
+              orders={byStatus(status)}
+              draggingOrder={draggingOrder}
+              onSelect={openModal}
+              onMove={move}
+              onDragStart={setDraggingOrder}
+              onDragEnd={() => setDraggingOrder(null)}
+              onDrop={handleDrop}
+            />
+          ))}
+        </div>
+      ) : (
+        <ServiceOrderKanbanAccordion
+          columns={columns}
+          ordersByStatus={byStatus}
+          onSelect={openModal}
+          onMove={move}
+        />
+      )}
 
       <OSQuickViewModal order={selected} open={modalOpen} onOpenChange={setModalOpen} />
     </>

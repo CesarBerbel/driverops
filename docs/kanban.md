@@ -23,12 +23,14 @@ A tela abre em **full width**, ocupando o máximo da área útil (`100svh` menos
 
 ### Responsividade
 
-- **Desktop:** colunas lado a lado, largura total, drag and drop completo.
-- **Tablet:** colunas mantêm o layout horizontal com rolagem lateral; scroll vertical dentro da
-  coluna. Snap horizontal facilita a navegação.
-- **Mobile:** colunas em carrossel horizontal (`snap-x`), uma por vez com swipe entre elas; o
-  scroll vertical fica dentro da coluna atual. Como o drag and drop por toque é limitado, cada card
-  oferece a **ação alternativa "Mover"** (menu de status) para mudar de coluna sem arrastar.
+O layout troca no breakpoint `lg` (1024px), detectado por `useMediaQuery`:
+
+- **Desktop (≥ 1024px):** board com colunas lado a lado, largura total, drag and drop completo.
+- **Mobile e tablet (< 1024px):** o board vira um **acordeão** — as colunas viram seções empilhadas
+  verticalmente. Cada seção mostra o nome do status e a contagem, e expande/retrai ao toque
+  (a primeira já vem aberta). Os cards ficam em largura total dentro da seção aberta e a lista rola
+  verticalmente. Como o drag and drop por toque é limitado, a mudança de status usa a **ação
+  "Mover"** (menu de status) presente em cada card.
 
 ## Colunas
 
@@ -189,7 +191,9 @@ Cobertura de testes relevante:
 ## Componentes
 
 - `ServiceOrderKanban` — orquestra colunas, drag state, mutação de move (otimista + rollback) e modal.
-- `ServiceOrderKanbanColumn` — coluna com contagem, scroll interno e realce de drop válido.
+- `ServiceOrderKanbanColumn` — coluna do board (desktop) com contagem, scroll interno e realce de
+  drop válido.
+- `ServiceOrderKanbanAccordion` — layout de acordeão empilhado para mobile/tablet (< `lg`).
 - `ServiceOrderPlateCard` — card em formato de placa (draggable + menu "Mover").
 - `KanbanPage` — tela full width com cabeçalho/filtros fixos.
 - `ServiceOrderKanbanSettings` (`KanbanSettingsPage`) — configuração das colunas.

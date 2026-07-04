@@ -64,6 +64,19 @@ const DEFAULT_SETTINGS: KanbanSettings = {
   ],
 };
 
+function mockMatchMedia(matches: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -78,8 +91,9 @@ function renderPage() {
   );
 }
 
-describe("KanbanPage", () => {
+describe("KanbanPage (desktop board)", () => {
   beforeEach(() => {
+    mockMatchMedia(true); // lg and up -> horizontal board
     vi.mocked(settingsApi.getKanbanSettings).mockResolvedValue(DEFAULT_SETTINGS);
     vi.mocked(ordersApi.listWorkOrders).mockReset();
     vi.mocked(ordersApi.moveWorkOrder).mockReset();
@@ -146,5 +160,36 @@ describe("KanbanPage", () => {
     await waitFor(() =>
       expect(ordersApi.moveWorkOrder).toHaveBeenCalledWith(1, "diagnosing"),
     );
+  });
+});
+
+describe("KanbanPage (mobile/tablet accordion)", () => {
+  beforeEach(() => {
+    mockMatchMedia(false); // below lg -> accordion
+    vi.mocked(settingsApi.getKanbanSettings).mockResolvedValue(DEFAULT_SETTINGS);
+    vi.mocked(ordersApi.listWorkOrders).mockReset();
+  });
+
+  it("renders columns as accordion sections; only the first is expanded", async () => {
+    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([
+      workOrder({ id: 1, number: 1, vehicle_plate: "ABC1D23", status: "open" }),
+      workOrder({
+        id: 2,
+        number: 2,
+        vehicle_plate: "XYZ9A88",
+        status: "in_progress" as OrderStatus,
+        status_display: "Em execução",
+      }),
+    ]);
+    const user = userEvent.setup();
+    renderPage();
+
+    // First section (Aberta) is open -> its card is visible; the collapsed
+    // "Em execução" section hides its card until expanded.
+    expect(await screen.findByText("ABC1D23")).toBeInTheDocument();
+    expect(screen.queryByText("XYZ9A88")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Em execução/ }));
+    expect(await screen.findByText("XYZ9A88")).toBeInTheDocument();
   });
 });
