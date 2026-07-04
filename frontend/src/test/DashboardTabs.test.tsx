@@ -56,8 +56,10 @@ describe("DashboardTabs", () => {
       "aria-selected",
       "true",
     );
-    // Operacional shows the highlighted OS hero card.
-    expect(screen.getByText("Acessar ordens de serviço")).toBeInTheDocument();
+    // Operacional shows the quick-access module cards (the OS hero now lives
+    // above the tabs, in DashboardPage).
+    expect(screen.getByText("Clientes")).toBeInTheDocument();
+    expect(screen.getByText("Estoque")).toBeInTheDocument();
   });
 
   it("switches to the OS board when the OS tab is clicked", async () => {
