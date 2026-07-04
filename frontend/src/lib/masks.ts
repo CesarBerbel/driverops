@@ -48,3 +48,63 @@ export function formatUF(value: string): string {
     .replace(/[^A-Z]/g, "")
     .slice(0, 2);
 }
+
+// --- Currency (BRL) ---
+
+export function formatCurrencyBRL(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
+// Tolerates "120,50", "R$ 120,50", "120.50", "1.234,56" -- pasted with or
+// without the R$ prefix, with or without thousands separators.
+export function parseCurrencyBRL(input: string): number | null {
+  const cleaned = (input ?? "").replace(/[^\d,.-]/g, "").trim();
+  if (!cleaned) return null;
+  const lastComma = cleaned.lastIndexOf(",");
+  const lastDot = cleaned.lastIndexOf(".");
+  let normalized: string;
+  if (lastComma > lastDot) normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  else if (lastDot > lastComma) normalized = cleaned.replace(/,/g, "");
+  else normalized = cleaned;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Cents-shifting keystroke formatter used by CurrencyInput: takes the raw
+// digits typed so far (already digits-only) and returns "R$ 0,00"-formatted text.
+export function formatCentsAsBRL(digitsOnly: string): string {
+  const cents = digitsOnly ? parseInt(digitsOnly, 10) : 0;
+  return formatCurrencyBRL(cents / 100);
+}
+
+// --- Quantity (pt-BR grouping, comma decimal) ---
+
+export function formatQuantityBRL(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+// Tolerates digits + at most one comma; thousands dots are stripped as noise
+// since users rarely type them while entering a quantity.
+export function parseQuantityBRL(input: string): number | null {
+  const cleaned = (input ?? "").replace(/[^\d,]/g, "");
+  if (!cleaned) return null;
+  const normalized = cleaned.replace(/\.(?=\d{3})/g, "").replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// --- NCM (Brazilian fiscal code, 8 digits, grouped XXXX.XX.XX) ---
+
+export function normalizeNCM(value: string): string {
+  return onlyDigits(value).slice(0, 8);
+}
+
+export function formatNCM(digits: string): string {
+  const value = onlyDigits(digits).slice(0, 8);
+  if (value.length <= 4) return value;
+  if (value.length <= 6) return `${value.slice(0, 4)}.${value.slice(4)}`;
+  return `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6)}`;
+}

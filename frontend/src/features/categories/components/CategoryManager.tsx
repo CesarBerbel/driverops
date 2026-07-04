@@ -1,8 +1,6 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Info, Loader2, Pencil, Plus, RotateCcw, Tag, Trash2 } from "lucide-react";
+import { ArrowLeft, Info, Pencil, Plus, RotateCcw, Tag, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -18,15 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -37,12 +27,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
 
-import { createCategory, deleteCategory, listCategories, reactivateCategory, updateCategory } from "../api";
-import { categorySchema, type CategoryFormValues } from "../schemas";
+import { deleteCategory, listCategories, reactivateCategory } from "../api";
 import type { Category, CategoryStatusFilter, CategoryType } from "../types";
+import { CategoryForm } from "./CategoryForm";
 
 const STATUS_OPTIONS: { value: CategoryStatusFilter; label: string }[] = [
   { value: "active", label: "Categorias habilitadas" },
@@ -271,75 +260,5 @@ export function CategoryManager({ categoryType, title, description }: CategoryMa
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-function CategoryForm({
-  category,
-  categoryType,
-  onSuccess,
-}: {
-  category: Category | null;
-  categoryType: CategoryType;
-  onSuccess: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors, isSubmitting },
-  } = useForm<CategoryFormValues>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: {
-      name: category?.name ?? "",
-      description: category?.description ?? "",
-      notes: category?.notes ?? "",
-    },
-  });
-
-  async function onSubmit(values: CategoryFormValues) {
-    try {
-      if (category) {
-        await updateCategory(category.id, values);
-        toast.success("Categoria atualizada.");
-      } else {
-        await createCategory({ ...values, category_type: categoryType });
-        toast.success("Categoria criada.");
-      }
-      await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
-      onSuccess();
-    } catch (error) {
-      const message = extractErrorMessage(error, "Não foi possível salvar a categoria.");
-      setError("name", { message });
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <div className="space-y-2">
-        <Label htmlFor="name">Nome</Label>
-        <Input id="name" aria-invalid={Boolean(errors.name)} {...register("name")} />
-        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="description">Descrição (opcional)</Label>
-        <Input id="description" {...register("description")} />
-        {errors.description && (
-          <p className="text-sm text-destructive">{errors.description.message}</p>
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="notes">Observações (opcional)</Label>
-        <Textarea id="notes" {...register("notes")} />
-        {errors.notes && <p className="text-sm text-destructive">{errors.notes.message}</p>}
-      </div>
-      <DialogFooter>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="animate-spin" />}
-          Salvar
-        </Button>
-      </DialogFooter>
-    </form>
   );
 }

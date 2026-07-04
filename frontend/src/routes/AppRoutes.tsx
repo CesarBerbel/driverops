@@ -12,6 +12,7 @@ import { ServiceCategoriesPage } from "@/features/categories/pages/ServiceCatego
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
+import { PartsPage } from "@/features/parts/pages/PartsPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";
@@ -37,6 +38,7 @@ export function AppRoutes() {
           <Route path="/settings/categories/services" element={<ServiceCategoriesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/vehicles" element={<VehiclesPage />} />
+          <Route path="/parts" element={<PartsPage />} />
         </Route>
       </Route>
 

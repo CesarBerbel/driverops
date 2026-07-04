@@ -4,10 +4,16 @@ import {
   formatCEP,
   formatCNPJ,
   formatCPF,
+  formatCurrencyBRL,
   formatDocument,
+  formatNCM,
   formatPhone,
+  formatQuantityBRL,
   formatUF,
+  normalizeNCM,
   onlyDigits,
+  parseCurrencyBRL,
+  parseQuantityBRL,
 } from "@/lib/masks";
 
 describe("onlyDigits", () => {
@@ -80,5 +86,74 @@ describe("formatUF", () => {
 
   it("strips non-letter characters", () => {
     expect(formatUF("s1p")).toBe("SP");
+  });
+});
+
+describe("formatCurrencyBRL", () => {
+  it("formats a value in Brazilian Real", () => {
+    expect(formatCurrencyBRL(120.5)).toBe("R$ 120,50");
+    expect(formatCurrencyBRL(1234.56)).toBe("R$ 1.234,56");
+    expect(formatCurrencyBRL(0)).toBe("R$ 0,00");
+  });
+});
+
+describe("parseCurrencyBRL", () => {
+  it("parses a comma-decimal value", () => {
+    expect(parseCurrencyBRL("120,50")).toBe(120.5);
+  });
+
+  it("tolerates the R$ prefix", () => {
+    expect(parseCurrencyBRL("R$ 120,50")).toBe(120.5);
+  });
+
+  it("tolerates a dot-decimal value pasted without R$", () => {
+    expect(parseCurrencyBRL("120.50")).toBe(120.5);
+  });
+
+  it("tolerates thousands separators", () => {
+    expect(parseCurrencyBRL("R$ 1.234,56")).toBe(1234.56);
+  });
+
+  it("returns null for empty input", () => {
+    expect(parseCurrencyBRL("")).toBeNull();
+  });
+});
+
+describe("formatQuantityBRL", () => {
+  it("formats an integer without decimals", () => {
+    expect(formatQuantityBRL(1000)).toBe("1.000");
+  });
+
+  it("formats a fractional value with a comma decimal", () => {
+    expect(formatQuantityBRL(1000.5)).toBe("1.000,5");
+  });
+});
+
+describe("parseQuantityBRL", () => {
+  it("parses an integer", () => {
+    expect(parseQuantityBRL("1000")).toBe(1000);
+  });
+
+  it("parses a comma-decimal value", () => {
+    expect(parseQuantityBRL("1000,5")).toBe(1000.5);
+  });
+
+  it("returns null for empty input", () => {
+    expect(parseQuantityBRL("")).toBeNull();
+  });
+});
+
+describe("normalizeNCM", () => {
+  it("strips non-digits and caps at 8 characters", () => {
+    expect(normalizeNCM("8708.99.90")).toBe("87089990");
+    expect(normalizeNCM("870899901234")).toBe("87089990");
+  });
+});
+
+describe("formatNCM", () => {
+  it("groups progressively as the user types", () => {
+    expect(formatNCM("8708")).toBe("8708");
+    expect(formatNCM("870899")).toBe("8708.99");
+    expect(formatNCM("87089990")).toBe("8708.99.90");
   });
 });
