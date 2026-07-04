@@ -15,6 +15,7 @@ driverops/
 │       ├── categories/         # CRUD de categorias (clientes, peças, serviços) com soft delete
 │       ├── customers/           # cadastro de clientes com endereço completo
 │       ├── vehicles/             # cadastro de veículos vinculado a clientes, soft delete
+│       ├── parts/                 # cadastro de peças em estoque vinculado a categorias, soft delete
 │       └── core/               # health check e concerns compartilhados
 └── frontend/                 # React + Vite + TS + Tailwind + shadcn/ui
     └── src/
@@ -25,6 +26,7 @@ driverops/
         │   ├── categories/     # CRUD de categorias (clientes/peças/serviços, consome apps.categories)
         │   ├── customers/       # cadastro de clientes (consome apps.customers, cepService.ts)
         │   ├── vehicles/         # cadastro de veículos (consome apps.vehicles)
+        │   ├── parts/             # cadastro de peças em estoque (consome apps.parts)
         │   ├── profile/        # página de perfil
         │   └── landing/        # página pública
         ├── components/
@@ -47,31 +49,37 @@ apenas usado para filtrar a listagem e decidir se a categoria pode ser reativada
 [Categorias](categories.md)), `customers`
 (cadastro de clientes com endereço completo, sem exclusão -- ver [Clientes](customers.md)), `vehicles`
 (cadastro de veículos com soft delete, obrigatoriamente vinculado a um cliente -- ver
-[Veículos](vehicles.md)) e `core` (health check e concerns compartilhados futuros). Ver também
-[Segurança](security.md) para as decisões por trás do esquema de autenticação.
+[Veículos](vehicles.md)), `parts` (cadastro de peças em estoque com soft delete, obrigatoriamente
+vinculado a uma categoria de peça -- ver [Peças e Estoque](parts.md)) e `core` (health check e
+concerns compartilhados futuros). Ver também [Segurança](security.md) para as decisões por trás do
+esquema de autenticação.
 
 `apps.vehicles` depende de `apps.customers` (FK `Vehicle.customer`), nunca o contrário -- o
 `CustomerViewSet.get_queryset()` anota `vehicle_count` (contagem de veículos ativos de cada cliente)
 usando a relação reversa `related_name="vehicles"` do Django, resolvida via app registry, sem importar
 `apps.vehicles` em `apps.customers`. Esse acoplamento é unidirecional por design: um app de domínio
 pode depender de outro "abaixo" dele, mas o inverso quebraria o isolamento entre apps.
+`apps.parts` segue a mesma regra: depende de `apps.categories` (FK `Part.category`, restrita a
+`category_type="part"`), nunca o contrário.
 
 ## Frontend
 
 Organizado por feature (`auth`, `dashboard`, `settings`, `categories`, `customers`, `vehicles`,
-`profile`, `landing`), com componentes de layout (`AppShell`/`Topbar`/`UserMenu` -- apenas menu
-superior fixo, sem sidebar) e primitivos de UI (`components/ui`, estilo shadcn/ui) separados dos
+`parts`, `profile`, `landing`), com componentes de layout (`AppShell`/`Topbar`/`UserMenu` -- apenas
+menu superior fixo, sem sidebar) e primitivos de UI (`components/ui`, estilo shadcn/ui) separados dos
 componentes de página. `lib/api-client.ts` centraliza o cliente axios com renovação automática de
-token em respostas 401; `lib/masks.ts` centraliza as funções de máscara (telefone, CPF/CNPJ, CEP, UF)
-reutilizadas via o componente `components/shared/MaskedInput.tsx`. `CustomerCombobox`
+token em respostas 401; `lib/masks.ts` centraliza as funções de máscara (telefone, CPF/CNPJ, CEP, UF,
+moeda/quantidade em padrão brasileiro, NCM) reutilizadas via os componentes
+`components/shared/MaskedInput.tsx` e `components/shared/CurrencyInput.tsx`. `CustomerCombobox`
 (`components/shared/CustomerCombobox.tsx`) é um autocomplete de clientes reutilizável, usado pelo
 formulário de veículos para selecionar o cliente responsável.
 
 Navegação administrativa é toda por drill-down de cards, sem menus/submenus dedicados: Dashboard →
 card "Configurações" → cards "Categorias de Clientes"/"de Peças"/"de Serviços" → CRUD, Dashboard →
-card "Clientes" → CRUD, e Dashboard → card "Veículos" → CRUD. Isso é deliberado -- ver o card
-"Configurações" em `features/settings/pages/SettingsPage.tsx` para o padrão a seguir ao adicionar
-novas áreas administrativas. As três telas de categorias são a mesma tela
+card "Clientes" → CRUD, Dashboard → card "Veículos" → CRUD, e Dashboard → card "Estoque" → CRUD de
+peças. Isso é deliberado -- ver o card "Configurações" em
+`features/settings/pages/SettingsPage.tsx` para o padrão a seguir ao adicionar novas áreas
+administrativas. As três telas de categorias são a mesma tela
 (`features/categories/components/CategoryManager.tsx`) parametrizada por tipo/título/descrição,
 renderizada por três componentes de página finos -- esse é o padrão a seguir sempre que uma "nova
 área administrativa" for na verdade uma variação de algo que já existe, em vez de duplicar o
@@ -81,6 +89,14 @@ CRUD inteiro.
 `VehicleFormSheet` e o `VehicleSelectorDialog` para o ícone de carro por linha -- ver
 ["Ícone de carro na lista de clientes"](vehicles.md#ícone-de-carro-na-lista-de-clientes) em
 [Veículos](vehicles.md)) -- essa é a única direção de acoplamento entre as duas features de página.
+
+`features/parts` depende de `features/categories` (o formulário de peça reutiliza
+`CategoryForm.tsx` -- extraído de `CategoryManager.tsx` justamente para isso -- dentro de um
+`CategoryQuickCreateDialog.tsx` próprio, permitindo criar uma categoria de peça sem sair do
+cadastro da peça; ver [Peças e Estoque → Adicionar categoria inline](parts.md#adicionar-categoria-inline)).
+Esse é o padrão a seguir sempre que um formulário precisar de um "criar rapidamente" para uma
+entidade relacionada: extrair o formulário da entidade relacionada para um componente exportado e
+reutilizável, em vez de duplicar sua lógica de criação/validação.
 
 ---
 Voltar para o [índice da documentação](README.md).

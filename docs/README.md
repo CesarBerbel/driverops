@@ -17,6 +17,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Categorias](categories.md) | Categorias de clientes, peças e serviços, soft delete, filtros |
 | [Clientes](customers.md) | Fluxo de cadastro, campos, máscaras e integração com CEP (ViaCEP) |
 | [Veículos](vehicles.md) | Cadastro vinculado a clientes, placa (formatos antigo/Mercosul), soft delete |
+| [Peças e Estoque](parts.md) | Cadastro de peças vinculado a categorias, estoque mínimo/baixo, formatação brasileira |
 | [Segurança (escopo v1)](security.md) | Decisões de segurança tomadas nesta primeira versão |
 | [Troubleshooting](troubleshooting.md) | Problemas comuns e como resolvê-los |
 

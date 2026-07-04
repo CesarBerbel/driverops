@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { Car, ChevronRight, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { Boxes, Car, ChevronRight, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -54,6 +54,21 @@ export function DashboardPage() {
                 <ChevronRight className="size-4 text-muted-foreground" />
               </CardTitle>
               <CardDescription>Cadastre os veículos vinculados aos clientes.</CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link to="/parts">
+          <Card className="h-full transition-colors hover:bg-accent/50">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <Boxes className="size-4 text-primary" />
+                  Estoque
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </CardTitle>
+              <CardDescription>Cadastre e controle as peças em estoque.</CardDescription>
             </CardHeader>
           </Card>
         </Link>
