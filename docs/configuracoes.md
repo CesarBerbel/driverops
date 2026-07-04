@@ -106,10 +106,11 @@ Regras padrão e textos reutilizados na criação, edição e geração futura d
 - Não aceita valor **negativo**; aceita **`0`** (entrega no mesmo dia). O campo exibe a unidade
   "dias".
 
-### Termos e textos padrão (uso futuro nos PDFs)
+### Termos e textos padrão (usados no PDF do orçamento)
 
-- Os termos serão usados nos PDFs correspondentes (garantia, orçamento, autorização, ciência do
-  cliente) e o texto de rodapé no rodapé dos documentos gerados.
+- Os termos de **orçamento**, **garantia** e **autorização de serviço**, além do **rodapé**, já são
+  usados no PDF e na página pública do **[Orçamento da OS](quotes.md)**. Se um termo não estiver
+  configurado, o PDF é gerado assim mesmo (sem quebrar).
 - Os campos aceitam **texto longo** e **preservam quebras de linha** (`textarea` simples nesta fase;
   editor rico fica para o futuro).
 - Já vêm com **valores padrão** para facilitar o uso em desenvolvimento.

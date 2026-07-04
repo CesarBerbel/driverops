@@ -20,6 +20,7 @@ driverops/
 │       ├── services/              # catálogo de serviços, peças padrão (through) e pacotes de serviços, soft delete
 │       ├── orders/               # ordens de serviço (OS): veículo/cliente, itens cadastrados e avulsos, soft delete
 │       ├── workshop/             # singletons de configuração: dados da oficina, configurações da OS e do Kanban
+│       ├── quotes/              # orçamentos da OS: snapshot/versões, PDF, aprovação (física/tablet/link), página pública
 │       └── core/               # health check e concerns compartilhados
 └── frontend/                 # React + Vite + TS + Tailwind + shadcn/ui
     └── src/
@@ -35,6 +36,7 @@ driverops/
         │   ├── services/          # serviços e pacotes de serviços (consome apps.services, apps.categories, apps.parts)
         │   ├── orders/            # ordens de serviço (consome apps.orders + clientes/veículos/serviços/peças)
         │   ├── kanban/            # Kanban OS: tela full width, colunas por status, drag and drop (consome apps.orders + apps.workshop)
+        │   ├── quotes/            # orçamento da OS: painel na OS, assinatura no tablet, página pública /orcamento/:token (consome apps.quotes)
         │   ├── settings/          # Configurações: dados da oficina, OS e Kanban (consome apps.workshop)
         │   ├── profile/        # página de perfil
         │   └── landing/        # página pública
@@ -94,12 +96,17 @@ escrita exige superusuário (`IsSuperUser`); a leitura, apenas autenticação. A
 status da OS no Kanban ficam em `apps.orders/status_transitions.py` (validadas no endpoint dedicado
 `POST /api/work-orders/{id}/move/`) -- ver [Kanban OS](kanban.md). `apps.orders` depende de `apps.workshop` para preencher a previsão de
 entrega de novas OS (data de abertura + prazo padrão), aplicado só na criação -- alterar o prazo
-global nunca altera uma OS existente. Ver [Configurações](configuracoes.md).
+global nunca altera uma OS existente. Ver [Configurações](configuracoes.md). `apps.quotes` (Orçamentos)
+fica acima de `apps.orders`: depende de `apps.orders` (a OS de origem) e de `apps.workshop` (dados da
+oficina e termos), nunca o contrário. Cada orçamento é um **snapshot** dos itens/valores da OS
+(congelado por versão), com totais calculados no backend, token público seguro para a página de
+aprovação (`/api/public/quotes/{token}/`, sem autenticação e limitada àquele orçamento), geração de
+PDF (xhtml2pdf) e trilha de auditoria. Ver [Orçamento da OS](quotes.md).
 
 ## Frontend
 
 Organizado por feature (`auth`, `dashboard`, `settings`, `categories`, `customers`, `vehicles`,
-`suppliers`, `parts`, `services`, `orders`, `kanban`, `profile`, `landing`), com componentes de layout
+`suppliers`, `parts`, `services`, `orders`, `quotes`, `kanban`, `profile`, `landing`), com componentes de layout
 (`AppShell`/`Topbar`/`UserMenu` -- apenas menu superior fixo, sem sidebar) e primitivos de UI
 (`components/ui`, estilo shadcn/ui) separados dos componentes de página. `lib/api-client.ts`
 centraliza o cliente axios com renovação automática de token em respostas 401; `lib/masks.ts`

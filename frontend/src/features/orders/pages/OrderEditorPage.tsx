@@ -5,6 +5,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { QuotePanel } from "@/features/quotes/components/QuotePanel";
+
 import { getWorkOrder } from "../api";
 import { OrderForm } from "../components/OrderForm";
 import { formatOrderNumber } from "../lib/orderMapping";
@@ -54,12 +56,16 @@ export function OrderEditorPage() {
           <Skeleton className="h-32 w-full" />
         </div>
       ) : (
-        <OrderForm
-          key={orderId ?? "create"}
-          order={order ?? null}
-          onSuccess={goToList}
-          onCancel={goToList}
-        />
+        <>
+          <OrderForm
+            key={orderId ?? "create"}
+            order={order ?? null}
+            onSuccess={goToList}
+            onCancel={goToList}
+          />
+          {/* Orçamentos só existem para uma OS já salva. */}
+          {isEditMode && orderId !== null && <QuotePanel orderId={orderId} />}
+        </>
       )}
     </div>
   );

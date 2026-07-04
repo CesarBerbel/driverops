@@ -1,0 +1,160 @@
+{% load quote_extras %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: A4; margin: 1.6cm 1.4cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #1f2937; }
+  h1, h2, h3 { margin: 0; }
+  .muted { color: #6b7280; }
+  .header-table { width: 100%; border-bottom: 2px solid #1d4ed8; padding-bottom: 8px; }
+  .logo { max-height: 64px; }
+  .title { font-size: 16pt; font-weight: bold; color: #1d4ed8; }
+  .doc-meta { text-align: right; font-size: 8.5pt; }
+  .section-title {
+    background: #eff6ff; color: #1e3a8a; font-weight: bold; padding: 4px 6px;
+    margin: 12px 0 4px; font-size: 9.5pt; border-left: 3px solid #1d4ed8;
+  }
+  table.data { width: 100%; border-collapse: collapse; }
+  table.data th {
+    background: #f3f4f6; text-align: left; padding: 4px 6px; font-size: 8pt;
+    border-bottom: 1px solid #d1d5db;
+  }
+  table.data td { padding: 4px 6px; border-bottom: 1px solid #e5e7eb; }
+  .right { text-align: right; }
+  .center { text-align: center; }
+  .tag { font-size: 7pt; color: #6b7280; text-transform: uppercase; }
+  table.totals { width: 45%; margin-left: 55%; margin-top: 8px; }
+  table.totals td { padding: 3px 6px; }
+  table.totals .grand { font-size: 12pt; font-weight: bold; color: #1d4ed8; border-top: 2px solid #1d4ed8; }
+  .terms { font-size: 8pt; white-space: pre-line; margin-top: 4px; color: #374151; }
+  .sign-box { border: 1px solid #9ca3af; height: 70px; margin-top: 6px; }
+  .sign-img { max-height: 60px; }
+  .footer { position: fixed; bottom: -1.0cm; left: 0; right: 0; text-align: center; font-size: 7.5pt; color: #9ca3af; }
+</style>
+</head>
+<body>
+  <div class="footer">
+    {% if footer_text %}{{ footer_text }}{% endif %}
+  </div>
+
+  <table class="header-table">
+    <tr>
+      <td width="60%">
+        {% if logo %}<img src="{{ logo }}" class="logo" /><br />{% endif %}
+        <span class="title">{{ profile.trade_name|default:"Orçamento" }}</span><br />
+        {% if profile.legal_name %}<span class="muted">{{ profile.legal_name }}</span><br />{% endif %}
+        {% if profile.cnpj %}<span class="muted">CNPJ: {{ profile.cnpj|format_cnpj }}</span><br />{% endif %}
+        {% if profile.phone %}<span class="muted">Tel: {{ profile.phone|format_phone }}</span> {% endif %}
+        {% if profile.whatsapp %}<span class="muted">WhatsApp: {{ profile.whatsapp|format_phone }}</span><br />{% endif %}
+        {% if profile.email %}<span class="muted">{{ profile.email }}</span>{% endif %}
+      </td>
+      <td width="40%" class="doc-meta">
+        <span class="title" style="font-size:13pt;">ORÇAMENTO</span><br />
+        Nº {{ quote.number|stringformat:"04d" }} &middot; v{{ quote.version }}<br />
+        OS Nº {{ quote.work_order.number|stringformat:"04d" }}<br />
+        Emissão: {{ emitted_at }}<br />
+        {% if valid_until %}Validade: {{ valid_until }}<br />{% endif %}
+        Status: {{ quote.get_status_display }}
+      </td>
+    </tr>
+  </table>
+
+  <div class="section-title">Cliente e Veículo</div>
+  <table class="data">
+    <tr>
+      <td width="50%"><b>{{ customer.name }}</b><br />
+        {% if customer.whatsapp %}<span class="muted">WhatsApp: {{ customer.whatsapp|format_phone }}</span><br />{% endif %}
+        {% if customer.email %}<span class="muted">{{ customer.email }}</span>{% endif %}
+      </td>
+      <td width="50%"><b>{{ vehicle.license_plate|format_plate }}</b>
+        {% if vehicle_description %} &middot; {{ vehicle_description }}{% endif %}
+      </td>
+    </tr>
+  </table>
+
+  {% if quote.customer_report %}
+  <div class="section-title">Relato do Cliente</div>
+  <div class="terms">{{ quote.customer_report }}</div>
+  {% endif %}
+  {% if quote.diagnosis %}
+  <div class="section-title">Diagnóstico Técnico</div>
+  <div class="terms">{{ quote.diagnosis }}</div>
+  {% endif %}
+
+  {% for group in groups %}
+    {% if group.items %}
+    <div class="section-title">{{ group.title }}</div>
+    <table class="data">
+      <thead>
+        <tr>
+          <th width="50%">Descrição</th>
+          <th class="center" width="12%">Qtd.</th>
+          <th class="right" width="19%">Valor unit.</th>
+          <th class="right" width="19%">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in group.items %}
+        <tr>
+          <td>{{ item.description }}{% if item.is_custom %} <span class="tag">avulso</span>{% endif %}
+            {% if item.notes %}<br /><span class="muted">{{ item.notes }}</span>{% endif %}
+          </td>
+          <td class="center">{{ item.quantity }}</td>
+          <td class="right">{{ item.unit_price }}</td>
+          <td class="right">{{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  {% endfor %}
+
+  <table class="totals">
+    <tr><td>Total de serviços (mão de obra)</td><td class="right">{{ totals.services_total }}</td></tr>
+    <tr><td>Total de pacotes</td><td class="right">{{ totals.packages_total }}</td></tr>
+    <tr><td>Total de peças</td><td class="right">{{ totals.parts_total }}</td></tr>
+    <tr><td>Total bruto</td><td class="right">{{ totals.gross_total }}</td></tr>
+    {% if has_discount %}<tr><td>Desconto</td><td class="right">- {{ totals.discount_value }}</td></tr>{% endif %}
+    <tr class="grand"><td>Valor final</td><td class="right">{{ totals.final_value }}</td></tr>
+  </table>
+
+  {% if quote_terms %}
+  <div class="section-title">Termo de Orçamento</div>
+  <div class="terms">{{ quote_terms }}</div>
+  {% endif %}
+  {% if warranty_terms %}
+  <div class="section-title">Termo de Garantia</div>
+  <div class="terms">{{ warranty_terms }}</div>
+  {% endif %}
+  {% if service_authorization_terms %}
+  <div class="section-title">Autorização de Serviço</div>
+  <div class="terms">{{ service_authorization_terms }}</div>
+  {% endif %}
+
+  <div class="section-title">Aprovação</div>
+  {% if signature %}
+    <table class="data" style="border:none;">
+      <tr>
+        <td width="60%" style="border:none;">
+          <span class="muted">Assinatura digital do cliente:</span><br />
+          <img src="{{ signature }}" class="sign-img" />
+        </td>
+        <td width="40%" style="border:none;">
+          <b>{{ quote.client_name }}</b><br />
+          <span class="muted">{{ quote.get_approval_channel_display }}</span><br />
+          {% if decided_at %}<span class="muted">Aprovado em {{ decided_at }}</span>{% endif %}
+        </td>
+      </tr>
+    </table>
+  {% elif quote.status == "approved" %}
+    <p><b>{{ quote.client_name }}</b> &middot; {{ quote.get_approval_channel_display }}
+      {% if decided_at %} &middot; {{ decided_at }}{% endif %}</p>
+  {% else %}
+    <p class="muted">Assinatura do cliente:</p>
+    <div class="sign-box"></div>
+    <p class="muted">Nome: __________________________________ &nbsp; Data: ____ / ____ / ______</p>
+  {% endif %}
+</body>
+</html>
