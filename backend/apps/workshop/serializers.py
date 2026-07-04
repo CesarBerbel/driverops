@@ -2,7 +2,13 @@ from rest_framework import serializers
 
 from apps.customers.utils import only_digits
 
-from .models import OrderSettings, WorkshopProfile
+from .models import (
+    KANBAN_DEFAULT_HIDDEN,
+    KANBAN_STATUS_ORDER,
+    KanbanSettings,
+    OrderSettings,
+    WorkshopProfile,
+)
 
 
 class WorkshopProfileSerializer(serializers.ModelSerializer):
@@ -107,3 +113,36 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
                 "O prazo padrão de entrega não pode ser negativo."
             )
         return value
+
+
+class KanbanSettingsSerializer(serializers.ModelSerializer):
+    # Ordered list of {"status": <os status>, "visible": bool}. Reordering the
+    # list reorders the Kanban columns.
+    columns = serializers.ListField(child=serializers.DictField(), required=False)
+
+    class Meta:
+        model = KanbanSettings
+        fields = ["columns", "updated_at"]
+        read_only_fields = ["updated_at"]
+
+    def validate_columns(self, value):
+        seen = []
+        normalized = []
+        for item in value:
+            status = item.get("status")
+            if status not in KANBAN_STATUS_ORDER:
+                raise serializers.ValidationError(f"Status inválido: {status!r}.")
+            if status in seen:
+                raise serializers.ValidationError(f"Status duplicado: {status!r}.")
+            seen.append(status)
+            normalized.append(
+                {"status": status, "visible": bool(item.get("visible", True))}
+            )
+        # Ensure every known status is present so the config is always complete;
+        # missing ones are appended in canonical order with their default state.
+        for status in KANBAN_STATUS_ORDER:
+            if status not in seen:
+                normalized.append(
+                    {"status": status, "visible": status not in KANBAN_DEFAULT_HIDDEN}
+                )
+        return normalized

@@ -21,6 +21,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Peças e Estoque](parts.md) | Cadastro de peças vinculado a categorias, estoque mínimo/baixo, formatação brasileira |
 | [Serviços](services.md) | Cadastro de serviços, peças padrão, pacotes de serviços, cálculo de valores, soft delete |
 | [Ordens de Serviço](orders.md) | OS com veículo/cliente, itens cadastrados e avulsos, cálculo de valores, status, soft delete |
+| [Kanban OS](kanban.md) | Tela própria full width, colunas por status, drag and drop, transições, filtros, modal rápido e configuração de colunas |
 | [Configurações da Oficina/OS](configuracoes.md) | Dados da oficina e configurações da OS (prazo padrão, termos para PDFs), singletons, permissões |
 | [Dashboard (abas)](dashboard.md) | Abas Operacional/OS/Administrativo, swipe no mobile, cards de OS em formato de carro, modal e indicadores |
 | [Segurança (escopo v1)](security.md) | Decisões de segurança tomadas nesta primeira versão |

@@ -1,3 +1,5 @@
+import type { OrderStatus } from "@/features/orders/types";
+
 export interface WorkshopProfile {
   trade_name: string;
   legal_name: string;
@@ -38,3 +40,17 @@ export interface OrderSettings {
 }
 
 export type OrderSettingsPayload = Omit<OrderSettings, "updated_at">;
+
+// One Kanban column: an OS status plus whether it is shown. The list order is
+// the column order on the board.
+export interface KanbanColumnConfig {
+  status: OrderStatus;
+  visible: boolean;
+}
+
+export interface KanbanSettings {
+  columns: KanbanColumnConfig[];
+  updated_at: string;
+}
+
+export type KanbanSettingsPayload = { columns: KanbanColumnConfig[] };

@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status as http_status
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -9,6 +10,7 @@ from apps.core.periods import period_start_date
 from .models import WorkOrder
 from .serializers import WorkOrderSerializer
 from .status_groups import OPERATIONAL_STATUSES
+from .status_transitions import can_transition
 
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
@@ -53,10 +55,20 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         if start is not None:
             queryset = queryset.filter(opened_at__gte=start)
 
-        # Workflow status filter (Aberta, Em execução, ...).
+        # Workflow status filter (Aberta, Em execução, ...). Accepts a single
+        # status or a comma-separated list (used by the Kanban to fetch only the
+        # visible columns in one request).
         status_param = self.request.query_params.get("status")
         if status_param:
-            queryset = queryset.filter(status=status_param)
+            statuses = [s for s in status_param.split(",") if s]
+            queryset = queryset.filter(status__in=statuses)
+
+        # Overdue filter (OS atrasadas): expected delivery in the past and still
+        # in the shop flow (never finished/canceled).
+        if self.request.query_params.get("overdue") in ("true", "1"):
+            queryset = queryset.filter(
+                expected_delivery__lt=timezone.localdate()
+            ).exclude(status__in=[WorkOrder.Status.FINISHED, WorkOrder.Status.CANCELED])
 
         search = self.request.query_params.get("search", "").strip()
         if search:
@@ -89,3 +101,35 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         order.is_active = True
         order.save(update_fields=["is_active", "updated_at"])
         return Response(WorkOrderSerializer(order).data)
+
+    @action(detail=True, methods=["post"])
+    def move(self, request, pk=None):
+        """Muda o status da OS respeitando o fluxo do Kanban.
+
+        Chamada quando um card é arrastado para outra coluna. O backend valida a
+        transição (fonte da verdade); transições inválidas retornam 400 com
+        mensagem clara e o frontend faz rollback do card para a coluna anterior.
+        """
+        order = self.get_object()
+        new_status = request.data.get("status")
+        labels = dict(WorkOrder.Status.choices)
+        if new_status not in labels:
+            return Response(
+                {"status": ["Status inválido."]},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        if not can_transition(order.status, new_status):
+            return Response(
+                {
+                    "status": [
+                        f"Não é possível mover de '{order.get_status_display()}' "
+                        f"para '{labels[new_status]}'."
+                    ]
+                },
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        if new_status != order.status:
+            order.status = new_status
+            order.save(update_fields=["status", "updated_at"])
+        serializer = WorkOrderSerializer(order, context=self.get_serializer_context())
+        return Response(serializer.data)

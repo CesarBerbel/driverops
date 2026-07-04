@@ -7,8 +7,12 @@ from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsSuperUser
 
-from .models import LOGO_EXTENSIONS, OrderSettings, WorkshopProfile
-from .serializers import OrderSettingsSerializer, WorkshopProfileSerializer
+from .models import LOGO_EXTENSIONS, KanbanSettings, OrderSettings, WorkshopProfile
+from .serializers import (
+    KanbanSettingsSerializer,
+    OrderSettingsSerializer,
+    WorkshopProfileSerializer,
+)
 
 
 class _SoloSettingsView(RetrieveUpdateAPIView):
@@ -36,6 +40,11 @@ class WorkshopProfileView(_SoloSettingsView):
 class OrderSettingsView(_SoloSettingsView):
     model = OrderSettings
     serializer_class = OrderSettingsSerializer
+
+
+class KanbanSettingsView(_SoloSettingsView):
+    model = KanbanSettings
+    serializer_class = KanbanSettingsSerializer
 
 
 class WorkshopLogoView(APIView):
