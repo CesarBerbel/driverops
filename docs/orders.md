@@ -27,7 +27,17 @@ make makemigrations     # gera migrations após alterar os models
 make test               # backend (pytest) + frontend (vitest)
 make lint               # ruff + black --check + oxlint
 make build              # bundle de produção do frontend
+make seed-scenarios     # popula catálogo + 10 cenários de OS (dev/teste)
 ```
+
+### Dados de demonstração
+
+`make seed-scenarios` (ou `docker compose exec backend python manage.py seed_scenarios`) popula um
+catálogo completo (14 categorias de peças + 14 de serviços, 10 peças, 7 serviços com peças padrão e
+4 pacotes) e **10 Ordens de Serviço realistas** cobrindo todo o fluxo: serviços cadastrados e avulsos,
+pacotes cadastrados e avulsos, peças cadastradas e avulsas, peças padrão, descontos, e todos os
+status operacionais. É **re-executável** (o catálogo é upsertado; os clientes/veículos/OS de demo são
+recriados). Dados fictícios, apenas para desenvolvimento, testes e homologação.
 
 Frontend em http://localhost:5173, API em http://localhost:8000/api. Todas as rotas de OS exigem
 usuário autenticado.
