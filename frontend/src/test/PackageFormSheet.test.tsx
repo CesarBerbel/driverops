@@ -1,14 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Toaster } from "@/components/ui/sonner";
+import * as categoriesApi from "@/features/categories/api";
 import * as servicesApi from "@/features/services/api";
 import { PackageFormSheet } from "@/features/services/PackageFormSheet";
 import type { Service, ServicePackage } from "@/features/services/types";
 
 vi.mock("@/features/services/api");
+vi.mock("@/features/categories/api");
+vi.mock("@/features/parts/api");
 
 function service(overrides: Partial<Service> = {}): Service {
   return {
@@ -43,7 +46,21 @@ describe("PackageFormSheet", () => {
   beforeEach(() => {
     vi.mocked(servicesApi.createServicePackage).mockReset();
     vi.mocked(servicesApi.listServices).mockReset();
+    vi.mocked(servicesApi.createService).mockReset();
     vi.mocked(servicesApi.listServices).mockResolvedValue([]);
+    vi.mocked(categoriesApi.listCategories).mockReset();
+    vi.mocked(categoriesApi.listCategories).mockResolvedValue([
+      {
+        id: 1,
+        category_type: "service",
+        name: "Mecânica",
+        description: "",
+        notes: "",
+        is_active: true,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
   });
 
   it("requires a name and at least one service", async () => {
@@ -132,5 +149,31 @@ describe("PackageFormSheet", () => {
     await user.click(screen.getByRole("button", { name: "Remover serviço" }));
     expect(screen.getByTestId("package-total")).toHaveTextContent("R$ 0,00");
     expect(screen.getByText("Nenhum serviço adicionado ainda.")).toBeInTheDocument();
+  });
+
+  it("creates a service inline and auto-adds it to the package without losing data", async () => {
+    vi.mocked(servicesApi.createService).mockResolvedValue(
+      service({ id: 9, name: "Serviço Novo", value: "150.00" }),
+    );
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.type(screen.getByLabelText("Nome do pacote"), "Pacote Inline");
+
+    await user.click(screen.getByRole("button", { name: /adicionar serviço/i }));
+    const dialog = await screen.findByRole("dialog", { name: "Novo serviço" });
+    await user.type(within(dialog).getByLabelText("Nome do serviço"), "Serviço Novo");
+    await user.click(within(dialog).getByLabelText("Categoria do serviço"));
+    await user.click(await screen.findByRole("option", { name: "Mecânica" }));
+    await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() => expect(servicesApi.createService).toHaveBeenCalled());
+    expect(screen.queryByRole("dialog", { name: "Novo serviço" })).not.toBeInTheDocument();
+    // Package name preserved, new service auto-added, total reflects it.
+    expect(screen.getByLabelText("Nome do pacote")).toHaveValue("Pacote Inline");
+    expect(screen.getByText("Serviço Novo")).toBeInTheDocument();
+    expect(screen.getByTestId("package-total")).toHaveTextContent("R$ 150,00");
+    // The inline service-save must not have submitted the package form.
+    expect(servicesApi.createServicePackage).not.toHaveBeenCalled();
   });
 });

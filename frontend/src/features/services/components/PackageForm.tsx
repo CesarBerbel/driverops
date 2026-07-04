@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -20,6 +21,7 @@ import { createServicePackage, updateServicePackage } from "../api";
 import { DISCOUNT_TYPE_OPTIONS } from "../constants";
 import { packageSchema, type PackageFormValues } from "../schemas";
 import type { DiscountType, ServicePackage, ServicePackagePayload } from "../types";
+import { ServiceQuickCreateDialog } from "./ServiceQuickCreateDialog";
 
 const EMPTY_VALUES: PackageFormValues = {
   name: "",
@@ -83,6 +85,7 @@ interface PackageFormProps {
 export function PackageForm({ servicePackage, onSuccess, onCancel }: PackageFormProps) {
   const queryClient = useQueryClient();
   const isEditMode = servicePackage !== null;
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
 
   const {
     control,
@@ -178,7 +181,19 @@ export function PackageForm({ servicePackage, onSuccess, onCancel }: PackageForm
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Adicionar serviço</Label>
+              <div className="flex items-center justify-between">
+                <Label>Vincular serviço</Label>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setServiceDialogOpen(true)}
+                >
+                  <Plus className="size-3" />
+                  Adicionar serviço
+                </Button>
+              </div>
               <ServiceCombobox
                 onSelect={addService}
                 excludeIds={linkedServiceIds}
@@ -332,6 +347,12 @@ export function PackageForm({ servicePackage, onSuccess, onCancel }: PackageForm
           Salvar
         </Button>
       </div>
+
+      <ServiceQuickCreateDialog
+        open={serviceDialogOpen}
+        onOpenChange={setServiceDialogOpen}
+        onCreated={addService}
+      />
     </form>
   );
 }

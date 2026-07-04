@@ -130,9 +130,11 @@ cadastro de serviço.
 `features/services` depende de `features/categories` (`CategoryQuickCreateDialog` com
 `categoryType="service"`) e de `features/parts` (`PartCombobox` para vincular peças padrão e
 `PartQuickCreateDialog` para criar uma peça inline) -- as duas peças do cadastro de serviço reusam o
-mesmo padrão de "criar rapidamente" descrito acima. Os formulários de serviço e de pacote
-(`ServiceForm.tsx`/`PackageForm.tsx`) também seguem o padrão de formulário reutilizável embutível
-(`onSuccess(entidade)`), prontos para um eventual "adicionar serviço inline" no futuro.
+mesmo padrão de "criar rapidamente" descrito acima. O `ServiceForm` também é embutível
+(`onSuccess(entidade)`), envolvido por um `ServiceQuickCreateDialog` usado no cadastro de pacote
+para criar um serviço inline (`PackageForm` → `ServiceQuickCreateDialog` → `ServiceForm` →
+`PartQuickCreateDialog`, aninhamento de diálogos que o Radix suporta e cujos `stopPropagation` de
+submit isolam cada formulário).
 
 **Convenção de `id` em formulários reutilizáveis**: como um formulário pode ser aninhado dentro de
 outro via Dialog/Portal (ex.: `PartForm` dentro de `ServiceForm`), os `id`/`htmlFor` de cada

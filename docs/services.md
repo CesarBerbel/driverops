@@ -115,6 +115,16 @@ Regras dos serviços dentro do pacote:
 - Só serviços **habilitados** aparecem para novos pacotes; se um pacote antigo estiver vinculado a
   um serviço posteriormente desabilitado, o vínculo histórico é preservado.
 
+### Adicionar serviço inline
+
+Ao lado do autocomplete de serviços existe um link "Adicionar serviço" que abre o modal de cadastro
+de serviço (`ServiceQuickCreateDialog`, o mesmo formulário da tela de Serviços) **sobre** o drawer do
+pacote, sem perder os dados já preenchidos. Ao salvar, o modal fecha, o usuário volta ao pacote e o
+serviço recém-criado já entra automaticamente na lista de serviços do pacote. Como o formulário de
+serviço também tem cadastro inline de categoria e de peça, é possível montar um serviço completo sem
+sair do cadastro do pacote (os diálogos se empilham sem se interferir). Cancelar ou um erro no
+cadastro mantém o drawer do pacote intacto por trás.
+
 ### Regras de cálculo
 
 Todos os valores do pacote são calculados dinamicamente pelo backend (nunca persistidos) e também
