@@ -174,7 +174,9 @@ function CustomerForm({
       isEditMode ? updateCustomer(customerId, values) : createCustomer(values),
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success(isEditMode ? "Cliente atualizado." : "Cliente criado.");
+      toast.success(isEditMode ? "Cliente atualizado." : "Cliente criado.", {
+        id: "customer-saved",
+      });
       if (addAnotherRef.current) {
         addAnotherRef.current = false;
         reset(EMPTY_VALUES);

@@ -111,7 +111,9 @@ export function SupplierForm({
       isEditMode ? updateSupplier(supplier.id, values) : createSupplier(values),
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      toast.success(isEditMode ? "Fornecedor atualizado." : "Fornecedor criado.");
+      toast.success(isEditMode ? "Fornecedor atualizado." : "Fornecedor criado.", {
+        id: "supplier-saved",
+      });
       if (addAnotherRef.current) {
         addAnotherRef.current = false;
         reset(EMPTY_VALUES);

@@ -138,7 +138,9 @@ export function PartForm({ part, onSuccess, onCancel, allowAddAnother }: PartFor
     },
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["parts"] });
-      toast.success(isEditMode ? "Peça atualizada." : "Peça criada.");
+      toast.success(isEditMode ? "Peça atualizada." : "Peça criada.", {
+        id: "part-saved",
+      });
       if (addAnotherRef.current) {
         addAnotherRef.current = false;
         reset(EMPTY_VALUES);

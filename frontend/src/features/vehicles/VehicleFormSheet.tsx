@@ -241,7 +241,9 @@ function VehicleForm({
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success(isEditMode ? "Veículo atualizado." : "Veículo criado.");
+      toast.success(isEditMode ? "Veículo atualizado." : "Veículo criado.", {
+        id: "vehicle-saved",
+      });
       if (addAnotherRef.current) {
         addAnotherRef.current = false;
         reset(EMPTY_VALUES);

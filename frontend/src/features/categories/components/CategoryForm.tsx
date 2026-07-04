@@ -55,10 +55,10 @@ export function CategoryForm({
       let saved: Category;
       if (category) {
         saved = await updateCategory(category.id, values);
-        toast.success("Categoria atualizada.");
+        toast.success("Categoria atualizada.", { id: "category-saved" });
       } else {
         saved = await createCategory({ ...values, category_type: categoryType });
-        toast.success("Categoria criada.");
+        toast.success("Categoria criada.", { id: "category-saved" });
       }
       await queryClient.invalidateQueries({ queryKey: ["categories"] });
       if (addAnotherRef.current) {

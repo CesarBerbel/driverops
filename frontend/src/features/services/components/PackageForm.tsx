@@ -134,7 +134,9 @@ export function PackageForm({
     },
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["service-packages"] });
-      toast.success(isEditMode ? "Pacote atualizado." : "Pacote criado.");
+      toast.success(isEditMode ? "Pacote atualizado." : "Pacote criado.", {
+        id: "package-saved",
+      });
       if (addAnotherRef.current) {
         addAnotherRef.current = false;
         reset(EMPTY_VALUES);

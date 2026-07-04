@@ -120,7 +120,9 @@ export function ServiceForm({
     },
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["services"] });
-      toast.success(isEditMode ? "Serviço atualizado." : "Serviço criado.");
+      toast.success(isEditMode ? "Serviço atualizado." : "Serviço criado.", {
+        id: "service-saved",
+      });
       if (addAnotherRef.current) {
         addAnotherRef.current = false;
         reset(EMPTY_VALUES);
