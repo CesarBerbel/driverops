@@ -63,7 +63,7 @@ function Column({
           </CardContent>
         </Card>
       ) : (
-        <div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {orders.map((order) => (
             <OSVehicleCard key={order.id} order={order} onSelect={onSelect} />
           ))}
@@ -159,12 +159,15 @@ export function DashboardOSView() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-6">
           {[0, 1].map((col) => (
             <div key={col} className="space-y-3">
               <Skeleton className="h-5 w-24" />
-              <Skeleton className="h-44 w-full" />
-              <Skeleton className="h-44 w-full" />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[0, 1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-52 w-full" />
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -181,7 +184,7 @@ export function DashboardOSView() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-6">
           <Column
             title="Abertas"
             orders={open}
