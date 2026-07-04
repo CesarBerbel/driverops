@@ -52,12 +52,17 @@ Lista de OS → "Excluir" (por linha)       → confirmação → desabilita a O
 ```
 
 O formulário é uma **página** (não um drawer), pois é extenso, e ocupa a **largura total**. Em telas
-grandes os blocos ficam em **duas colunas** (coluna esquerda: identificação/veículo/cliente/relato/
-diagnóstico; coluna direita: serviços/pacotes/peças/valores/observações/status); no mobile as colunas
-empilham na mesma ordem numerada abaixo. Além do botão "Nova OS" na lista, há um atalho **"Nova OS"
-sempre visível no menu superior** (`/orders/new`). Os blocos aparecem nesta ordem:
+grandes os blocos ficam em **duas colunas**; no mobile empilham na ordem numerada abaixo. Além do
+botão "Nova OS" na lista, há um atalho **"Nova OS" sempre visível no menu superior** (`/orders/new`).
 
-1. Dados principais (número gerado, data de abertura, previsão de entrega, quilometragem)
+- **Coluna esquerda:** Dados principais, Veículo, Cliente, Relato do cliente, Diagnóstico técnico,
+  Observações internas.
+- **Coluna direita:** Serviços, Pacotes de serviços, Peças utilizadas, Valores.
+
+Blocos:
+
+1. Dados principais (número gerado, data de abertura, previsão de entrega, quilometragem e o
+   **Status da OS** ao lado da quilometragem)
 2. **Veículo** (vem **antes** do cliente)
 3. **Cliente**
 4. Relato do cliente
@@ -67,7 +72,6 @@ sempre visível no menu superior** (`/orders/new`). Os blocos aparecem nesta ord
 8. Peças utilizadas
 9. Valores
 10. Observações internas
-11. Status da OS
 
 ## Veículo antes do cliente (prioridade: placa)
 

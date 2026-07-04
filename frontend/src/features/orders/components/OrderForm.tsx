@@ -324,6 +324,27 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
               )}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status da OS</Label>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="status" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ORDER_STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -441,9 +462,24 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           <Textarea id="diagnosis" rows={3} aria-label="Diagnóstico" {...register("diagnosis")} />
         </CardContent>
       </Card>
+
+      {/* Observações internas (coluna esquerda) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Observações internas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            id="internal_notes"
+            rows={3}
+            aria-label="Observações internas"
+            {...register("internal_notes")}
+          />
+        </CardContent>
+      </Card>
         </div>
 
-        {/* Coluna direita: itens (serviços/pacotes/peças), valores, observações, status. */}
+        {/* Coluna direita: itens (serviços/pacotes/peças) e valores. */}
         <div className="space-y-6">
       {/* 6. Serviços */}
       <Card>
@@ -655,51 +691,6 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
             <span className="text-lg font-semibold" data-testid="order-final-value">
               {formatCurrencyBRL(finalValue)}
             </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 10. Observações internas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Observações internas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            id="internal_notes"
-            rows={3}
-            aria-label="Observações internas"
-            {...register("internal_notes")}
-          />
-        </CardContent>
-      </Card>
-
-      {/* 11. Status da OS */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Status da OS</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="max-w-xs space-y-2">
-            <Label htmlFor="status">Status atual</Label>
-            <Controller
-              control={control}
-              name="status"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="status" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ORDER_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
           </div>
         </CardContent>
       </Card>
