@@ -25,7 +25,7 @@ driverops/
     └── src/
         ├── features/
         │   ├── auth/           # contexto de autenticação, guardas de rota, páginas
-        │   ├── dashboard/      # página do dashboard
+        │   ├── dashboard/      # dashboard com abas (Operacional/OS/Administrativo), board de OS, indicadores
         │   ├── settings/       # página de Configurações (ponto de entrada administrativo)
         │   ├── categories/     # CRUD de categorias (clientes/peças/serviços, consome apps.categories)
         │   ├── customers/       # cadastro de clientes (consome apps.customers, cepService.ts)
@@ -61,8 +61,11 @@ apenas usado para filtrar a listagem e decidir se a categoria pode ser reativada
 delete, mesmo formato de campos de `customers` -- ver [Fornecedores](suppliers.md)), `parts`
 (cadastro de peças em estoque com soft delete, obrigatoriamente vinculado a uma categoria de peça e
 opcionalmente a um fornecedor -- ver [Peças e Estoque](parts.md)), `services` (catálogo de serviços
-e pacotes de serviços com soft delete -- ver [Serviços](services.md)) e `core` (health check e
-concerns compartilhados futuros). Ver também [Segurança](security.md) para as decisões por trás do
+e pacotes de serviços com soft delete -- ver [Serviços](services.md)) e `core` (health check,
+indicadores consolidados do Dashboard em `GET /api/dashboard/stats/`, e concerns compartilhados como
+os grupos de período -- ver [Dashboard](dashboard.md)). A listagem de OS também aceita
+`?board=operational` (só OS no fluxo, sem finalizadas/canceladas) e `?period=` para as visões do
+Dashboard. Ver também [Segurança](security.md) para as decisões por trás do
 esquema de autenticação.
 
 `apps.vehicles` depende de `apps.customers` (FK `Vehicle.customer`), nunca o contrário -- o
