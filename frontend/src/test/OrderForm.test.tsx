@@ -90,12 +90,47 @@ function service(overrides: Partial<Service> = {}): Service {
   };
 }
 
-function renderForm(onSuccess = vi.fn()) {
+function workOrder(overrides: Partial<WorkOrder> = {}): WorkOrder {
+  return {
+    id: 1,
+    number: 1,
+    customer: 1,
+    customer_name: "Maria Silva",
+    customer_whatsapp: "11987654321",
+    customer_phone: "",
+    vehicle: 1,
+    vehicle_plate: "ABC1234",
+    vehicle_description: "Fiat Uno",
+    status: "open",
+    status_display: "Aberta",
+    opened_at: "2026-07-04",
+    expected_delivery: "2026-07-11",
+    current_mileage: null,
+    customer_report: "Barulho",
+    diagnosis: "",
+    internal_notes: "",
+    service_items: [],
+    package_items: [],
+    part_items: [],
+    discount_type: "none",
+    discount_value: "0.00",
+    services_total: "0.00",
+    packages_total: "0.00",
+    parts_total: "0.00",
+    gross_total: "0.00",
+    final_value: "0.00",
+    created_at: "2026-07-04T00:00:00Z",
+    updated_at: "2026-07-04T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function renderForm(order: WorkOrder | null = null, onSuccess = vi.fn()) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <OrderForm order={null} onSuccess={onSuccess} onCancel={vi.fn()} />
+        <OrderForm order={order} onSuccess={onSuccess} onCancel={vi.fn()} />
       </MemoryRouter>
       <Toaster />
     </QueryClientProvider>,
@@ -185,6 +220,30 @@ describe("OrderForm", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Previsão de entrega")).toHaveValue("2026-08-08"),
     );
+  });
+
+  it("locks the customer and vehicle when editing an existing OS", async () => {
+    renderForm(workOrder());
+
+    // Both are shown as read-only selections...
+    expect(screen.getByText("Maria Silva")).toBeInTheDocument();
+    expect(screen.getByText(/ABC-1234/)).toBeInTheDocument();
+    expect(
+      screen.getByText("O cliente não pode ser alterado após a abertura da OS."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("O veículo não pode ser alterado após a abertura da OS."),
+    ).toBeInTheDocument();
+
+    // ...with no way to change or clear them.
+    expect(
+      screen.queryByRole("button", { name: /adicionar cliente/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /adicionar veículo/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Trocar cliente")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Trocar veículo")).not.toBeInTheDocument();
   });
 
   it("adds a custom (avulso) service line requiring a description", async () => {

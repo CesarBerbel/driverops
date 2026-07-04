@@ -356,28 +356,36 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <Label htmlFor="vehicle_id">Placa do veículo</Label>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs"
-              onClick={() => setVehicleSheetOpen(true)}
-            >
-              <Car className="size-3" />
-              Adicionar veículo
-            </Button>
+            {!isEditMode && (
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                onClick={() => setVehicleSheetOpen(true)}
+              >
+                <Car className="size-3" />
+                Adicionar veículo
+              </Button>
+            )}
           </div>
           <VehicleCombobox
             selectedLabel={vehicleLabel}
             onSelect={selectVehicle}
             onClear={clearVehicle}
             customerId={customerId}
+            disabled={isEditMode}
             invalid={Boolean(errors.vehicle_id)}
           />
+          {isEditMode && (
+            <p className="text-xs text-muted-foreground">
+              O veículo não pode ser alterado após a abertura da OS.
+            </p>
+          )}
           {errors.vehicle_id && (
             <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>
           )}
-          {customerId != null && vehicleId == null && (
+          {!isEditMode && customerId != null && vehicleId == null && (
             <p className="text-xs text-muted-foreground">
               Este cliente ainda não tem veículo selecionado. Busque pela placa ou cadastre um
               novo veículo.
@@ -394,23 +402,31 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <Label htmlFor="customer_id">Cliente</Label>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs"
-              onClick={() => setCustomerSheetOpen(true)}
-            >
-              <UserPlus className="size-3" />
-              Adicionar cliente
-            </Button>
+            {!isEditMode && (
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                onClick={() => setCustomerSheetOpen(true)}
+              >
+                <UserPlus className="size-3" />
+                Adicionar cliente
+              </Button>
+            )}
           </div>
           <CustomerCombobox
             selectedName={customerName}
             onSelect={selectCustomer}
             onClear={clearCustomer}
+            disabled={isEditMode}
             invalid={Boolean(errors.customer_id)}
           />
+          {isEditMode && (
+            <p className="text-xs text-muted-foreground">
+              O cliente não pode ser alterado após a abertura da OS.
+            </p>
+          )}
           {errors.customer_id && (
             <p className="text-sm text-destructive">{errors.customer_id.message}</p>
           )}

@@ -89,6 +89,9 @@ antes** do de cliente.
 - Selecionar um cliente diferente do dono do veículo já escolhido **limpa** o veículo, mantendo a
   consistência. O backend também recusa uma OS cujo veículo não pertença ao cliente informado.
 - Não é possível salvar a OS **sem veículo** nem **sem cliente**.
+- Depois da OS aberta, **veículo e cliente não podem ser alterados** -- só podem ser escolhidos na
+  criação. Na edição, os campos ficam travados (sem seletor, sem cadastro inline) e o backend ignora
+  qualquer tentativa de trocá-los, mantendo o histórico consistente.
 
 ## Campos e obrigatoriedade
 
