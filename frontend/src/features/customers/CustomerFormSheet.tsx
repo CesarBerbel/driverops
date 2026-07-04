@@ -210,7 +210,13 @@ function CustomerForm({
 
   return (
     <form
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      onSubmit={(event) => {
+        // Stop the submit from bubbling to an ancestor form when this sheet is
+        // opened inline (e.g. from a vehicle form or an Ordem de Serviço) --
+        // React re-dispatches bubbling events through the portal along the tree.
+        event.stopPropagation();
+        handleSubmit((values) => mutation.mutate(values))(event);
+      }}
       className="flex flex-1 flex-col overflow-hidden"
       noValidate
     >

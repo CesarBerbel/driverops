@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
 import { onlyDigits } from "@/lib/masks";
+import { CustomerFormSheet } from "@/features/customers/CustomerFormSheet";
 import type { Customer } from "@/features/customers/types";
 
 import { createVehicle, getVehicle, updateVehicle } from "./api";
@@ -211,6 +212,7 @@ function VehicleForm({
   const queryClient = useQueryClient();
   const isEditMode = vehicleId !== null;
   const [customerName, setCustomerName] = useState(defaultCustomerName);
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
 
   const {
     control,
@@ -255,7 +257,13 @@ function VehicleForm({
 
   return (
     <form
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      onSubmit={(event) => {
+        // Stop the submit from bubbling to an ancestor form when this sheet is
+        // opened inline (e.g. from an Ordem de Serviço) -- React re-dispatches
+        // bubbling events through the portal along the component tree.
+        event.stopPropagation();
+        handleSubmit((values) => mutation.mutate(values))(event);
+      }}
       className="flex flex-1 flex-col overflow-hidden"
       noValidate
     >
@@ -266,7 +274,19 @@ function VehicleForm({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="customer_id">Cliente responsável</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="customer_id">Cliente responsável</Label>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setCustomerSheetOpen(true)}
+                >
+                  <UserPlus className="size-3" />
+                  Adicionar cliente
+                </Button>
+              </div>
               <CustomerCombobox
                 selectedName={customerName}
                 onSelect={handleSelectCustomer}
@@ -682,6 +702,14 @@ function VehicleForm({
           Salvar
         </Button>
       </SheetFooter>
+
+      {/* Cadastro inline de cliente -- volta selecionado sem perder os dados do veículo. */}
+      <CustomerFormSheet
+        open={customerSheetOpen}
+        onOpenChange={setCustomerSheetOpen}
+        customerId={null}
+        onCreated={handleSelectCustomer}
+      />
     </form>
   );
 }
