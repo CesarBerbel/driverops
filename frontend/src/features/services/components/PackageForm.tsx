@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -80,18 +80,27 @@ interface PackageFormProps {
   servicePackage: ServicePackage | null;
   onSuccess: (servicePackage: ServicePackage) => void;
   onCancel?: () => void;
+  // Show a "Salvar e adicionar outro" action (standalone create only).
+  allowAddAnother?: boolean;
 }
 
-export function PackageForm({ servicePackage, onSuccess, onCancel }: PackageFormProps) {
+export function PackageForm({
+  servicePackage,
+  onSuccess,
+  onCancel,
+  allowAddAnother,
+}: PackageFormProps) {
   const queryClient = useQueryClient();
   const isEditMode = servicePackage !== null;
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+  const addAnotherRef = useRef(false);
 
   const {
     control,
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PackageFormValues>({
     resolver: zodResolver(packageSchema),
@@ -125,8 +134,15 @@ export function PackageForm({ servicePackage, onSuccess, onCancel }: PackageForm
     },
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["service-packages"] });
-      toast.success(isEditMode ? "Pacote atualizado." : "Pacote criado.");
-      onSuccess(saved);
+      toast.success(isEditMode ? "Pacote atualizado." : "Pacote criado.", {
+        id: "package-saved",
+      });
+      if (addAnotherRef.current) {
+        addAnotherRef.current = false;
+        reset(EMPTY_VALUES);
+      } else {
+        onSuccess(saved);
+      }
     },
     onError: (error) => {
       toast.error(extractErrorMessage(error, "Não foi possível salvar o pacote."));
@@ -342,7 +358,25 @@ export function PackageForm({ servicePackage, onSuccess, onCancel }: PackageForm
             Cancelar
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+        {allowAddAnother && (
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={isSubmitting || mutation.isPending}
+            onClick={() => {
+              addAnotherRef.current = true;
+            }}
+          >
+            Salvar e adicionar outro
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={isSubmitting || mutation.isPending}
+          onClick={() => {
+            addAnotherRef.current = false;
+          }}
+        >
           {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
           Salvar
         </Button>

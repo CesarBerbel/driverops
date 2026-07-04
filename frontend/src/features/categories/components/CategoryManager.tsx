@@ -232,6 +232,7 @@ export function CategoryManager({ categoryType, title, description }: CategoryMa
             key={editingCategory?.id ?? "create"}
             category={editingCategory}
             categoryType={categoryType}
+            allowAddAnother={editingCategory === null}
             onSuccess={() => setDialogOpen(false)}
           />
         </DialogContent>

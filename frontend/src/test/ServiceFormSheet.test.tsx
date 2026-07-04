@@ -127,6 +127,24 @@ describe("ServiceFormSheet", () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });
 
+  it("'Salvar e adicionar outro' saves, keeps the sheet open, and clears the form", async () => {
+    vi.mocked(servicesApi.createService).mockResolvedValue(service());
+    const user = userEvent.setup();
+    const { onOpenChange } = renderSheet();
+
+    await user.type(screen.getByLabelText("Nome do serviço"), "Troca de óleo");
+    await user.click(screen.getByLabelText("Categoria do serviço"));
+    await user.click(await screen.findByRole("option", { name: "Mecânica" }));
+    await user.click(screen.getByRole("button", { name: "Salvar e adicionar outro" }));
+
+    await waitFor(() => expect(servicesApi.createService).toHaveBeenCalled());
+    // Sheet stays open (not closed) and the form is reset for the next record.
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nome do serviço")).toHaveValue(""),
+    );
+  });
+
   it("adds a standard part via autocomplete and submits it, then can remove it", async () => {
     vi.mocked(partsApi.listParts).mockResolvedValue([part()]);
     vi.mocked(servicesApi.createService).mockResolvedValue(service());

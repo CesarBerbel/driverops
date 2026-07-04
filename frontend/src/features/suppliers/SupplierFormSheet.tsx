@@ -52,6 +52,7 @@ export function SupplierFormSheet({ open, onOpenChange, supplierId }: SupplierFo
           <SupplierForm
             key={supplierId ?? "create"}
             supplier={supplier ?? null}
+            allowAddAnother={!isEditMode}
             onSuccess={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
           />

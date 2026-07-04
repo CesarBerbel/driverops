@@ -52,6 +52,7 @@ export function PartFormSheet({ open, onOpenChange, partId }: PartFormSheetProps
           <PartForm
             key={partId ?? "create"}
             part={part ?? null}
+            allowAddAnother={!isEditMode}
             onSuccess={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
           />

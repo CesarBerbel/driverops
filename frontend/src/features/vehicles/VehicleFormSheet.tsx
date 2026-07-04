@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -189,6 +189,7 @@ export function VehicleFormSheet({
             defaultCustomerName={vehicle?.customer_name ?? defaultCustomerName ?? ""}
             onClose={() => onOpenChange(false)}
             onCreated={onCreated}
+            allowAddAnother={!isEditMode && !onCreated}
           />
         )}
       </SheetContent>
@@ -202,17 +203,20 @@ function VehicleForm({
   defaultCustomerName,
   onClose,
   onCreated,
+  allowAddAnother,
 }: {
   vehicleId: number | null;
   defaultValues: VehicleFormValues;
   defaultCustomerName: string;
   onClose: () => void;
   onCreated?: (vehicle: Vehicle) => void;
+  allowAddAnother?: boolean;
 }) {
   const queryClient = useQueryClient();
   const isEditMode = vehicleId !== null;
   const [customerName, setCustomerName] = useState(defaultCustomerName);
   const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
+  const addAnotherRef = useRef(false);
 
   const {
     control,
@@ -220,6 +224,7 @@ function VehicleForm({
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
@@ -236,7 +241,15 @@ function VehicleForm({
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success(isEditMode ? "Veículo atualizado." : "Veículo criado.");
+      toast.success(isEditMode ? "Veículo atualizado." : "Veículo criado.", {
+        id: "vehicle-saved",
+      });
+      if (addAnotherRef.current) {
+        addAnotherRef.current = false;
+        reset(EMPTY_VALUES);
+        setCustomerName("");
+        return;
+      }
       onCreated?.(saved);
       onClose();
     },
@@ -697,7 +710,25 @@ function VehicleForm({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+        {allowAddAnother && (
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={isSubmitting || mutation.isPending}
+            onClick={() => {
+              addAnotherRef.current = true;
+            }}
+          >
+            Salvar e adicionar outro
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={isSubmitting || mutation.isPending}
+          onClick={() => {
+            addAnotherRef.current = false;
+          }}
+        >
           {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
           Salvar
         </Button>

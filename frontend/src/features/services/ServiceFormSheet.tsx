@@ -51,6 +51,7 @@ export function ServiceFormSheet({ open, onOpenChange, serviceId }: ServiceFormS
           <ServiceForm
             key={serviceId ?? "create"}
             service={service ?? null}
+            allowAddAnother={!isEditMode}
             onSuccess={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
           />

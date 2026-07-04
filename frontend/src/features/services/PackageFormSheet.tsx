@@ -50,6 +50,7 @@ export function PackageFormSheet({ open, onOpenChange, packageId }: PackageFormS
           <PackageForm
             key={packageId ?? "create"}
             servicePackage={servicePackage ?? null}
+            allowAddAnother={!isEditMode}
             onSuccess={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
           />

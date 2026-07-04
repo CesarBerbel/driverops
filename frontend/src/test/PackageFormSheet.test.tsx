@@ -162,6 +162,10 @@ describe("PackageFormSheet", () => {
 
     await user.click(screen.getByRole("button", { name: /adicionar serviço/i }));
     const dialog = await screen.findByRole("dialog", { name: "Novo serviço" });
+    // The inline (nested) create dialog must not offer "save and add another".
+    expect(
+      within(dialog).queryByRole("button", { name: "Salvar e adicionar outro" }),
+    ).not.toBeInTheDocument();
     await user.type(within(dialog).getByLabelText("Nome do serviço"), "Serviço Novo");
     await user.click(within(dialog).getByLabelText("Categoria do serviço"));
     await user.click(await screen.findByRole("option", { name: "Mecânica" }));

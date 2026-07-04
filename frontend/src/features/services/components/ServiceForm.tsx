@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -78,19 +78,28 @@ interface ServiceFormProps {
   service: Service | null;
   onSuccess: (service: Service) => void;
   onCancel?: () => void;
+  // Show a "Salvar e adicionar outro" action (standalone create only).
+  allowAddAnother?: boolean;
 }
 
-export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) {
+export function ServiceForm({
+  service,
+  onSuccess,
+  onCancel,
+  allowAddAnother,
+}: ServiceFormProps) {
   const queryClient = useQueryClient();
   const isEditMode = service !== null;
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [partDialogOpen, setPartDialogOpen] = useState(false);
+  const addAnotherRef = useRef(false);
 
   const {
     control,
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
@@ -111,8 +120,15 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
     },
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["services"] });
-      toast.success(isEditMode ? "Serviço atualizado." : "Serviço criado.");
-      onSuccess(saved);
+      toast.success(isEditMode ? "Serviço atualizado." : "Serviço criado.", {
+        id: "service-saved",
+      });
+      if (addAnotherRef.current) {
+        addAnotherRef.current = false;
+        reset(EMPTY_VALUES);
+      } else {
+        onSuccess(saved);
+      }
     },
     onError: (error) => {
       toast.error(extractErrorMessage(error, "Não foi possível salvar o serviço."));
@@ -340,7 +356,25 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
             Cancelar
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
+        {allowAddAnother && (
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={isSubmitting || mutation.isPending}
+            onClick={() => {
+              addAnotherRef.current = true;
+            }}
+          >
+            Salvar e adicionar outro
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={isSubmitting || mutation.isPending}
+          onClick={() => {
+            addAnotherRef.current = false;
+          }}
+        >
           {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
           Salvar
         </Button>

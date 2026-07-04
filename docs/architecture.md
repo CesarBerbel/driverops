@@ -115,7 +115,11 @@ autopreenchimento do cliente) e `PackageCombobox` (adicionar-à-lista) foram acr
 Ordem de Serviço. Os cadastros inline reaproveitam os `QuickCreateDialog`/`FormSheet` existentes:
 `CustomerFormSheet` e `VehicleFormSheet` ganharam um callback opcional `onCreated` (e o de veículo
 aceita um cliente padrão) para devolver o registro recém-criado à OS e selecioná-lo sem perder os
-dados já preenchidos.
+dados já preenchidos. Os formulários de cadastro (clientes, veículos, fornecedores, peças, serviços,
+pacotes e categorias) aceitam uma prop `allowAddAnother`: quando ligada (apenas na criação avulsa a
+partir da listagem, nunca em edição ou no cadastro inline), exibem um botão **"Salvar e adicionar
+outro"** que salva e **reseta o formulário** (via `reset`) em vez de fechar, para incluir vários
+registros em sequência.
 
 Navegação administrativa é toda por drill-down de cards, sem menus/submenus dedicados: Dashboard →
 card "Configurações" → cards "Dados da Oficina"/"Configurações da OS" (singletons de `apps.workshop`,
