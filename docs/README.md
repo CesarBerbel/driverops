@@ -19,6 +19,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Veículos](vehicles.md) | Cadastro vinculado a clientes, placa (formatos antigo/Mercosul), soft delete |
 | [Fornecedores](suppliers.md) | Cadastro de fornecedores, vínculo com peças, soft delete |
 | [Peças e Estoque](parts.md) | Cadastro de peças vinculado a categorias, estoque mínimo/baixo, formatação brasileira |
+| [Serviços](services.md) | Cadastro de serviços, peças padrão, pacotes de serviços, cálculo de valores, soft delete |
 | [Segurança (escopo v1)](security.md) | Decisões de segurança tomadas nesta primeira versão |
 | [Troubleshooting](troubleshooting.md) | Problemas comuns e como resolvê-los |
 

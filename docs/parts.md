@@ -59,6 +59,12 @@ Tecnicamente, o modal de peça e o modal de categoria são dois componentes Radi
 independentes que compartilham a mesma base (`@radix-ui/react-dialog`); o de categoria é aberto por
 cima do drawer sem interferir no seu estado.
 
+O formulário de peça em si foi extraído de `PartFormSheet.tsx` para
+`features/parts/components/PartForm.tsx` (com um `PartQuickCreateDialog.tsx` irmão), seguindo o
+mesmo padrão de `CategoryForm`/`SupplierForm`. Assim o cadastro de peça pode ser reutilizado inline
+a partir de outros formulários -- é o que o cadastro de [Serviços](services.md#adicionar-peça-inline)
+faz para criar uma peça sem sair do serviço.
+
 ## Campos do cadastro
 
 Somente **Nome da peça**, **Categoria da peça**, **Unidade de medida** e **Quantidade atual** são

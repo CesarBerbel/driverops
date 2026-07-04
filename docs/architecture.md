@@ -17,6 +17,7 @@ driverops/
 │       ├── vehicles/             # cadastro de veículos vinculado a clientes, soft delete
 │       ├── suppliers/             # cadastro de fornecedores com endereço completo, soft delete
 │       ├── parts/                 # cadastro de peças em estoque vinculado a categorias/fornecedores, soft delete
+│       ├── services/              # catálogo de serviços, peças padrão (through) e pacotes de serviços, soft delete
 │       └── core/               # health check e concerns compartilhados
 └── frontend/                 # React + Vite + TS + Tailwind + shadcn/ui
     └── src/
@@ -29,20 +30,21 @@ driverops/
         │   ├── vehicles/         # cadastro de veículos (consome apps.vehicles)
         │   ├── suppliers/        # cadastro de fornecedores (consome apps.suppliers)
         │   ├── parts/             # cadastro de peças em estoque (consome apps.parts e apps.suppliers)
+        │   ├── services/          # serviços e pacotes de serviços (consome apps.services, apps.categories, apps.parts)
         │   ├── profile/        # página de perfil
         │   └── landing/        # página pública
         ├── components/
         │   ├── layout/         # AppShell, Topbar (menu superior fixo), UserMenu
         │   ├── ui/              # primitivos shadcn/ui
-        │   └── shared/          # PasswordInput, MaskedInput, CustomerCombobox, SupplierCombobox
-        │                        # e outros componentes reutilizáveis
+        │   └── shared/          # PasswordInput, MaskedInput, CustomerCombobox, SupplierCombobox,
+        │                        # PartCombobox, ServiceCombobox e outros componentes reutilizáveis
         ├── lib/                 # cliente axios com refresh automático, masks.ts, cepService.ts, utils
         └── routes/               # definição de rotas
 ```
 
 ## Backend
 
-Seis apps Django: `accounts` (User customizado, autenticação JWT via cookies httpOnly, perfil,
+Sete apps Django: `accounts` (User customizado, autenticação JWT via cookies httpOnly, perfil,
 troca/recuperação de senha, permissão de superusuário, comando `seed_admin`), `categories` (um único
 modelo `Category` genérico com um discriminador `category_type` (`client`/`part`/`service`) atende
 as categorias de clientes, peças e serviços -- a unicidade do nome é escopada por
@@ -54,7 +56,8 @@ apenas usado para filtrar a listagem e decidir se a categoria pode ser reativada
 [Veículos](vehicles.md)), `suppliers` (cadastro de fornecedores com endereço completo e soft
 delete, mesmo formato de campos de `customers` -- ver [Fornecedores](suppliers.md)), `parts`
 (cadastro de peças em estoque com soft delete, obrigatoriamente vinculado a uma categoria de peça e
-opcionalmente a um fornecedor -- ver [Peças e Estoque](parts.md)) e `core` (health check e
+opcionalmente a um fornecedor -- ver [Peças e Estoque](parts.md)), `services` (catálogo de serviços
+e pacotes de serviços com soft delete -- ver [Serviços](services.md)) e `core` (health check e
 concerns compartilhados futuros). Ver também [Segurança](security.md) para as decisões por trás do
 esquema de autenticação.
 
@@ -65,7 +68,12 @@ usando a relação reversa `related_name="vehicles"` do Django, resolvida via ap
 pode depender de outro "abaixo" dele, mas o inverso quebraria o isolamento entre apps.
 `apps.parts` segue a mesma regra: depende de `apps.categories` (FK `Part.category`, restrita a
 `category_type="part"`) e de `apps.suppliers` (FK `Part.supplier`, opcional -- `null=True`), nunca o
-contrário; `apps.suppliers` nunca importa `apps.parts`.
+contrário; `apps.suppliers` nunca importa `apps.parts`. `apps.services` também segue a regra:
+depende de `apps.categories` (FK `Service.category`, restrita a `category_type="service"`) e de
+`apps.parts` (`ServicePart.part`), nunca o contrário. É o primeiro app com **modelos de ligação**
+(`ServicePart`, `PackageService`) e os primeiros serializers com **escrita aninhada** -- todo o
+restante do backend usa apenas FKs simples. Os valores calculados (valor do serviço, total e final
+do pacote) são derivados no serializer e nunca persistidos.
 
 ## Frontend
 
@@ -82,12 +90,16 @@ consulta -- deixou de ser algo exclusivo de Clientes). `CustomerCombobox`
 (`components/shared/CustomerCombobox.tsx`) e `SupplierCombobox`
 (`components/shared/SupplierCombobox.tsx`) são autocompletes reutilizáveis com a mesma estrutura,
 usados respectivamente pelo formulário de veículos (cliente responsável) e pelo formulário de peças
-(fornecedor).
+(fornecedor). `PartCombobox` e `ServiceCombobox` seguem a mesma estrutura como seletores
+"adicionar-à-lista" (múltiplos itens): o de peças alimenta a seção de peças padrão do serviço, e o
+de serviços alimenta a montagem do pacote.
 
 Navegação administrativa é toda por drill-down de cards, sem menus/submenus dedicados: Dashboard →
 card "Configurações" → cards "Categorias de Clientes"/"de Peças"/"de Serviços" → CRUD, Dashboard →
 card "Clientes" → CRUD, Dashboard → card "Veículos" → CRUD, Dashboard → card "Fornecedores" → CRUD,
-e Dashboard → card "Estoque" → CRUD de peças. Isso é deliberado -- ver o card "Configurações" em
+Dashboard → card "Estoque" → CRUD de peças, e Dashboard → card "Serviços" → CRUD de serviços (com um
+controle segmentado interno para alternar entre Serviços e Pacotes de Serviços, já que não há
+primitivo de abas). Isso é deliberado -- ver o card "Configurações" em
 `features/settings/pages/SettingsPage.tsx` para o padrão a seguir ao adicionar novas áreas
 administrativas. As três telas de categorias são a mesma tela
 (`features/categories/components/CategoryManager.tsx`) parametrizada por tipo/título/descrição,
@@ -110,7 +122,22 @@ e, pelo mesmo motivo, de `features/suppliers` (`SupplierCombobox` para o seletor
 [Peças e Estoque → Adicionar fornecedor inline](parts.md#adicionar-fornecedor-inline)). Esse é o
 padrão a seguir sempre que um formulário precisar de um "criar rapidamente" para uma entidade
 relacionada: extrair o formulário da entidade relacionada para um componente exportado e
-reutilizável, em vez de duplicar sua lógica de criação/validação.
+reutilizável, em vez de duplicar sua lógica de criação/validação. Seguindo esse padrão, o próprio
+`PartForm` foi extraído de `PartFormSheet.tsx` para `features/parts/components/PartForm.tsx` (com um
+`PartQuickCreateDialog.tsx`) para que `features/services` possa criar uma peça inline a partir do
+cadastro de serviço.
+
+`features/services` depende de `features/categories` (`CategoryQuickCreateDialog` com
+`categoryType="service"`) e de `features/parts` (`PartCombobox` para vincular peças padrão e
+`PartQuickCreateDialog` para criar uma peça inline) -- as duas peças do cadastro de serviço reusam o
+mesmo padrão de "criar rapidamente" descrito acima. Os formulários de serviço e de pacote
+(`ServiceForm.tsx`/`PackageForm.tsx`) também seguem o padrão de formulário reutilizável embutível
+(`onSuccess(entidade)`), prontos para um eventual "adicionar serviço inline" no futuro.
+
+**Convenção de `id` em formulários reutilizáveis**: como um formulário pode ser aninhado dentro de
+outro via Dialog/Portal (ex.: `PartForm` dentro de `ServiceForm`), os `id`/`htmlFor` de cada
+formulário reutilizável são prefixados pelo domínio (`part-`, `supplier-`, `category-`,
+`service-`...) para evitar colisão de `id` no DOM quando dois formulários coexistem.
 
 ---
 Voltar para o [índice da documentação](README.md).
