@@ -8,6 +8,9 @@ export interface ListWorkOrdersParams {
   search?: string;
   active?: OrderActiveFilter;
   status?: OrderStatus;
+  // Multiple workflow statuses in one request (Kanban visible columns).
+  statuses?: OrderStatus[];
+  overdue?: boolean;
   customer?: number;
   vehicle?: number;
   board?: "operational";
@@ -21,12 +24,28 @@ export async function listWorkOrders(
     params: {
       search: params.search || undefined,
       active: params.active,
-      status: params.status,
+      status:
+        params.statuses && params.statuses.length > 0
+          ? params.statuses.join(",")
+          : params.status,
+      overdue: params.overdue ? "true" : undefined,
       customer: params.customer,
       vehicle: params.vehicle,
       board: params.board,
       period: params.period,
     },
+  });
+  return data;
+}
+
+// Kanban drag-and-drop: change only the OS status. The backend validates the
+// transition and returns the updated OS (400 on an invalid transition).
+export async function moveWorkOrder(
+  id: number,
+  status: OrderStatus,
+): Promise<WorkOrder> {
+  const { data } = await apiClient.post<WorkOrder>(`/work-orders/${id}/move/`, {
+    status,
   });
   return data;
 }

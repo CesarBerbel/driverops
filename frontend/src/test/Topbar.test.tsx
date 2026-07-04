@@ -23,6 +23,17 @@ describe("Topbar", () => {
     expect(screen.queryByLabelText("Abrir menu")).not.toBeInTheDocument();
   });
 
+  it("has a 'Kanban OS' link in the top navigation", () => {
+    render(
+      <MemoryRouter>
+        <Topbar />
+      </MemoryRouter>,
+    );
+
+    const kanban = screen.getByRole("link", { name: /kanban os/i });
+    expect(kanban).toHaveAttribute("href", "/kanban");
+  });
+
   it("has an always-visible 'Nova OS' action pointing to the OS editor", () => {
     render(
       <MemoryRouter>

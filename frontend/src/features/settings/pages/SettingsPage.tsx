@@ -1,4 +1,12 @@
-import { Building2, ChevronRight, ClipboardList, Package, Tag, Wrench } from "lucide-react";
+import {
+  Building2,
+  ChevronRight,
+  ClipboardList,
+  KanbanSquare,
+  Package,
+  Tag,
+  Wrench,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +23,12 @@ const SETTINGS_CARDS = [
     icon: ClipboardList,
     title: "Configurações da OS",
     description: "Prazo padrão de entrega e termos padrão das Ordens de Serviço.",
+  },
+  {
+    to: "/settings/kanban",
+    icon: KanbanSquare,
+    title: "Kanban OS",
+    description: "Escolha quais colunas de status aparecem no Kanban e em que ordem.",
   },
   {
     to: "/settings/categories",

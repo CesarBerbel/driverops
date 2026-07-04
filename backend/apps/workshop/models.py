@@ -86,6 +86,48 @@ class WorkshopProfile(SingletonModel):
         return self.trade_name or "Dados da Oficina"
 
 
+# Ordem canônica das colunas do Kanban de OS (mesma sequência do fluxo da OS).
+# "Finalizada" e "Cancelada" nascem desmarcadas -- a visão padrão do Kanban
+# mostra apenas as colunas operacionais.
+KANBAN_STATUS_ORDER = [
+    "open",
+    "diagnosing",
+    "awaiting_approval",
+    "approved",
+    "in_progress",
+    "awaiting_parts",
+    "testing",
+    "ready",
+    "finished",
+    "canceled",
+]
+KANBAN_DEFAULT_HIDDEN = ["finished", "canceled"]
+
+
+def default_kanban_columns():
+    """Colunas padrão do Kanban (todas operacionais visíveis, terminais ocultas)."""
+    return [
+        {"status": status, "visible": status not in KANBAN_DEFAULT_HIDDEN}
+        for status in KANBAN_STATUS_ORDER
+    ]
+
+
+class KanbanSettings(SingletonModel):
+    """Configuração do Kanban de OS (registro único, pk=1).
+
+    Controla apenas a *visibilidade* e a *ordem* das colunas -- nunca altera o
+    status de nenhuma OS. OS em colunas ocultas continuam no sistema; apenas
+    deixam de ser exibidas nessa visão. Persistida como uma lista ordenada de
+    ``{"status": ..., "visible": bool}``.
+    """
+
+    columns = models.JSONField(default=default_kanban_columns)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Configurações do Kanban"
+
+
 class OrderSettings(SingletonModel):
     """Configurações globais da Ordem de Serviço (registro único, pk=1).
 

@@ -10,6 +10,10 @@ menu do usuário.
 - **Backend:** endpoint de indicadores `GET /api/dashboard/stats/` e filtros `board`/`period` em
   `GET /api/work-orders/`
 
+> O acompanhamento operacional aprofundado (colunas por status, drag and drop, filtros) fica no
+> **[Kanban OS](kanban.md)** — uma **tela própria** acessada pelo menu superior, **não** um card do
+> Dashboard.
+
 ## Como rodar
 
 ```bash

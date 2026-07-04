@@ -1,6 +1,8 @@
 import { apiClient } from "@/lib/api-client";
 
 import type {
+  KanbanSettings,
+  KanbanSettingsPayload,
   OrderSettings,
   OrderSettingsPayload,
   WorkshopProfile,
@@ -43,5 +45,17 @@ export async function updateOrderSettings(
   payload: Partial<OrderSettingsPayload>,
 ): Promise<OrderSettings> {
   const { data } = await apiClient.patch<OrderSettings>("/order-settings/", payload);
+  return data;
+}
+
+export async function getKanbanSettings(): Promise<KanbanSettings> {
+  const { data } = await apiClient.get<KanbanSettings>("/kanban-settings/");
+  return data;
+}
+
+export async function updateKanbanSettings(
+  payload: KanbanSettingsPayload,
+): Promise<KanbanSettings> {
+  const { data } = await apiClient.patch<KanbanSettings>("/kanban-settings/", payload);
   return data;
 }

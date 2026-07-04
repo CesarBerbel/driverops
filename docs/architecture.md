@@ -19,7 +19,7 @@ driverops/
 │       ├── parts/                 # cadastro de peças em estoque vinculado a categorias/fornecedores, soft delete
 │       ├── services/              # catálogo de serviços, peças padrão (through) e pacotes de serviços, soft delete
 │       ├── orders/               # ordens de serviço (OS): veículo/cliente, itens cadastrados e avulsos, soft delete
-│       ├── workshop/             # singletons de configuração: dados da oficina e configurações da OS
+│       ├── workshop/             # singletons de configuração: dados da oficina, configurações da OS e do Kanban
 │       └── core/               # health check e concerns compartilhados
 └── frontend/                 # React + Vite + TS + Tailwind + shadcn/ui
     └── src/
@@ -34,7 +34,8 @@ driverops/
         │   ├── parts/             # cadastro de peças em estoque (consome apps.parts e apps.suppliers)
         │   ├── services/          # serviços e pacotes de serviços (consome apps.services, apps.categories, apps.parts)
         │   ├── orders/            # ordens de serviço (consome apps.orders + clientes/veículos/serviços/peças)
-        │   ├── settings/          # Configurações: dados da oficina e configurações da OS (consome apps.workshop)
+        │   ├── kanban/            # Kanban OS: tela full width, colunas por status, drag and drop (consome apps.orders + apps.workshop)
+        │   ├── settings/          # Configurações: dados da oficina, OS e Kanban (consome apps.workshop)
         │   ├── profile/        # página de perfil
         │   └── landing/        # página pública
         ├── components/
@@ -86,17 +87,19 @@ nunca o contrário. Cada OS tem linhas (`WorkOrderService`, `WorkOrderPackage`, 
 podem referenciar um cadastro (FK opcional) ou ser **avulsas** (FK nula + texto livre) -- o nome e o
 valor são congelados na linha (snapshot) para preservar o histórico. Os totais (serviços, pacotes,
 peças, bruto e final com desconto) são calculados no serializer, nunca persistidos, e o veículo é
-validado como pertencente ao cliente. Ver [Ordens de Serviço](orders.md). `apps.workshop` guarda dois
+validado como pertencente ao cliente. Ver [Ordens de Serviço](orders.md). `apps.workshop` guarda três
 **singletons** de configuração (`WorkshopProfile` = Dados da Oficina; `OrderSettings` = Configurações
-da OS), cada um com um único registro (`pk=1`). A escrita exige superusuário (`IsSuperUser`); a
-leitura, apenas autenticação. `apps.orders` depende de `apps.workshop` para preencher a previsão de
+da OS; `KanbanSettings` = colunas visíveis/ordem do Kanban), cada um com um único registro (`pk=1`). A
+escrita exige superusuário (`IsSuperUser`); a leitura, apenas autenticação. As regras de transição de
+status da OS no Kanban ficam em `apps.orders/status_transitions.py` (validadas no endpoint dedicado
+`POST /api/work-orders/{id}/move/`) -- ver [Kanban OS](kanban.md). `apps.orders` depende de `apps.workshop` para preencher a previsão de
 entrega de novas OS (data de abertura + prazo padrão), aplicado só na criação -- alterar o prazo
 global nunca altera uma OS existente. Ver [Configurações](configuracoes.md).
 
 ## Frontend
 
 Organizado por feature (`auth`, `dashboard`, `settings`, `categories`, `customers`, `vehicles`,
-`suppliers`, `parts`, `services`, `orders`, `profile`, `landing`), com componentes de layout
+`suppliers`, `parts`, `services`, `orders`, `kanban`, `profile`, `landing`), com componentes de layout
 (`AppShell`/`Topbar`/`UserMenu` -- apenas menu superior fixo, sem sidebar) e primitivos de UI
 (`components/ui`, estilo shadcn/ui) separados dos componentes de página. `lib/api-client.ts`
 centraliza o cliente axios com renovação automática de token em respostas 401; `lib/masks.ts`

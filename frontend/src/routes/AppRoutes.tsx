@@ -11,6 +11,7 @@ import { PartCategoriesPage } from "@/features/categories/pages/PartCategoriesPa
 import { ServiceCategoriesPage } from "@/features/categories/pages/ServiceCategoriesPage";
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
+import { KanbanPage } from "@/features/kanban/pages/KanbanPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
@@ -18,6 +19,7 @@ import { PartsPage } from "@/features/parts/pages/PartsPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { ServicePackagesPage } from "@/features/services/pages/ServicePackagesPage";
 import { ServicesPage } from "@/features/services/pages/ServicesPage";
+import { KanbanSettingsPage } from "@/features/settings/pages/KanbanSettingsPage";
 import { OrderSettingsPage } from "@/features/settings/pages/OrderSettingsPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { WorkshopProfilePage } from "@/features/settings/pages/WorkshopProfilePage";
@@ -38,10 +40,12 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/kanban" element={<KanbanPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/workshop" element={<WorkshopProfilePage />} />
           <Route path="/settings/orders" element={<OrderSettingsPage />} />
+          <Route path="/settings/kanban" element={<KanbanSettingsPage />} />
           <Route path="/settings/categories" element={<ClientCategoriesPage />} />
           <Route path="/settings/categories/parts" element={<PartCategoriesPage />} />
           <Route path="/settings/categories/services" element={<ServiceCategoriesPage />} />
