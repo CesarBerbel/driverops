@@ -1,8 +1,16 @@
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apps.workshop.models import OrderSettings, WorkshopProfile
 
 pytestmark = pytest.mark.django_db
+
+# Minimal PNG header -- FileField only checks the extension, not the pixels.
+PNG_BYTES = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+
+
+def _png(name="logo.png"):
+    return SimpleUploadedFile(name, PNG_BYTES, content_type="image/png")
 
 
 # --- Dados da Oficina (WorkshopProfile) ---
@@ -119,6 +127,40 @@ def test_order_settings_rejects_negative_days(super_client):
         content_type="application/json",
     )
     assert response.status_code == 400
+
+
+def test_logo_upload_and_delete(super_client, settings, tmp_path):
+    settings.MEDIA_ROOT = str(tmp_path)
+    response = super_client.post("/api/workshop-profile/logo/", data={"logo": _png()})
+    assert response.status_code == 200
+    logo = response.json()["logo"]
+    assert logo and "workshop/logos/" in logo
+    assert WorkshopProfile.get_solo().logo
+
+    delete = super_client.delete("/api/workshop-profile/logo/")
+    assert delete.status_code == 200
+    assert delete.json()["logo"] is None
+    assert not WorkshopProfile.get_solo().logo
+
+
+def test_logo_upload_requires_superuser(auth_client, settings, tmp_path):
+    settings.MEDIA_ROOT = str(tmp_path)
+    response = auth_client.post("/api/workshop-profile/logo/", data={"logo": _png()})
+    assert response.status_code == 403
+
+
+def test_logo_upload_rejects_non_image_extension(super_client, settings, tmp_path):
+    settings.MEDIA_ROOT = str(tmp_path)
+    bad = SimpleUploadedFile("logo.txt", b"hello", content_type="text/plain")
+    response = super_client.post("/api/workshop-profile/logo/", data={"logo": bad})
+    assert response.status_code == 400
+    assert "logo" in response.json()
+
+
+def test_logo_upload_requires_a_file(super_client):
+    response = super_client.post("/api/workshop-profile/logo/", data={})
+    assert response.status_code == 400
+    assert "logo" in response.json()
 
 
 def test_order_settings_preserves_line_breaks(super_client):

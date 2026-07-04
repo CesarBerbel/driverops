@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Loader2, Lock } from "lucide-react";
+import { AlertCircle, ArrowLeft, ImageOff, Loader2, Lock, Trash2, Upload } from "lucide-react";
+import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -17,9 +18,17 @@ import { extractErrorMessage } from "@/lib/api-client";
 import { lookupCep } from "@/lib/cepService";
 import { formatCEP, formatCNPJ, formatPhone, formatUF } from "@/lib/masks";
 
-import { getWorkshopProfile, updateWorkshopProfile } from "../api";
+import {
+  deleteWorkshopLogo,
+  getWorkshopProfile,
+  updateWorkshopProfile,
+  uploadWorkshopLogo,
+} from "../api";
 import { workshopProfileSchema, type WorkshopProfileFormValues } from "../schemas";
 import type { WorkshopProfile } from "../types";
+
+const LOGO_MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+const LOGO_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif"];
 
 function toFormValues(profile: WorkshopProfile): WorkshopProfileFormValues {
   return {
@@ -32,7 +41,6 @@ function toFormValues(profile: WorkshopProfile): WorkshopProfileFormValues {
     phone: profile.phone,
     whatsapp: profile.whatsapp,
     website: profile.website,
-    logo_url: profile.logo_url,
     zip_code: profile.zip_code,
     street: profile.street,
     number: profile.number,
@@ -98,13 +106,121 @@ export function WorkshopProfilePage() {
           </CardContent>
         </Card>
       ) : (
-        <WorkshopProfileForm
-          defaultValues={toFormValues(profile)}
-          canEdit={canEdit}
-          onSaved={() => queryClient.invalidateQueries({ queryKey: ["workshop-profile"] })}
-        />
+        <div className="space-y-6">
+          <LogoUploader logoUrl={profile.logo} canEdit={canEdit} />
+          <WorkshopProfileForm
+            defaultValues={toFormValues(profile)}
+            canEdit={canEdit}
+            onSaved={() => queryClient.invalidateQueries({ queryKey: ["workshop-profile"] })}
+          />
+        </div>
       )}
     </div>
+  );
+}
+
+function LogoUploader({ logoUrl, canEdit }: { logoUrl: string | null; canEdit: boolean }) {
+  const queryClient = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const uploadMutation = useMutation({
+    mutationFn: uploadWorkshopLogo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workshop-profile"] });
+      toast.success("Logotipo atualizado.");
+    },
+    onError: (error) => {
+      toast.error(extractErrorMessage(error, "Não foi possível enviar o logotipo."));
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: deleteWorkshopLogo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workshop-profile"] });
+      toast.success("Logotipo removido.");
+    },
+    onError: (error) => {
+      toast.error(extractErrorMessage(error, "Não foi possível remover o logotipo."));
+    },
+  });
+
+  const busy = uploadMutation.isPending || removeMutation.isPending;
+
+  function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!LOGO_EXTENSIONS.includes(ext)) {
+      toast.error("Formato inválido. Use PNG, JPG, WEBP ou GIF.");
+      return;
+    }
+    if (file.size > LOGO_MAX_SIZE) {
+      toast.error("O arquivo deve ter no máximo 2 MB.");
+      return;
+    }
+    uploadMutation.mutate(file);
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Logotipo</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/40">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logotipo da oficina" className="max-h-full max-w-full object-contain" />
+          ) : (
+            <ImageOff className="size-8 text-muted-foreground" />
+          )}
+        </div>
+        <div className="space-y-2">
+          {canEdit && (
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                aria-label="Selecionar logotipo"
+                onChange={handleFile}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => inputRef.current?.click()}
+              >
+                {uploadMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Upload className="size-4" />
+                )}
+                {logoUrl ? "Trocar logotipo" : "Enviar logotipo"}
+              </Button>
+              {logoUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => removeMutation.mutate()}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                  Remover
+                </Button>
+              )}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            PNG, JPG, WEBP ou GIF, até 2 MB. Usado nos cabeçalhos dos documentos e PDFs.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -259,10 +375,6 @@ function WorkshopProfileForm({
             <div className="space-y-2">
               <Label htmlFor="website">Site</Label>
               <Input id="website" placeholder="https://" {...register("website")} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="logo_url">Logo (URL)</Label>
-              <Input id="logo_url" placeholder="https://" {...register("logo_url")} />
             </div>
           </CardContent>
         </Card>

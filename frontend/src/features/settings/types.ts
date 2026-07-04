@@ -8,7 +8,7 @@ export interface WorkshopProfile {
   phone: string;
   whatsapp: string;
   website: string;
-  logo_url: string;
+  logo: string | null;
   zip_code: string;
   street: string;
   number: string;
@@ -21,7 +21,8 @@ export interface WorkshopProfile {
   updated_at: string;
 }
 
-export type WorkshopProfilePayload = Omit<WorkshopProfile, "updated_at">;
+// The logo is uploaded/removed via a dedicated endpoint, not the profile PATCH.
+export type WorkshopProfilePayload = Omit<WorkshopProfile, "updated_at" | "logo">;
 
 export interface OrderSettings {
   default_delivery_days: number;

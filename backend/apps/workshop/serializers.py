@@ -13,6 +13,9 @@ class WorkshopProfileSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
     whatsapp = serializers.CharField(required=False, allow_blank=True, max_length=20)
     zip_code = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    # The logo is uploaded/removed through the dedicated logo endpoint, so it is
+    # read-only here (a plain JSON PATCH of the other fields never touches it).
+    logo = serializers.FileField(read_only=True)
 
     class Meta:
         model = WorkshopProfile
@@ -26,7 +29,7 @@ class WorkshopProfileSerializer(serializers.ModelSerializer):
             "phone",
             "whatsapp",
             "website",
-            "logo_url",
+            "logo",
             "zip_code",
             "street",
             "number",

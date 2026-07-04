@@ -61,7 +61,7 @@ Dados institucionais usados futuramente nos cabeçalhos, rodapés e identificaç
 | Telefone | Máscara brasileira; normalizado para dígitos |
 | WhatsApp | Máscara brasileira; normalizado para dígitos |
 | Site | Opcional |
-| Logo (URL) | Opcional -- upload de arquivo fica para uma fase futura |
+| Logotipo | Opcional -- **upload de arquivo** de imagem (PNG, JPG, WEBP ou GIF, até 2 MB) |
 | CEP | Máscara `00000-000`; consulta o endereço no ViaCEP |
 | Rua/Logradouro, Número, Complemento, Bairro, Cidade | Endereço completo, padrão brasileiro |
 | Estado (UF) | Exibido em maiúsculas |
@@ -72,6 +72,10 @@ Dados institucionais usados futuramente nos cabeçalhos, rodapés e identificaç
   continuam **editáveis**.
 - CNPJ, telefone, WhatsApp e CEP são **normalizados para dígitos** no backend (mesmo padrão de
   Clientes/Fornecedores); a UF é gravada em maiúsculas.
+- O **logotipo** é enviado por **upload** (não URL) por um endpoint dedicado, com pré-visualização e
+  botão de remover. Formatos aceitos: PNG, JPG, WEBP ou GIF, até 2 MB (SVG é intencionalmente
+  excluído por poder conter scripts). Os arquivos são servidos via `MEDIA` pelo backend em
+  desenvolvimento (`/media/...`); em produção seriam servidos pelo web server/CDN.
 
 ## Configurações da OS
 
@@ -130,12 +134,13 @@ Ambos os endpoints operam sobre o registro único e exigem autenticação (cooki
 |---|---|---|
 | GET | `/api/workshop-profile/` | Retorna os dados da oficina (cria o singleton com padrões na primeira leitura) |
 | PATCH | `/api/workshop-profile/` | Atualiza os dados da oficina (superusuário) |
+| POST | `/api/workshop-profile/logo/` | Envia/substitui o logotipo (multipart, campo `logo`; superusuário) |
+| DELETE | `/api/workshop-profile/logo/` | Remove o logotipo (superusuário) |
 | GET | `/api/order-settings/` | Retorna as configurações da OS (com os termos padrão) |
 | PATCH | `/api/order-settings/` | Atualiza as configurações da OS (superusuário) |
 
 ## Limitações conhecidas desta fase
 
-- **Logo por URL**, sem upload de arquivo (planejado para o futuro).
 - **Editor de texto simples** (`textarea`) para os termos -- sem editor rico (negrito/listas) nesta
   fase; a formatação básica por quebras de linha é preservada.
 - Registro **único por instância** (não há multiempresa/multi-oficina nesta fase; o padrão singleton

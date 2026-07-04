@@ -19,6 +19,21 @@ export async function updateWorkshopProfile(
   return data;
 }
 
+export async function uploadWorkshopLogo(file: File): Promise<WorkshopProfile> {
+  const formData = new FormData();
+  formData.append("logo", file);
+  const { data } = await apiClient.post<WorkshopProfile>(
+    "/workshop-profile/logo/",
+    formData,
+  );
+  return data;
+}
+
+export async function deleteWorkshopLogo(): Promise<WorkshopProfile> {
+  const { data } = await apiClient.delete<WorkshopProfile>("/workshop-profile/logo/");
+  return data;
+}
+
 export async function getOrderSettings(): Promise<OrderSettings> {
   const { data } = await apiClient.get<OrderSettings>("/order-settings/");
   return data;

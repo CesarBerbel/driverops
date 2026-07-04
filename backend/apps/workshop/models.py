@@ -1,4 +1,9 @@
+from django.core.validators import FileExtensionValidator
 from django.db import models
+
+# Raster formats only -- SVG is intentionally excluded because it can carry
+# scripts and is served from the backend origin.
+LOGO_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif"]
 
 # Default term/text bodies seeded on the first read so the OS documents already
 # have usable content in development. They can be edited freely afterwards.
@@ -59,8 +64,13 @@ class WorkshopProfile(SingletonModel):
     phone = models.CharField(max_length=11, blank=True)
     whatsapp = models.CharField(max_length=11, blank=True)
     website = models.CharField(max_length=200, blank=True)
-    # Logo por URL nesta fase -- upload de arquivo fica para uma fase futura.
-    logo_url = models.URLField(blank=True)
+    # Logo enviado por upload (arquivo de imagem). Servido via MEDIA em dev.
+    logo = models.FileField(
+        upload_to="workshop/logos/",
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(LOGO_EXTENSIONS)],
+    )
     zip_code = models.CharField(max_length=8, blank=True)
     street = models.CharField(max_length=200, blank=True)
     number = models.CharField(max_length=20, blank=True)

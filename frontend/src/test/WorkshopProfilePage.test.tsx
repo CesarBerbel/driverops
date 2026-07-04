@@ -25,7 +25,7 @@ function profile(overrides: Partial<WorkshopProfile> = {}): WorkshopProfile {
     phone: "",
     whatsapp: "",
     website: "",
-    logo_url: "",
+    logo: null,
     zip_code: "",
     street: "",
     number: "",
@@ -57,6 +57,8 @@ describe("WorkshopProfilePage", () => {
     auth.user = { is_superuser: true };
     vi.mocked(settingsApi.getWorkshopProfile).mockReset();
     vi.mocked(settingsApi.updateWorkshopProfile).mockReset();
+    vi.mocked(settingsApi.uploadWorkshopLogo).mockReset();
+    vi.mocked(settingsApi.deleteWorkshopLogo).mockReset();
   });
 
   it("loads and shows the existing profile data", async () => {
@@ -97,6 +99,46 @@ describe("WorkshopProfilePage", () => {
         expect.anything(),
       ),
     );
+  });
+
+  it("uploads a logo file", async () => {
+    vi.mocked(settingsApi.getWorkshopProfile).mockResolvedValue(profile({ trade_name: "X" }));
+    vi.mocked(settingsApi.uploadWorkshopLogo).mockResolvedValue(
+      profile({ trade_name: "X", logo: "http://x/media/workshop/logos/logo.png" }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const input = await screen.findByLabelText("Selecionar logotipo");
+    const file = new File(["binary"], "logo.png", { type: "image/png" });
+    await user.upload(input, file);
+    await waitFor(() =>
+      expect(settingsApi.uploadWorkshopLogo).toHaveBeenCalledWith(file, expect.anything()),
+    );
+  });
+
+  it("removes an existing logo", async () => {
+    vi.mocked(settingsApi.getWorkshopProfile).mockResolvedValue(
+      profile({ trade_name: "X", logo: "http://x/media/workshop/logos/logo.png" }),
+    );
+    vi.mocked(settingsApi.deleteWorkshopLogo).mockResolvedValue(
+      profile({ trade_name: "X", logo: null }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(await screen.findByRole("button", { name: "Remover" }));
+    await waitFor(() => expect(settingsApi.deleteWorkshopLogo).toHaveBeenCalled());
+  });
+
+  it("hides the logo controls for non-superusers", async () => {
+    auth.user = { is_superuser: false };
+    vi.mocked(settingsApi.getWorkshopProfile).mockResolvedValue(
+      profile({ trade_name: "X", logo: "http://x/media/workshop/logos/logo.png" }),
+    );
+    renderPage();
+    // The logo preview still renders, but no upload/remove controls.
+    expect(await screen.findByAltText("Logotipo da oficina")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Selecionar logotipo")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remover" })).not.toBeInTheDocument();
   });
 
   it("hides the save action and shows a lock notice for non-superusers", async () => {

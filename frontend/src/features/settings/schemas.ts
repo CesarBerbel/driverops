@@ -19,7 +19,6 @@ export const workshopProfileSchema = z.object({
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
   website: z.string().optional(),
-  logo_url: z.string().optional(),
   zip_code: z.string().optional(),
   street: z.string().optional(),
   number: z.string().optional(),
