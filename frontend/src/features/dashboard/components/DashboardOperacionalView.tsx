@@ -19,6 +19,8 @@ import { adminPing } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/useAuth";
 import { extractErrorMessage } from "@/lib/api-client";
 
+import { OrdersHeroCard } from "./OrdersHeroCard";
+
 const MODULE_CARDS = [
   {
     to: "/customers",
@@ -69,6 +71,9 @@ export function DashboardOperacionalView() {
 
   return (
     <div className="space-y-6">
+      {/* Ordem de Serviço em destaque -- funcionalidade central do sistema. */}
+      <OrdersHeroCard />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODULE_CARDS.map(({ to, icon: Icon, title, description }) => (
           <Link key={to} to={to}>

@@ -262,6 +262,9 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
       className="space-y-6"
       noValidate
     >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        {/* Coluna esquerda: identificação, veículo (antes do cliente), cliente, relato, diagnóstico. */}
+        <div className="space-y-6">
       {/* 1. Dados principais */}
       <Card>
         <CardHeader>
@@ -438,7 +441,10 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           <Textarea id="diagnosis" rows={3} aria-label="Diagnóstico" {...register("diagnosis")} />
         </CardContent>
       </Card>
+        </div>
 
+        {/* Coluna direita: itens (serviços/pacotes/peças), valores, observações, status. */}
+        <div className="space-y-6">
       {/* 6. Serviços */}
       <Card>
         <CardHeader>
@@ -697,6 +703,8 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           </div>
         </CardContent>
       </Card>
+        </div>
+      </div>
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>

@@ -51,7 +51,11 @@ Lista de OS → filtro de status            → por status da OS ou "Desabilitad
 Lista de OS → "Excluir" (por linha)       → confirmação → desabilita a OS (soft delete)
 ```
 
-O formulário é uma **página** (não um drawer), pois é extenso. Os blocos aparecem nesta ordem:
+O formulário é uma **página** (não um drawer), pois é extenso, e ocupa a **largura total**. Em telas
+grandes os blocos ficam em **duas colunas** (coluna esquerda: identificação/veículo/cliente/relato/
+diagnóstico; coluna direita: serviços/pacotes/peças/valores/observações/status); no mobile as colunas
+empilham na mesma ordem numerada abaixo. Além do botão "Nova OS" na lista, há um atalho **"Nova OS"
+sempre visível no menu superior** (`/orders/new`). Os blocos aparecem nesta ordem:
 
 1. Dados principais (número gerado, data de abertura, previsão de entrega, quilometragem)
 2. **Veículo** (vem **antes** do cliente)

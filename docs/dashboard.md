@@ -1,9 +1,9 @@
 # Dashboard: abas Operacional, OS e Administrativo
 
-O Dashboard é organizado em **três abas**, permitindo alternar rapidamente entre visões sem sair do
-Dashboard e **sem menu lateral**. Acima das abas (fora delas), fica em destaque o card de acesso às
-**Ordens de Serviço** (`OrdersHeroCard`) — a principal ação operacional —, que **permanece visível em
-todas as abas**. Abaixo dele ficam as abas e o conteúdo da aba ativa.
+O Dashboard é organizado em **três abas** no topo da área principal (abaixo do menu superior fixo),
+permitindo alternar rapidamente entre visões sem sair do Dashboard e **sem menu lateral**. O menu
+superior traz ainda um botão **"Nova OS"** sempre visível (atalho para `/orders/new`), ao lado do
+menu do usuário.
 
 - **Rotas frontend:** `/dashboard` com `?tab=operacional | os | administrativo`
 - **Aba padrão:** `Operacional`
@@ -46,9 +46,11 @@ autenticado (rota protegida).
 
 ## Aba Operacional
 
-Central de atalhos, baseada em cards de acesso rápido aos módulos: Clientes, Veículos, Fornecedores,
-Estoque, Serviços e Configurações. O acesso às **Ordens de Serviço** fica no card em destaque **acima
-das abas** (sempre visível), então não é repetido aqui.
+Central de atalhos, baseada em cards de acesso rápido aos módulos:
+
+- **Ordens de Serviço** (card **maior e em destaque**, largura total — principal ação operacional,
+  componente `OrdersHeroCard`),
+- Clientes, Veículos, Estoque, Serviços, Fornecedores, Configurações.
 
 Objetivo: abertura rápida dos cadastros e módulos, com foco em ação e navegação.
 
