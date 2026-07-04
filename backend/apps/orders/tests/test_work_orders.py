@@ -188,6 +188,63 @@ def test_search_by_number(auth_client, customer, vehicle):
     assert results[0]["number"] == created["number"]
 
 
+def test_expected_delivery_auto_filled_from_default_deadline(
+    auth_client, customer, vehicle
+):
+    from apps.workshop.models import OrderSettings
+
+    OrderSettings.get_solo()  # seeds the default (7 days)
+    response = auth_client.post(
+        "/api/work-orders/",
+        data=_payload(customer, vehicle, opened_at="2026-08-01"),
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    # 2026-08-01 + 7 dias = 2026-08-08.
+    assert response.json()["expected_delivery"] == "2026-08-08"
+
+
+def test_explicit_expected_delivery_is_respected(auth_client, customer, vehicle):
+    response = auth_client.post(
+        "/api/work-orders/",
+        data=_payload(
+            customer, vehicle, opened_at="2026-08-01", expected_delivery="2026-08-03"
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    assert response.json()["expected_delivery"] == "2026-08-03"
+
+
+def test_changing_default_deadline_does_not_touch_existing_os(
+    auth_client, customer, vehicle
+):
+    from apps.workshop.models import OrderSettings
+
+    order = auth_client.post(
+        "/api/work-orders/",
+        data=_payload(customer, vehicle, opened_at="2026-08-01"),
+        content_type="application/json",
+    ).json()
+    assert order["expected_delivery"] == "2026-08-08"
+
+    settings = OrderSettings.get_solo()
+    settings.default_delivery_days = 30
+    settings.save()
+
+    # The existing OS keeps its original expected delivery.
+    refreshed = auth_client.get(f"/api/work-orders/{order['id']}/").json()
+    assert refreshed["expected_delivery"] == "2026-08-08"
+
+    # A new OS uses the new default.
+    new_order = auth_client.post(
+        "/api/work-orders/",
+        data=_payload(customer, vehicle, opened_at="2026-08-01"),
+        content_type="application/json",
+    ).json()
+    assert new_order["expected_delivery"] == "2026-08-31"
+
+
 def test_filter_by_customer(auth_client, customer, vehicle, other_customer):
     auth_client.post(
         "/api/work-orders/",

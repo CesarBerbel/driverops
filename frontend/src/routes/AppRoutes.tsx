@@ -18,7 +18,9 @@ import { PartsPage } from "@/features/parts/pages/PartsPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { ServicePackagesPage } from "@/features/services/pages/ServicePackagesPage";
 import { ServicesPage } from "@/features/services/pages/ServicesPage";
+import { OrderSettingsPage } from "@/features/settings/pages/OrderSettingsPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
+import { WorkshopProfilePage } from "@/features/settings/pages/WorkshopProfilePage";
 import { SuppliersPage } from "@/features/suppliers/pages/SuppliersPage";
 import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";
 
@@ -38,6 +40,8 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/workshop" element={<WorkshopProfilePage />} />
+          <Route path="/settings/orders" element={<OrderSettingsPage />} />
           <Route path="/settings/categories" element={<ClientCategoriesPage />} />
           <Route path="/settings/categories/parts" element={<PartCategoriesPage />} />
           <Route path="/settings/categories/services" element={<ServiceCategoriesPage />} />
