@@ -193,7 +193,6 @@ def test_text_fields_are_trimmed_and_internal_code_uppercased(
             "internal_code": "  pc-1234  ",
             "brand": "  Bosch  ",
             "location": "  Prateleira A3  ",
-            "supplier": "  Fornecedor Ltda  ",
         },
         content_type="application/json",
     )
@@ -201,7 +200,99 @@ def test_text_fields_are_trimmed_and_internal_code_uppercased(
     assert response.data["internal_code"] == "PC-1234"
     assert response.data["brand"] == "Bosch"
     assert response.data["location"] == "Prateleira A3"
-    assert response.data["supplier"] == "Fornecedor Ltda"
+
+
+def test_create_with_valid_supplier(auth_client, part_category, supplier):
+    response = auth_client.post(
+        "/api/parts/",
+        data={"category": part_category.id, "name": "Teste", "supplier": supplier.id},
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    assert response.data["supplier"] == supplier.id
+    assert response.data["supplier_name"] == "Fornecedor Ltda"
+
+
+def test_create_without_supplier_is_optional(auth_client, part_category):
+    response = auth_client.post(
+        "/api/parts/",
+        data={"category": part_category.id, "name": "Teste"},
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    assert response.data["supplier"] is None
+    assert response.data["supplier_name"] is None
+
+
+def test_create_rejects_disabled_supplier_as_new_assignment(
+    auth_client, part_category, supplier
+):
+    supplier.is_active = False
+    supplier.save(update_fields=["is_active"])
+
+    response = auth_client.post(
+        "/api/parts/",
+        data={"category": part_category.id, "name": "Teste", "supplier": supplier.id},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "supplier" in response.data
+
+
+def test_update_keeps_existing_disabled_supplier(auth_client, part_category, supplier):
+    part = Part.objects.create(
+        category=part_category, name="Filtro de óleo", supplier=supplier
+    )
+    supplier.is_active = False
+    supplier.save(update_fields=["is_active"])
+
+    response = auth_client.patch(
+        f"/api/parts/{part.id}/",
+        data={"brand": "Bosch"},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.data["supplier"] == supplier.id
+
+
+def test_update_rejects_reassigning_to_disabled_supplier(
+    auth_client, part_category, supplier
+):
+    part = Part.objects.create(category=part_category, name="Filtro de óleo")
+    supplier.is_active = False
+    supplier.save(update_fields=["is_active"])
+
+    response = auth_client.patch(
+        f"/api/parts/{part.id}/",
+        data={"supplier": supplier.id},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "supplier" in response.data
+
+
+def test_update_can_clear_supplier(auth_client, part_category, supplier):
+    part = Part.objects.create(
+        category=part_category, name="Filtro de óleo", supplier=supplier
+    )
+
+    response = auth_client.patch(
+        f"/api/parts/{part.id}/",
+        data={"supplier": None},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.data["supplier"] is None
+    assert response.data["supplier_name"] is None
+
+
+def test_list_includes_supplier_name(auth_client, part_category, supplier):
+    Part.objects.create(
+        category=part_category, name="Filtro de óleo", supplier=supplier
+    )
+
+    response = auth_client.get("/api/parts/")
+    assert response.data[0]["supplier_name"] == "Fornecedor Ltda"
 
 
 def test_list_includes_category_name(auth_client, part_category):

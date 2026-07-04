@@ -2,9 +2,6 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 
-from apps.categories.models import Category
-from apps.suppliers.models import Supplier
-
 User = get_user_model()
 
 
@@ -30,13 +27,3 @@ def auth_client(client, user):
         content_type="application/json",
     )
     return client
-
-
-@pytest.fixture
-def part_category(db):
-    return Category.objects.create(category_type="part", name="Motor")
-
-
-@pytest.fixture
-def supplier(db):
-    return Supplier.objects.create(name="Fornecedor Ltda")

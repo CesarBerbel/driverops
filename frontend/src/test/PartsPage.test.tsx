@@ -26,7 +26,8 @@ function part(overrides: Partial<Part> = {}): Part {
     cost_price: null,
     sale_price: null,
     location: "",
-    supplier: "",
+    supplier: null,
+    supplier_name: null,
     ncm: "",
     barcode: "",
     notes: "",
@@ -83,12 +84,27 @@ describe("PartsPage", () => {
     expect(within(table).getByText("5")).toBeInTheDocument();
   });
 
+  it("shows the linked supplier's name, or a dash when there is none", async () => {
+    vi.mocked(partsApi.listParts).mockResolvedValue([
+      part({ id: 1, supplier: 1, supplier_name: "Fornecedor Ltda" }),
+      part({ id: 2, name: "Vela de ignição", supplier: null, supplier_name: null }),
+    ]);
+    renderPage();
+
+    const table = await screen.findByRole("table");
+    expect(within(table).getByText("Fornecedor Ltda")).toBeInTheDocument();
+    const dashCells = within(table).getAllByText("—");
+    expect(dashCells.length).toBeGreaterThan(0);
+  });
+
   it("shows a dash for min stock when it is not set", async () => {
     vi.mocked(partsApi.listParts).mockResolvedValue([part({ min_quantity: null })]);
     renderPage();
 
     const table = await screen.findByRole("table");
-    expect(within(table).getByText("—")).toBeInTheDocument();
+    // The Fornecedor column also shows "—" when unset, so there are two
+    // dashes in this row -- assert at least one rather than a single exact match.
+    expect(within(table).getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("shows the 'Estoque baixo' badge when is_low_stock is true", async () => {

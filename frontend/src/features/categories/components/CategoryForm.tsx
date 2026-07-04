@@ -56,7 +56,20 @@ export function CategoryForm({ category, categoryType, onSuccess }: CategoryForm
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form
+      onSubmit={(event) => {
+        // This form can be nested (via CategoryQuickCreateDialog's Radix
+        // Portal) inside another <form> in the React tree -- e.g. the part
+        // cadastro's own form. React re-dispatches bubbling events along the
+        // *component* tree for portaled content, so without stopPropagation
+        // here, submitting this form would also fire the ancestor form's
+        // onSubmit with whatever state it had at that moment.
+        event.stopPropagation();
+        handleSubmit(onSubmit)(event);
+      }}
+      className="space-y-4"
+      noValidate
+    >
       <div className="space-y-2">
         <Label htmlFor="category-name">Nome</Label>
         <Input

@@ -38,8 +38,13 @@ class Part(models.Model):
         max_digits=10, decimal_places=2, null=True, blank=True
     )
     location = models.CharField(max_length=100, blank=True)
-    # Free text for now -- no Supplier model exists yet; ready to become a FK later.
-    supplier = models.CharField(max_length=150, blank=True)
+    supplier = models.ForeignKey(
+        "suppliers.Supplier",
+        on_delete=models.PROTECT,
+        related_name="parts",
+        null=True,
+        blank=True,
+    )
     ncm = models.CharField(max_length=8, blank=True)
     barcode = models.CharField(max_length=30, blank=True)
     notes = models.TextField(blank=True)

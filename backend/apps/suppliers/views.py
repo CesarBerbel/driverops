@@ -3,19 +3,15 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Part
-from .serializers import PartSerializer
+from .models import Supplier
+from .serializers import SupplierSerializer
 
 
-class PartViewSet(viewsets.ModelViewSet):
-    serializer_class = PartSerializer
+class SupplierViewSet(viewsets.ModelViewSet):
+    serializer_class = SupplierSerializer
 
     def get_queryset(self):
-        queryset = Part.objects.select_related("category", "supplier").all()
-
-        category_id = self.request.query_params.get("category")
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)
+        queryset = Supplier.objects.all()
 
         if self.action != "list":
             return queryset
@@ -30,21 +26,20 @@ class PartViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(
                 Q(name__icontains=search)
-                | Q(internal_code__icontains=search)
-                | Q(brand__icontains=search)
-                | Q(category__name__icontains=search)
+                | Q(trade_name__icontains=search)
+                | Q(document__icontains=search)
             )
         return queryset
 
     def destroy(self, request, *args, **kwargs):
-        part = self.get_object()
-        part.is_active = False
-        part.save(update_fields=["is_active", "updated_at"])
+        supplier = self.get_object()
+        supplier.is_active = False
+        supplier.save(update_fields=["is_active", "updated_at"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"])
     def reactivate(self, request, pk=None):
-        part = self.get_object()
-        part.is_active = True
-        part.save(update_fields=["is_active", "updated_at"])
-        return Response(PartSerializer(part).data)
+        supplier = self.get_object()
+        supplier.is_active = True
+        supplier.save(update_fields=["is_active", "updated_at"])
+        return Response(SupplierSerializer(supplier).data)

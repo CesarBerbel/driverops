@@ -15,6 +15,7 @@ import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { PartsPage } from "@/features/parts/pages/PartsPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
+import { SuppliersPage } from "@/features/suppliers/pages/SuppliersPage";
 import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";
 
 export function AppRoutes() {
@@ -38,6 +39,7 @@ export function AppRoutes() {
           <Route path="/settings/categories/services" element={<ServiceCategoriesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/vehicles" element={<VehiclesPage />} />
+          <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/parts" element={<PartsPage />} />
         </Route>
       </Route>

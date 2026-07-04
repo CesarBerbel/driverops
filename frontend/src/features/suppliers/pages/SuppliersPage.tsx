@@ -1,15 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  Boxes,
-  Info,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { AlertCircle, Info, Pencil, Plus, RotateCcw, Search, Trash2, Truck, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -23,7 +13,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,71 +27,74 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { extractErrorMessage } from "@/lib/api-client";
-import { formatQuantityBRL } from "@/lib/masks";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { deletePart, listParts, reactivatePart } from "../api";
-import { PART_STATUS_OPTIONS, UNIT_OF_MEASURE_LABELS } from "../constants";
-import { PartFormSheet } from "../PartFormSheet";
-import type { Part, PartStatusFilter } from "../types";
+import { deleteSupplier, listSuppliers, reactivateSupplier } from "../api";
+import { SUPPLIER_STATUS_OPTIONS, SUPPLIER_TYPE_OPTIONS } from "../constants";
+import { SupplierFormSheet } from "../SupplierFormSheet";
+import type { Supplier, SupplierStatusFilter } from "../types";
 
-const PARTS_QUERY_KEY = ["parts"];
+const SUPPLIERS_QUERY_KEY = ["suppliers"];
 
-export function PartsPage() {
+const SUPPLIER_TYPE_LABELS = Object.fromEntries(
+  SUPPLIER_TYPE_OPTIONS.map((option) => [option.value, option.label]),
+) as Record<Supplier["supplier_type"], string>;
+
+export function SuppliersPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   const effectiveSearch = searchInput === "" ? "" : debouncedSearch;
 
-  const [statusFilter, setStatusFilter] = useState<PartStatusFilter>("active");
+  const [statusFilter, setStatusFilter] = useState<SupplierStatusFilter>("active");
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingPartId, setEditingPartId] = useState<number | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
+  const [editingSupplierId, setEditingSupplierId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
 
   const queryClient = useQueryClient();
 
   const {
-    data: parts,
+    data: suppliers,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: [...PARTS_QUERY_KEY, effectiveSearch, statusFilter],
-    queryFn: () => listParts({ search: effectiveSearch || undefined, status: statusFilter }),
+    queryKey: [...SUPPLIERS_QUERY_KEY, effectiveSearch, statusFilter],
+    queryFn: () => listSuppliers({ search: effectiveSearch || undefined, status: statusFilter }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deletePart,
+    mutationFn: deleteSupplier,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: PARTS_QUERY_KEY });
-      toast.success("Peça excluída.");
+      await queryClient.invalidateQueries({ queryKey: SUPPLIERS_QUERY_KEY });
+      toast.success("Fornecedor excluído.");
       setDeleteTarget(null);
     },
     onError: (error) => {
-      toast.error(extractErrorMessage(error, "Não foi possível excluir a peça."));
+      toast.error(extractErrorMessage(error, "Não foi possível excluir o fornecedor."));
       setDeleteTarget(null);
     },
   });
 
   const reactivateMutation = useMutation({
-    mutationFn: reactivatePart,
+    mutationFn: reactivateSupplier,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: PARTS_QUERY_KEY });
-      toast.success("Peça reativada.");
+      await queryClient.invalidateQueries({ queryKey: SUPPLIERS_QUERY_KEY });
+      toast.success("Fornecedor reativado.");
     },
     onError: (error) => {
-      toast.error(extractErrorMessage(error, "Não foi possível reativar a peça."));
+      toast.error(extractErrorMessage(error, "Não foi possível reativar o fornecedor."));
     },
   });
 
-  const isEmpty = (parts?.length ?? 0) === 0;
+  const isEmpty = (suppliers?.length ?? 0) === 0;
 
   function openCreateSheet() {
-    setEditingPartId(null);
+    setEditingSupplierId(null);
     setSheetOpen(true);
   }
 
   function openEditSheet(id: number) {
-    setEditingPartId(id);
+    setEditingSupplierId(id);
     setSheetOpen(true);
   }
 
@@ -110,12 +102,12 @@ export function PartsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Peças em Estoque</h1>
-          <p className="text-muted-foreground">Cadastre e controle as peças em estoque.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Fornecedores</h1>
+          <p className="text-muted-foreground">Cadastre os fornecedores de peças do sistema.</p>
         </div>
         <Button onClick={openCreateSheet}>
           <Plus />
-          Nova peça
+          Novo fornecedor
         </Button>
       </div>
 
@@ -123,7 +115,7 @@ export function PartsPage() {
         <div className="relative max-w-sm flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, código, categoria ou marca..."
+            placeholder="Buscar por nome, nome fantasia ou documento..."
             className="pl-9"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
@@ -137,13 +129,13 @@ export function PartsPage() {
         )}
         <Select
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as PartStatusFilter)}
+          onValueChange={(value) => setStatusFilter(value as SupplierStatusFilter)}
         >
           <SelectTrigger className="w-56">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {PART_STATUS_OPTIONS.map((option) => (
+            {SUPPLIER_STATUS_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -156,7 +148,8 @@ export function PartsPage() {
         <div className="flex items-start gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
           <Info className="mt-0.5 size-4 shrink-0" />
           <span>
-            Estas peças estão desabilitadas e não estão disponíveis para novos vínculos.
+            Estes fornecedores estão desabilitados e não estão disponíveis para novos vínculos com
+            peças.
           </span>
         </div>
       )}
@@ -172,7 +165,7 @@ export function PartsPage() {
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <AlertCircle className="size-8 text-destructive" />
             <p className="text-sm text-muted-foreground">
-              Não foi possível carregar as peças. Tente novamente.
+              Não foi possível carregar os fornecedores. Tente novamente.
             </p>
             <Button size="sm" variant="outline" onClick={() => refetch()}>
               Tentar novamente
@@ -182,19 +175,19 @@ export function PartsPage() {
       ) : isEmpty ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <Boxes className="size-8 text-muted-foreground" />
+            <Truck className="size-8 text-muted-foreground" />
             {effectiveSearch ? (
               <p className="text-sm text-muted-foreground">
-                Nenhuma peça encontrada para "{effectiveSearch}".
+                Nenhum fornecedor encontrado para "{effectiveSearch}".
               </p>
             ) : statusFilter === "inactive" ? (
-              <p className="text-sm text-muted-foreground">Nenhuma peça desabilitada.</p>
+              <p className="text-sm text-muted-foreground">Nenhum fornecedor desabilitado.</p>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground">Nenhuma peça cadastrada ainda.</p>
+                <p className="text-sm text-muted-foreground">Nenhum fornecedor cadastrado ainda.</p>
                 <Button size="sm" onClick={openCreateSheet}>
                   <Plus />
-                  Nova peça
+                  Novo fornecedor
                 </Button>
               </>
             )}
@@ -205,41 +198,38 @@ export function PartsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Fornecedor</TableHead>
-                <TableHead>Quantidade</TableHead>
-                <TableHead>Estoque mínimo</TableHead>
+                <TableHead>Nome/Razão social</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Documento</TableHead>
+                <TableHead>Telefone</TableHead>
                 <TableHead className="w-0 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {parts?.map((part) => (
-                <TableRow key={part.id}>
-                  <TableCell className="font-medium">{part.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{part.category_name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {part.supplier_name ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span>
-                        {formatQuantityBRL(Number(part.current_quantity))}{" "}
-                        {UNIT_OF_MEASURE_LABELS[part.unit_of_measure]}
+              {suppliers?.map((supplier) => (
+                <TableRow key={supplier.id}>
+                  <TableCell className="font-medium">
+                    {supplier.name}
+                    {supplier.trade_name && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {supplier.trade_name}
                       </span>
-                      {part.is_low_stock && <Badge variant="muted">Estoque baixo</Badge>}
-                    </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {part.min_quantity !== null ? formatQuantityBRL(Number(part.min_quantity)) : "—"}
+                    {SUPPLIER_TYPE_LABELS[supplier.supplier_type]}
                   </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {supplier.document || "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{supplier.phone || "—"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label="Editar peça"
-                        onClick={() => openEditSheet(part.id)}
+                        aria-label="Editar fornecedor"
+                        onClick={() => openEditSheet(supplier.id)}
                       >
                         <Pencil className="size-4" />
                       </Button>
@@ -247,8 +237,8 @@ export function PartsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label="Excluir peça"
-                          onClick={() => setDeleteTarget(part)}
+                          aria-label="Excluir fornecedor"
+                          onClick={() => setDeleteTarget(supplier)}
                         >
                           <Trash2 className="size-4 text-destructive" />
                         </Button>
@@ -256,9 +246,9 @@ export function PartsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label="Reativar peça"
+                          aria-label="Reativar fornecedor"
                           disabled={reactivateMutation.isPending}
-                          onClick={() => reactivateMutation.mutate(part.id)}
+                          onClick={() => reactivateMutation.mutate(supplier.id)}
                         >
                           <RotateCcw className="size-4" />
                         </Button>
@@ -272,7 +262,7 @@ export function PartsPage() {
         </Card>
       )}
 
-      <PartFormSheet open={sheetOpen} onOpenChange={setSheetOpen} partId={editingPartId} />
+      <SupplierFormSheet open={sheetOpen} onOpenChange={setSheetOpen} supplierId={editingSupplierId} />
 
       <AlertDialog
         open={deleteTarget !== null}
@@ -280,10 +270,11 @@ export function PartsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir peça?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir fornecedor?</AlertDialogTitle>
             <AlertDialogDescription>
-              A peça "{deleteTarget?.name}" será desabilitada e deixará de aparecer na listagem
-              padrão. O histórico é preservado e ela pode ser reativada depois.
+              O fornecedor "{deleteTarget?.name}" será desabilitado e deixará de aparecer na
+              listagem padrão e nos vínculos de novas peças. O histórico é preservado e ele pode
+              ser reativado depois.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

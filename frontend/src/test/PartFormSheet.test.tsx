@@ -9,10 +9,13 @@ import type { Category } from "@/features/categories/types";
 import * as partsApi from "@/features/parts/api";
 import { PartFormSheet } from "@/features/parts/PartFormSheet";
 import type { Part } from "@/features/parts/types";
+import * as suppliersApi from "@/features/suppliers/api";
+import type { Supplier } from "@/features/suppliers/types";
 import { formatCurrencyBRL } from "@/lib/masks";
 
 vi.mock("@/features/parts/api");
 vi.mock("@/features/categories/api");
+vi.mock("@/features/suppliers/api");
 
 function category(overrides: Partial<Category> = {}): Category {
   return {
@@ -43,11 +46,39 @@ function part(overrides: Partial<Part> = {}): Part {
     cost_price: null,
     sale_price: null,
     location: "",
-    supplier: "",
+    supplier: null,
+    supplier_name: null,
     ncm: "",
     barcode: "",
     notes: "",
     is_low_stock: false,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function supplier(overrides: Partial<Supplier> = {}): Supplier {
+  return {
+    id: 1,
+    name: "Fornecedor Ltda",
+    trade_name: "",
+    supplier_type: "company",
+    document: "",
+    state_registration: "",
+    email: "",
+    phone: "",
+    whatsapp: "",
+    contact_name: "",
+    zip_code: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    country: "Brasil",
+    notes: "",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
@@ -73,6 +104,9 @@ describe("PartFormSheet", () => {
     vi.mocked(categoriesApi.listCategories).mockReset();
     vi.mocked(categoriesApi.createCategory).mockReset();
     vi.mocked(categoriesApi.listCategories).mockResolvedValue([category()]);
+    vi.mocked(suppliersApi.createSupplier).mockReset();
+    vi.mocked(suppliersApi.listSuppliers).mockReset();
+    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([]);
   });
 
   it("requires a category and a name before submitting", async () => {
@@ -196,11 +230,79 @@ describe("PartFormSheet", () => {
     // submitted below), not just visually -- Radix's Select.Value only
     // resolves a label from an Item that has actually mounted, so asserting
     // on the trigger's rendered text here would be a JSDOM-specific flake.
+
+    // Regression guard: submitting the inline category form (nested via the
+    // Dialog's Portal inside the part form's own <form>) must not also
+    // submit the outer part form as a side effect -- see the identical
+    // guard in the inline-supplier test above for why.
+    expect(partsApi.createPart).not.toHaveBeenCalled();
+
     await user.click(screen.getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(partsApi.createPart).toHaveBeenCalledWith(
         expect.objectContaining({ category: 99, name: "Amortecedor dianteiro" }),
+      ),
+    );
+  });
+
+  it("creates a supplier inline and auto-selects it without losing other field values", async () => {
+    vi.mocked(suppliersApi.createSupplier).mockResolvedValue(
+      supplier({ id: 99, name: "Peças Silva Ltda" }),
+    );
+    vi.mocked(partsApi.createPart).mockResolvedValue(
+      part({ supplier: 99, supplier_name: "Peças Silva Ltda" }),
+    );
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.type(screen.getByLabelText("Nome da peça"), "Amortecedor dianteiro");
+    await user.click(screen.getByLabelText("Categoria da peça"));
+    await user.click(await screen.findByRole("option", { name: "Motor" }));
+
+    await user.click(screen.getByRole("button", { name: /adicionar fornecedor/i }));
+    expect(await screen.findByRole("dialog", { name: "Novo fornecedor" })).toBeInTheDocument();
+
+    await user.type(
+      within(screen.getByRole("dialog", { name: "Novo fornecedor" })).getByLabelText(
+        "Nome/Razão social",
+      ),
+      "Peças Silva Ltda",
+    );
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Novo fornecedor" })).getByRole("button", {
+        name: "Salvar",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(suppliersApi.createSupplier).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Peças Silva Ltda", supplier_type: "company" }),
+      ),
+    );
+
+    // Dialog closed, back on the part form -- no data loss from the earlier fields.
+    expect(screen.queryByRole("dialog", { name: "Novo fornecedor" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Nome da peça")).toHaveValue("Amortecedor dianteiro");
+
+    // The new supplier is auto-selected and displayed immediately -- unlike
+    // the category Select, SupplierCombobox shows `supplierName` directly
+    // without waiting on a refetch, so no re-mock of listSuppliers is needed.
+    expect(screen.getByText("Peças Silva Ltda")).toBeInTheDocument();
+
+    // Regression guard: SupplierForm is nested (via the Dialog's Portal)
+    // inside the part form's own <form> in the React tree. Submitting the
+    // inline supplier form must NOT also submit the outer part form as a
+    // side effect (React re-dispatches bubbling events along the component
+    // tree for portaled content) -- that would silently create a part with
+    // supplier left unset, before the user ever clicks the part's own Salvar.
+    expect(partsApi.createPart).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() =>
+      expect(partsApi.createPart).toHaveBeenCalledWith(
+        expect.objectContaining({ supplier: 99, name: "Amortecedor dianteiro" }),
       ),
     );
   });
