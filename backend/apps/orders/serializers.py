@@ -174,6 +174,15 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     gross_total = serializers.SerializerMethodField()
     final_value = serializers.SerializerMethodField()
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Once an OS exists, its vehicle and customer are fixed -- they can only
+        # be chosen on creation. Locking them read-only on update also keeps the
+        # vehicle/customer consistency guaranteed at creation time.
+        if self.instance is not None:
+            self.fields["customer"].read_only = True
+            self.fields["vehicle"].read_only = True
+
     class Meta:
         model = WorkOrder
         fields = [

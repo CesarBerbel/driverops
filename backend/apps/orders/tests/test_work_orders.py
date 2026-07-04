@@ -107,6 +107,38 @@ def test_update_keeps_disabled_vehicle(auth_client, customer, vehicle):
     assert response.json()["diagnosis"] == "Pastilha gasta"
 
 
+def test_customer_and_vehicle_are_immutable_after_creation(
+    auth_client, customer, vehicle, other_customer
+):
+    from apps.vehicles.models import Vehicle
+
+    order = auth_client.post(
+        "/api/work-orders/",
+        data=_payload(customer, vehicle),
+        content_type="application/json",
+    ).json()
+
+    # Try to reassign to a different customer + their vehicle on update.
+    other_vehicle = Vehicle.objects.create(
+        customer=other_customer, license_plate="ZZZ9999"
+    )
+    response = auth_client.patch(
+        f"/api/work-orders/{order['id']}/",
+        data={
+            "customer": other_customer.id,
+            "vehicle": other_vehicle.id,
+            "diagnosis": "x",
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    body = response.json()
+    # Vehicle/customer stay put (read-only on update); other fields still apply.
+    assert body["customer"] == customer.id
+    assert body["vehicle"] == vehicle.id
+    assert body["diagnosis"] == "x"
+
+
 def test_status_can_be_updated(auth_client, customer, vehicle):
     order = auth_client.post(
         "/api/work-orders/",
