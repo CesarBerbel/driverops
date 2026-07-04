@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { CurrencyInput } from "@/components/shared/CurrencyInput";
+import { SupplierCombobox } from "@/components/shared/SupplierCombobox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { listCategories } from "@/features/categories/api";
 import { CategoryQuickCreateDialog } from "@/features/categories/components/CategoryQuickCreateDialog";
 import type { Category } from "@/features/categories/types";
+import { SupplierQuickCreateDialog } from "@/features/suppliers/components/SupplierQuickCreateDialog";
+import type { Supplier } from "@/features/suppliers/types";
 import { extractErrorMessage } from "@/lib/api-client";
 import {
   formatCurrencyBRL,
@@ -51,7 +54,7 @@ const EMPTY_VALUES: PartFormValues = {
   cost_price: "",
   sale_price: "",
   location: "",
-  supplier: "",
+  supplier_id: null,
   ncm: "",
   barcode: "",
   notes: "",
@@ -77,7 +80,7 @@ function toFormValues(part: Part): PartFormValues {
     cost_price: part.cost_price ? formatCurrencyBRL(Number(part.cost_price)) : "",
     sale_price: part.sale_price ? formatCurrencyBRL(Number(part.sale_price)) : "",
     location: part.location,
-    supplier: part.supplier,
+    supplier_id: part.supplier,
     ncm: part.ncm,
     barcode: part.barcode,
     notes: part.notes,
@@ -97,7 +100,7 @@ function toPayload(values: PartFormValues): Partial<PartPayload> {
     cost_price: values.cost_price ? String(parseCurrencyBRL(values.cost_price)) : null,
     sale_price: values.sale_price ? String(parseCurrencyBRL(values.sale_price)) : null,
     location: values.location,
-    supplier: values.supplier,
+    supplier: values.supplier_id,
     ncm: values.ncm,
     barcode: values.barcode,
     notes: values.notes,
@@ -145,6 +148,7 @@ export function PartFormSheet({ open, onOpenChange, partId }: PartFormSheetProps
             key={partId ?? "create"}
             partId={partId}
             defaultValues={part ? toFormValues(part) : EMPTY_VALUES}
+            defaultSupplierName={part?.supplier_name ?? ""}
             onClose={() => onOpenChange(false)}
           />
         )}
@@ -156,15 +160,19 @@ export function PartFormSheet({ open, onOpenChange, partId }: PartFormSheetProps
 function PartForm({
   partId,
   defaultValues,
+  defaultSupplierName,
   onClose,
 }: {
   partId: number | null;
   defaultValues: PartFormValues;
+  defaultSupplierName: string;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
   const isEditMode = partId !== null;
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
+  const [supplierName, setSupplierName] = useState(defaultSupplierName);
 
   const {
     control,
@@ -200,6 +208,21 @@ function PartForm({
   function handleCategoryCreated(category: Category) {
     queryClient.invalidateQueries({ queryKey: ["categories", "part", "active"] });
     setValue("category_id", category.id, { shouldValidate: true, shouldDirty: true });
+  }
+
+  function handleSelectSupplier(supplier: Supplier) {
+    setValue("supplier_id", supplier.id, { shouldValidate: true, shouldDirty: true });
+    setSupplierName(supplier.name);
+  }
+
+  function handleClearSupplier() {
+    setValue("supplier_id", null, { shouldValidate: true, shouldDirty: true });
+    setSupplierName("");
+  }
+
+  function handleSupplierCreated(supplier: Supplier) {
+    setValue("supplier_id", supplier.id, { shouldValidate: true, shouldDirty: true });
+    setSupplierName(supplier.name);
   }
 
   return (
@@ -419,8 +442,28 @@ function PartForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="supplier">Fornecedor</Label>
-              <Input id="supplier" placeholder="Fornecedor Ltda" {...register("supplier")} />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="supplier_id">Fornecedor</Label>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setSupplierDialogOpen(true)}
+                >
+                  <Plus className="size-3" />
+                  Adicionar fornecedor
+                </Button>
+              </div>
+              <SupplierCombobox
+                selectedName={supplierName}
+                onSelect={handleSelectSupplier}
+                onClear={handleClearSupplier}
+                invalid={Boolean(errors.supplier_id)}
+              />
+              {errors.supplier_id && (
+                <p className="text-sm text-destructive">{errors.supplier_id.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -482,6 +525,12 @@ function PartForm({
         onOpenChange={setCategoryDialogOpen}
         categoryType="part"
         onCreated={handleCategoryCreated}
+      />
+
+      <SupplierQuickCreateDialog
+        open={supplierDialogOpen}
+        onOpenChange={setSupplierDialogOpen}
+        onCreated={handleSupplierCreated}
       />
     </form>
   );

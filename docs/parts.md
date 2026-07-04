@@ -77,7 +77,7 @@ obrigatórios. A quantidade atual pode começar em zero.
 | Preço de custo | Não | Moeda (Real brasileiro), não aceita negativo quando informado |
 | Preço de venda | Não | Moeda (Real brasileiro), não aceita negativo quando informado |
 | Localização no estoque | Não | Texto livre |
-| Fornecedor | Não | Texto livre por enquanto -- ver [Fornecedor](#fornecedor) |
+| Fornecedor | Não | Vínculo com o cadastro de fornecedores -- ver [Vínculo com o fornecedor](#vínculo-com-o-fornecedor) |
 | NCM | Não | 8 dígitos, exibido como `8708.99.90` |
 | Código de barras | Não | Apenas números |
 | Observações | Não | Texto livre |
@@ -89,11 +89,49 @@ Nenhum desses campos opcionais bloqueia o cadastro quando deixado em branco.
 Campo de valores controlados (não aceita texto livre), com "Unidade" como padrão: Unidade, Par,
 Kit, Litro, Mililitro, Metro, Centímetro, Caixa, Pacote, Jogo, Outro.
 
-### Fornecedor
+### Vínculo com o fornecedor
 
-Por enquanto é um campo de texto livre -- não existe um módulo de Fornecedores ainda. O campo está
-propositalmente pronto para ser trocado por um vínculo (FK) com uma futura entidade de Fornecedor,
-sem precisar de mudança na experiência de cadastro.
+O campo **Fornecedor** é opcional, mas **nunca é texto livre**: quando informado, é obrigatoriamente
+um vínculo (FK `Part.supplier`) com um registro do cadastro de [Fornecedores](suppliers.md) --
+mesmo padrão já usado pelo vínculo Veículo↔Cliente (ver
+[Veículos → Vínculo com o cliente](vehicles.md#vínculo-com-o-cliente)). O sistema nunca salva um
+nome de fornecedor digitado à mão sem um registro real por trás; a arquitetura permite tornar o
+campo obrigatório no futuro sem refatoração estrutural (bastaria remover `allow_null`/`required=False`
+no serializer e o `.nullable()` no schema do frontend).
+
+O seletor (`SupplierCombobox`, em
+[`frontend/src/components/shared/SupplierCombobox.tsx`](../frontend/src/components/shared/SupplierCombobox.tsx))
+segue o mesmo padrão de autocomplete do `CustomerCombobox` usado em Veículos: o usuário digita e os
+resultados aparecem em um painel abaixo do campo (busca ao vivo, debounced, por razão social, nome
+fantasia ou documento), com um botão "×" para trocar o fornecedor selecionado. Só fornecedores
+**habilitados** aparecem como opção (`listSuppliers({status: "active"})`) -- um fornecedor
+desabilitado nunca é oferecido para um novo vínculo, mas o vínculo de uma peça já existente com um
+fornecedor posteriormente desabilitado é preservado (mesma regra de "só a *nova* atribuição precisa
+estar habilitada" já usada para `Part.category`). A listagem de peças mostra o nome do fornecedor
+vinculado (coluna "Fornecedor") ou um traço (`—`) quando não há vínculo; editar uma peça carrega
+corretamente o fornecedor já vinculado, e o usuário pode trocá-lo ou limpá-lo livremente.
+
+### Adicionar fornecedor inline
+
+Ao lado do seletor de fornecedor existe um link discreto "Adicionar fornecedor", com o mesmo
+comportamento do "Adicionar categoria" descrito acima: clicar nele abre um modal de cadastro de
+fornecedor (`SupplierQuickCreateDialog.tsx`) **sobre** o drawer de cadastro de peça, sem fechá-lo e
+sem perder nenhum dado já preenchido no formulário da peça.
+
+1. O modal reaproveita o mesmo componente de formulário do CRUD de Fornecedores
+   (`SupplierForm.tsx`, extraído para ser compartilhado -- mesma técnica de `CategoryForm.tsx`) --
+   mesma validação, mesmas máscaras, mesma integração de CEP.
+2. Assim como no CRUD completo, o cadastro inline já vem com **Pessoa Jurídica** selecionada por
+   padrão e só exige o nome/razão social.
+3. Ao salvar com sucesso, o modal fecha automaticamente e o usuário volta para o drawer de cadastro
+   da peça, com o fornecedor recém-criado **já selecionado automaticamente** -- sem esperar um
+   refetch, já que o nome exibido vem diretamente do retorno da criação.
+4. Se o usuário cancelar o cadastro do fornecedor (ou fechar o modal), volta para o drawer de peça
+   mantendo tudo o que já havia preenchido.
+5. Se houver erro ao salvar o fornecedor, o erro aparece dentro do próprio modal -- o drawer de peça
+   permanece aberto e intacto por trás.
+6. O fornecedor criado dessa forma passa a existir também no CRUD de [Fornecedores](suppliers.md) --
+   não é uma entidade paralela.
 
 ## Padrão brasileiro
 
@@ -124,7 +162,9 @@ mais simples que aceita dígitos e uma vírgula decimal, já que "10" deve signi
 O backend (`backend/apps/parts/models.py`) usa `DecimalField` para quantidade e preços -- nunca
 `float` -- evitando problemas de arredondamento de ponto flutuante em valores monetários. O
 serializer (`backend/apps/parts/serializers.py`) normaliza antes de salvar:
-- **Nome, Marca, Modelo/aplicação, Localização, Fornecedor**: espaços nas extremidades removidos.
+- **Nome, Marca, Modelo/aplicação, Localização**: espaços nas extremidades removidos.
+- **Fornecedor**: salvo como o ID do fornecedor vinculado (ou `null`), nunca como texto -- ver
+  [Vínculo com o fornecedor](#vínculo-com-o-fornecedor).
 - **Código interno**: espaços removidos e convertido para maiúsculas.
 - **NCM**: apenas dígitos; se preenchido, precisa ter exatamente 8 dígitos.
 - **Código de barras**: apenas dígitos.
@@ -185,6 +225,8 @@ Nenhum comando novo foi criado para este módulo -- ele usa a infraestrutura já
   [Banco de dados e migrations](database.md).
 - Rodar os testes (`apps/parts/tests/` no backend, `PartsPage.test.tsx`, `PartFormSheet.test.tsx` e
   as adições de `masks.test.ts` no frontend): [Testes e lint](testing.md).
+- Cadastro de fornecedores em si, incluindo soft delete e o comportamento de fornecedores
+  desabilitados: [Fornecedores](suppliers.md).
 
 ---
 Voltar para o [índice da documentação](README.md).

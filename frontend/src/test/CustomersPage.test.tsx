@@ -12,6 +12,7 @@ import type { Vehicle } from "@/features/vehicles/types";
 
 vi.mock("@/features/customers/api");
 vi.mock("@/features/vehicles/api");
+vi.mock("@/lib/cepService");
 
 function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   return {
@@ -45,7 +46,6 @@ function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
     ...overrides,
   };
 }
-vi.mock("@/features/customers/cepService");
 
 function customer(overrides: Partial<Customer> = {}): Customer {
   return {

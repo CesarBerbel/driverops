@@ -32,7 +32,7 @@ export const partSchema = z
     cost_price: optionalCurrencySchema,
     sale_price: optionalCurrencySchema,
     location: z.string().optional(),
-    supplier: z.string().optional(),
+    supplier_id: z.number().nullable(),
     ncm: z.string().optional(),
     barcode: z.string().optional(),
     notes: z.string().optional(),

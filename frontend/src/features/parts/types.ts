@@ -28,7 +28,8 @@ export interface Part {
   cost_price: string | null;
   sale_price: string | null;
   location: string;
-  supplier: string;
+  supplier: number | null;
+  supplier_name: string | null;
   ncm: string;
   barcode: string;
   notes: string;
@@ -39,5 +40,5 @@ export interface Part {
 
 export type PartPayload = Omit<
   Part,
-  "id" | "category_name" | "is_low_stock" | "created_at" | "updated_at"
+  "id" | "category_name" | "supplier_name" | "is_low_stock" | "created_at" | "updated_at"
 >;

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.categories.models import Category
+from apps.suppliers.models import Supplier
 
 from .models import Part
 
@@ -12,6 +13,10 @@ class PartSerializer(serializers.ModelSerializer):
         queryset=Category.objects.filter(category_type=Category.CategoryType.PART)
     )
     category_name = serializers.CharField(source="category.name", read_only=True)
+    supplier = serializers.PrimaryKeyRelatedField(
+        queryset=Supplier.objects.all(), required=False, allow_null=True
+    )
+    supplier_name = serializers.SerializerMethodField()
     is_low_stock = serializers.SerializerMethodField()
     # Declared explicitly (overriding the max_length auto-generated from the
     # model field) so punctuated input like "8708.99.90" can reach
@@ -37,6 +42,7 @@ class PartSerializer(serializers.ModelSerializer):
             "sale_price",
             "location",
             "supplier",
+            "supplier_name",
             "ncm",
             "barcode",
             "notes",
@@ -45,6 +51,9 @@ class PartSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_supplier_name(self, obj):
+        return obj.supplier.name if obj.supplier_id else None
 
     def get_is_low_stock(self, obj):
         return obj.is_low_stock
@@ -83,7 +92,17 @@ class PartSerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate_supplier(self, value):
-        return value.strip()
+        # Same "only a *new* assignment must be active" rule as
+        # validate_category -- an update that leaves an already-inactive
+        # historical supplier untouched must still pass.
+        if value is None:
+            return value
+        is_new_assignment = (
+            self.instance is None or self.instance.supplier_id != value.id
+        )
+        if is_new_assignment and not value.is_active:
+            raise serializers.ValidationError("Selecione um fornecedor habilitado.")
+        return value
 
     def validate_ncm(self, value):
         digits = "".join(ch for ch in value if ch.isdigit())

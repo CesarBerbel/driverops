@@ -1,7 +1,7 @@
 // Isolated integration point for the public CEP (Brazilian postal code)
 // lookup provider. Everything about "which API we use" lives in this one
 // file -- swapping ViaCEP for another provider later only touches this
-// module, not the form that consumes it.
+// module, not the forms that consume it (Customers, Suppliers, ...).
 
 export interface CepAddress {
   street: string;

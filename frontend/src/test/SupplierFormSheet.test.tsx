@@ -4,57 +4,60 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Toaster } from "@/components/ui/sonner";
-import * as customersApi from "@/features/customers/api";
-import { CustomerFormSheet } from "@/features/customers/CustomerFormSheet";
+import * as suppliersApi from "@/features/suppliers/api";
+import { SupplierFormSheet } from "@/features/suppliers/SupplierFormSheet";
 import * as cepService from "@/lib/cepService";
 
-vi.mock("@/features/customers/api");
+vi.mock("@/features/suppliers/api");
 vi.mock("@/lib/cepService");
 
 function renderSheet(onOpenChange = vi.fn()) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <CustomerFormSheet open customerId={null} onOpenChange={onOpenChange} />
+      <SupplierFormSheet open supplierId={null} onOpenChange={onOpenChange} />
       <Toaster />
     </QueryClientProvider>,
   );
   return { onOpenChange };
 }
 
-describe("CustomerFormSheet", () => {
+describe("SupplierFormSheet", () => {
   beforeEach(() => {
-    vi.mocked(customersApi.createCustomer).mockReset();
+    vi.mocked(suppliersApi.createSupplier).mockReset();
     vi.mocked(cepService.lookupCep).mockReset();
   });
 
-  it("defaults customer type to Pessoa Física and labels the document field as CPF", async () => {
+  it("defaults supplier type to Pessoa Jurídica and labels the document field as CNPJ", async () => {
     renderSheet();
     await waitFor(() =>
-      expect(screen.getByRole("combobox")).toHaveTextContent("Pessoa Física"),
+      expect(screen.getByRole("combobox")).toHaveTextContent("Pessoa Jurídica"),
     );
-    expect(screen.getByText("Documento (CPF)")).toBeInTheDocument();
+    expect(screen.getByText("Documento (CNPJ)")).toBeInTheDocument();
   });
 
-  it("switches the document field to CNPJ when the type changes to Pessoa Jurídica", async () => {
+  it("switches the document field to CPF when the type changes to Pessoa Física", async () => {
     const user = userEvent.setup();
     renderSheet();
 
     await user.click(screen.getByRole("combobox"));
-    await user.click(screen.getByRole("option", { name: "Pessoa Jurídica" }));
+    await user.click(screen.getByRole("option", { name: "Pessoa Física" }));
 
-    expect(await screen.findByText("Documento (CNPJ)")).toBeInTheDocument();
+    expect(await screen.findByText("Documento (CPF)")).toBeInTheDocument();
   });
 
   it("submits with only the name filled in and closes the sheet", async () => {
-    vi.mocked(customersApi.createCustomer).mockResolvedValue({
+    vi.mocked(suppliersApi.createSupplier).mockResolvedValue({
       id: 1,
-      name: "John Doe",
-      customer_type: "individual",
+      name: "Fornecedor Ltda",
+      trade_name: "",
+      supplier_type: "company",
+      document: "",
+      state_registration: "",
       email: "",
       phone: "",
       whatsapp: "",
-      document: "",
+      contact_name: "",
       zip_code: "",
       street: "",
       number: "",
@@ -64,19 +67,18 @@ describe("CustomerFormSheet", () => {
       state: "",
       country: "Brasil",
       notes: "",
-      vehicle_count: 0,
       created_at: "2026-01-01T00:00:00Z",
       updated_at: "2026-01-01T00:00:00Z",
     });
     const user = userEvent.setup();
     const { onOpenChange } = renderSheet();
 
-    await user.type(screen.getByLabelText("Nome"), "John Doe");
+    await user.type(screen.getByLabelText("Nome/Razão social"), "Fornecedor Ltda");
     await user.click(screen.getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
-      expect(customersApi.createCustomer).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "John Doe", customer_type: "individual" }),
+      expect(suppliersApi.createSupplier).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "Fornecedor Ltda", supplier_type: "company" }),
       ),
     );
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));

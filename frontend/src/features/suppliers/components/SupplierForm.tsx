@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircle } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -16,33 +16,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
 import { lookupCep } from "@/lib/cepService";
 import { formatCEP, formatDocument, formatPhone, formatUF } from "@/lib/masks";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
-import { createCustomer, getCustomer, updateCustomer } from "./api";
-import { CUSTOMER_TYPE_OPTIONS } from "./constants";
-import { customerSchema, type CustomerFormValues } from "./schemas";
-import type { Customer, CustomerType } from "./types";
+import { createSupplier, updateSupplier } from "../api";
+import { SUPPLIER_TYPE_OPTIONS } from "../constants";
+import { supplierSchema, type SupplierFormValues } from "../schemas";
+import type { Supplier, SupplierType } from "../types";
 
-const EMPTY_VALUES: CustomerFormValues = {
+const EMPTY_VALUES: SupplierFormValues = {
   name: "",
-  customer_type: "individual",
+  trade_name: "",
+  supplier_type: "company",
+  document: "",
+  state_registration: "",
   email: "",
   phone: "",
   whatsapp: "",
-  document: "",
+  contact_name: "",
   zip_code: "",
   street: "",
   number: "",
@@ -54,88 +48,38 @@ const EMPTY_VALUES: CustomerFormValues = {
   notes: "",
 };
 
-function toFormValues(customer: Customer): CustomerFormValues {
+function toFormValues(supplier: Supplier): SupplierFormValues {
   return {
-    name: customer.name,
-    customer_type: customer.customer_type,
-    email: customer.email,
-    phone: customer.phone,
-    whatsapp: customer.whatsapp,
-    document: customer.document,
-    zip_code: customer.zip_code,
-    street: customer.street,
-    number: customer.number,
-    complement: customer.complement,
-    neighborhood: customer.neighborhood,
-    city: customer.city,
-    state: customer.state,
-    country: customer.country,
-    notes: customer.notes,
+    name: supplier.name,
+    trade_name: supplier.trade_name,
+    supplier_type: supplier.supplier_type,
+    document: supplier.document,
+    state_registration: supplier.state_registration,
+    email: supplier.email,
+    phone: supplier.phone,
+    whatsapp: supplier.whatsapp,
+    contact_name: supplier.contact_name,
+    zip_code: supplier.zip_code,
+    street: supplier.street,
+    number: supplier.number,
+    complement: supplier.complement,
+    neighborhood: supplier.neighborhood,
+    city: supplier.city,
+    state: supplier.state,
+    country: supplier.country,
+    notes: supplier.notes,
   };
 }
 
-interface CustomerFormSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  customerId: number | null;
+interface SupplierFormProps {
+  supplier: Supplier | null;
+  onSuccess: (supplier: Supplier) => void;
+  onCancel?: () => void;
 }
 
-export function CustomerFormSheet({ open, onOpenChange, customerId }: CustomerFormSheetProps) {
-  const isEditMode = customerId !== null;
-
-  const { data: customer } = useQuery({
-    queryKey: ["customers", customerId],
-    queryFn: () => getCustomer(customerId as number),
-    enabled: isEditMode && open,
-  });
-
-  // Gate on the data itself rather than `isLoading`: TanStack Query can
-  // report isLoading=false for one render right after a query is enabled
-  // (fetch hasn't started yet), which would let CustomerForm mount once
-  // with empty defaultValues before the real data arrives -- and since it
-  // never remounts afterward (stable `key`), it would stay empty.
-  const isWaitingForData = isEditMode && !customer;
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
-        <SheetHeader className="shrink-0 border-b">
-          <SheetTitle>{isEditMode ? "Editar cliente" : "Novo cliente"}</SheetTitle>
-          <SheetDescription>
-            Apenas o nome é obrigatório -- os demais dados podem ser completados depois.
-          </SheetDescription>
-        </SheetHeader>
-
-        {isWaitingForData ? (
-          <div className="flex-1 space-y-4 overflow-y-auto p-6">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </div>
-        ) : (
-          <CustomerForm
-            key={customerId ?? "create"}
-            customerId={customerId}
-            defaultValues={customer ? toFormValues(customer) : EMPTY_VALUES}
-            onClose={() => onOpenChange(false)}
-          />
-        )}
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function CustomerForm({
-  customerId,
-  defaultValues,
-  onClose,
-}: {
-  customerId: number | null;
-  defaultValues: CustomerFormValues;
-  onClose: () => void;
-}) {
+export function SupplierForm({ supplier, onSuccess, onCancel }: SupplierFormProps) {
   const queryClient = useQueryClient();
-  const isEditMode = customerId !== null;
+  const isEditMode = supplier !== null;
 
   const {
     control,
@@ -145,34 +89,34 @@ function CustomerForm({
     setValue,
     getValues,
     formState: { errors, isSubmitting },
-  } = useForm<CustomerFormValues>({
-    resolver: zodResolver(customerSchema),
-    defaultValues,
+  } = useForm<SupplierFormValues>({
+    resolver: zodResolver(supplierSchema),
+    defaultValues: supplier ? toFormValues(supplier) : EMPTY_VALUES,
   });
 
-  const customerType = watch("customer_type");
+  const supplierType = watch("supplier_type");
 
   const mutation = useMutation({
-    mutationFn: (values: CustomerFormValues) =>
-      isEditMode ? updateCustomer(customerId, values) : createCustomer(values),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["customers"] });
-      toast.success(isEditMode ? "Cliente atualizado." : "Cliente criado.");
-      onClose();
+    mutationFn: (values: SupplierFormValues) =>
+      isEditMode ? updateSupplier(supplier.id, values) : createSupplier(values),
+    onSuccess: async (saved) => {
+      await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success(isEditMode ? "Fornecedor atualizado." : "Fornecedor criado.");
+      onSuccess(saved);
     },
     onError: (error) => {
-      toast.error(extractErrorMessage(error, "Não foi possível salvar o cliente."));
+      toast.error(extractErrorMessage(error, "Não foi possível salvar o fornecedor."));
     },
   });
 
-  function handleCustomerTypeChange(newType: CustomerType, onChange: (value: CustomerType) => void) {
+  function handleSupplierTypeChange(newType: SupplierType, onChange: (value: SupplierType) => void) {
     const currentDocument = getValues("document");
     if (currentDocument) {
       const expectedLength = newType === "company" ? 14 : 11;
       if (currentDocument.length !== expectedLength) {
         setValue("document", "");
         toast(
-          "Documento limpo porque não é compatível com o novo tipo de cliente. Revise o valor.",
+          "Documento limpo porque não é compatível com o novo tipo de fornecedor. Revise o valor.",
         );
       }
     }
@@ -198,7 +142,17 @@ function CustomerForm({
 
   return (
     <form
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      onSubmit={(event) => {
+        // This form can be nested (via SupplierQuickCreateDialog's Radix
+        // Portal) inside another <form> in the React tree -- e.g. the part
+        // cadastro's own form. React re-dispatches bubbling events along the
+        // *component* tree for portaled content, so without stopPropagation
+        // here, submitting this form would also fire the ancestor form's
+        // onSubmit and silently create/save it with whatever state it had
+        // at that moment (e.g. a part saved with supplier left unset).
+        event.stopPropagation();
+        handleSubmit((values) => mutation.mutate(values))(event);
+      }}
       className="flex flex-1 flex-col overflow-hidden"
       noValidate
     >
@@ -209,28 +163,33 @@ function CustomerForm({
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" aria-invalid={Boolean(errors.name)} {...register("name")} />
+              <Label htmlFor="supplier-name">Nome/Razão social</Label>
+              <Input id="supplier-name" aria-invalid={Boolean(errors.name)} {...register("name")} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="customer_type">Tipo de cliente</Label>
+              <Label htmlFor="supplier-trade_name">Nome fantasia</Label>
+              <Input id="supplier-trade_name" {...register("trade_name")} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supplier-type">Tipo de fornecedor</Label>
               <Controller
                 control={control}
-                name="customer_type"
+                name="supplier_type"
                 render={({ field }) => (
                   <Select
                     value={field.value}
                     onValueChange={(value) =>
-                      handleCustomerTypeChange(value as CustomerType, field.onChange)
+                      handleSupplierTypeChange(value as SupplierType, field.onChange)
                     }
                   >
-                    <SelectTrigger id="customer_type" className="w-full">
+                    <SelectTrigger id="supplier-type" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {CUSTOMER_TYPE_OPTIONS.map((option) => (
+                      {SUPPLIER_TYPE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -242,19 +201,19 @@ function CustomerForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="document">
-                Documento ({customerType === "company" ? "CNPJ" : "CPF"})
+              <Label htmlFor="supplier-document">
+                Documento ({supplierType === "company" ? "CNPJ" : "CPF"})
               </Label>
               <Controller
                 control={control}
                 name="document"
                 render={({ field }) => (
                   <MaskedInput
-                    id="document"
+                    id="supplier-document"
                     value={field.value}
                     onChange={field.onChange}
-                    format={(digits) => formatDocument(digits, customerType)}
-                    maxDigits={customerType === "company" ? 14 : 11}
+                    format={(digits) => formatDocument(digits, supplierType)}
+                    maxDigits={supplierType === "company" ? 14 : 11}
                     aria-invalid={Boolean(errors.document)}
                   />
                 )}
@@ -265,9 +224,19 @@ function CustomerForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="supplier-state_registration">Inscrição estadual</Label>
+              <Input id="supplier-state_registration" {...register("state_registration")} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supplier-contact_name">Nome do contato</Label>
+              <Input id="supplier-contact_name" {...register("contact_name")} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supplier-email">E-mail</Label>
               <Input
-                id="email"
+                id="supplier-email"
                 type="email"
                 aria-invalid={Boolean(errors.email)}
                 {...register("email")}
@@ -276,13 +245,13 @@ function CustomerForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
+              <Label htmlFor="supplier-phone">Telefone</Label>
               <Controller
                 control={control}
                 name="phone"
                 render={({ field }) => (
                   <MaskedInput
-                    id="phone"
+                    id="supplier-phone"
                     value={field.value}
                     onChange={field.onChange}
                     format={formatPhone}
@@ -295,14 +264,14 @@ function CustomerForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="whatsapp">WhatsApp</Label>
+              <Label htmlFor="supplier-whatsapp">WhatsApp</Label>
               <Controller
                 control={control}
                 name="whatsapp"
                 render={({ field }) => (
                   <div className="flex items-center gap-2">
                     <MaskedInput
-                      id="whatsapp"
+                      id="supplier-whatsapp"
                       value={field.value}
                       onChange={field.onChange}
                       format={formatPhone}
@@ -342,13 +311,13 @@ function CustomerForm({
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="zip_code">CEP</Label>
+              <Label htmlFor="supplier-zip_code">CEP</Label>
               <Controller
                 control={control}
                 name="zip_code"
                 render={({ field }) => (
                   <MaskedInput
-                    id="zip_code"
+                    id="supplier-zip_code"
                     value={field.value}
                     onChange={(digits) => handleCepChange(digits, field.onChange)}
                     format={formatCEP}
@@ -363,38 +332,38 @@ function CustomerForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="street">Rua/Logradouro</Label>
-              <Input id="street" {...register("street")} />
+              <Label htmlFor="supplier-street">Rua/Logradouro</Label>
+              <Input id="supplier-street" {...register("street")} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="number">Número</Label>
-              <Input id="number" {...register("number")} />
+              <Label htmlFor="supplier-number">Número</Label>
+              <Input id="supplier-number" {...register("number")} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="complement">Complemento</Label>
-              <Input id="complement" {...register("complement")} />
+              <Label htmlFor="supplier-complement">Complemento</Label>
+              <Input id="supplier-complement" {...register("complement")} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="neighborhood">Bairro</Label>
-              <Input id="neighborhood" {...register("neighborhood")} />
+              <Label htmlFor="supplier-neighborhood">Bairro</Label>
+              <Input id="supplier-neighborhood" {...register("neighborhood")} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="city">Cidade</Label>
-              <Input id="city" {...register("city")} />
+              <Label htmlFor="supplier-city">Cidade</Label>
+              <Input id="supplier-city" {...register("city")} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="state">Estado (UF)</Label>
+              <Label htmlFor="supplier-state">Estado (UF)</Label>
               <Controller
                 control={control}
                 name="state"
                 render={({ field }) => (
                   <Input
-                    id="state"
+                    id="supplier-state"
                     maxLength={2}
                     value={field.value}
                     onChange={(event) => field.onChange(formatUF(event.target.value))}
@@ -406,8 +375,8 @@ function CustomerForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="country">País</Label>
-              <Input id="country" {...register("country")} />
+              <Label htmlFor="supplier-country">País</Label>
+              <Input id="supplier-country" {...register("country")} />
             </div>
           </CardContent>
         </Card>
@@ -417,20 +386,22 @@ function CustomerForm({
             <CardTitle className="text-base">Observações</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea id="notes" rows={4} {...register("notes")} />
+            <Textarea id="supplier-notes" rows={4} {...register("notes")} />
           </CardContent>
         </Card>
       </div>
 
-      <SheetFooter className="flex-row justify-end gap-2 border-t">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
+      <div className="flex shrink-0 flex-row justify-end gap-2 border-t p-4">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+        )}
         <Button type="submit" disabled={isSubmitting || mutation.isPending}>
           {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
           Salvar
         </Button>
-      </SheetFooter>
+      </div>
     </form>
   );
 }
