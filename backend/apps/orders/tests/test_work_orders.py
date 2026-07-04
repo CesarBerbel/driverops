@@ -245,6 +245,49 @@ def test_changing_default_deadline_does_not_touch_existing_os(
     assert new_order["expected_delivery"] == "2026-08-31"
 
 
+def test_board_operational_excludes_finished_and_canceled(
+    auth_client, customer, vehicle
+):
+    def make(status):
+        order = auth_client.post(
+            "/api/work-orders/",
+            data=_payload(customer, vehicle),
+            content_type="application/json",
+        ).json()
+        if status != "open":
+            auth_client.patch(
+                f"/api/work-orders/{order['id']}/",
+                data={"status": status},
+                content_type="application/json",
+            )
+
+    for st in ("open", "in_progress", "finished", "canceled"):
+        make(st)
+
+    board = auth_client.get("/api/work-orders/?board=operational").json()
+    assert len(board) == 2
+    assert {o["status"] for o in board} == {"open", "in_progress"}
+
+
+def test_period_today_filter(auth_client, customer, vehicle):
+    from django.utils import timezone
+
+    today = timezone.localdate().isoformat()
+    auth_client.post(
+        "/api/work-orders/",
+        data=_payload(customer, vehicle, opened_at=today),
+        content_type="application/json",
+    )
+    auth_client.post(
+        "/api/work-orders/",
+        data=_payload(customer, vehicle, opened_at="2020-01-01"),
+        content_type="application/json",
+    )
+    results = auth_client.get("/api/work-orders/?period=today").json()
+    assert len(results) == 1
+    assert results[0]["opened_at"] == today
+
+
 def test_filter_by_customer(auth_client, customer, vehicle, other_customer):
     auth_client.post(
         "/api/work-orders/",

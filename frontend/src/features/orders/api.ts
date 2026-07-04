@@ -2,12 +2,16 @@ import { apiClient } from "@/lib/api-client";
 
 import type { OrderActiveFilter, OrderStatus, WorkOrder, WorkOrderPayload } from "./types";
 
+export type OrderPeriod = "today" | "week" | "month" | "last30" | "all";
+
 export interface ListWorkOrdersParams {
   search?: string;
   active?: OrderActiveFilter;
   status?: OrderStatus;
   customer?: number;
   vehicle?: number;
+  board?: "operational";
+  period?: OrderPeriod;
 }
 
 export async function listWorkOrders(
@@ -20,6 +24,8 @@ export async function listWorkOrders(
       status: params.status,
       customer: params.customer,
       vehicle: params.vehicle,
+      board: params.board,
+      period: params.period,
     },
   });
   return data;

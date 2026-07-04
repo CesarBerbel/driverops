@@ -262,6 +262,9 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
       className="space-y-6"
       noValidate
     >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        {/* Coluna esquerda: identificação, veículo (antes do cliente), cliente, relato, diagnóstico. */}
+        <div className="space-y-6">
       {/* 1. Dados principais */}
       <Card>
         <CardHeader>
@@ -318,6 +321,27 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
                   value={field.value ? formatQuantityBRL(Number(onlyDigits(field.value))) : ""}
                   onChange={(event) => field.onChange(onlyDigits(event.target.value))}
                 />
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status da OS</Label>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="status" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ORDER_STATUS_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             />
           </div>
@@ -439,6 +463,24 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
         </CardContent>
       </Card>
 
+      {/* Observações internas (coluna esquerda) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Observações internas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            id="internal_notes"
+            rows={3}
+            aria-label="Observações internas"
+            {...register("internal_notes")}
+          />
+        </CardContent>
+      </Card>
+        </div>
+
+        {/* Coluna direita: itens (serviços/pacotes/peças) e valores. */}
+        <div className="space-y-6">
       {/* 6. Serviços */}
       <Card>
         <CardHeader>
@@ -652,51 +694,8 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* 10. Observações internas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Observações internas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            id="internal_notes"
-            rows={3}
-            aria-label="Observações internas"
-            {...register("internal_notes")}
-          />
-        </CardContent>
-      </Card>
-
-      {/* 11. Status da OS */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Status da OS</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="max-w-xs space-y-2">
-            <Label htmlFor="status">Status atual</Label>
-            <Controller
-              control={control}
-              name="status"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="status" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ORDER_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>

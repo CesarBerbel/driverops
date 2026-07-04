@@ -22,4 +22,15 @@ describe("Topbar", () => {
     expect(screen.getByRole("link", { name: /dashboard/i })).toBeInTheDocument();
     expect(screen.queryByLabelText("Abrir menu")).not.toBeInTheDocument();
   });
+
+  it("has an always-visible 'Nova OS' action pointing to the OS editor", () => {
+    render(
+      <MemoryRouter>
+        <Topbar />
+      </MemoryRouter>,
+    );
+
+    const novaOs = screen.getByRole("link", { name: /nova os/i });
+    expect(novaOs).toHaveAttribute("href", "/orders/new");
+  });
 });

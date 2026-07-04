@@ -1,6 +1,7 @@
-import { LayoutDashboard, Truck } from "lucide-react";
+import { LayoutDashboard, Plus, Truck } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { UserMenu } from "./UserMenu";
@@ -29,6 +30,14 @@ export function Topbar() {
       </NavLink>
 
       <div className="flex-1" />
+
+      {/* Ação rápida sempre visível para abrir uma nova Ordem de Serviço. */}
+      <Button asChild size="sm">
+        <Link to="/orders/new">
+          <Plus className="size-4" />
+          <span className="hidden sm:inline">Nova OS</span>
+        </Link>
+      </Button>
 
       <UserMenu />
     </header>

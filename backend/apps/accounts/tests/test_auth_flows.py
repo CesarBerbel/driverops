@@ -52,6 +52,25 @@ def test_refresh_without_cookie_returns_401(client):
     assert response.status_code == 401
 
 
+def test_concurrent_refresh_reuse_does_not_kill_the_session(auth_client):
+    """Regression: two refreshes racing on the same (pre-rotation) refresh cookie
+    -- e.g. several tabs or a request burst after the access token expired -- must
+    both succeed. Blacklisting on rotation used to make the second one 401, clear
+    the auth cookies and bounce the user to the login screen."""
+    original_refresh = auth_client.cookies["refresh_token"].value
+
+    first = auth_client.post("/api/auth/refresh/")
+    assert first.status_code == 204
+
+    # Second, concurrent refresh still carrying the original refresh cookie.
+    auth_client.cookies["refresh_token"] = original_refresh
+    second = auth_client.post("/api/auth/refresh/")
+
+    assert second.status_code == 204
+    # The session survives: the reused refresh cookie was not cleared.
+    assert second.cookies["refresh_token"].value != ""
+
+
 def test_logout_clears_cookies_and_blacklists_refresh(auth_client):
     response = auth_client.post("/api/auth/logout/")
     assert response.status_code == 204

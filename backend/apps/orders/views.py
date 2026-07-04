@@ -4,8 +4,11 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.periods import period_start_date
+
 from .models import WorkOrder
 from .serializers import WorkOrderSerializer
+from .status_groups import OPERATIONAL_STATUSES
 
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
@@ -39,6 +42,16 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(is_active=True)
         elif active_param == "inactive":
             queryset = queryset.filter(is_active=False)
+
+        # Operational board (Dashboard aba OS): only OS still in the shop flow,
+        # never finished/canceled.
+        if self.request.query_params.get("board") == "operational":
+            queryset = queryset.filter(status__in=OPERATIONAL_STATUSES)
+
+        # Period filter over the opening date (Hoje/Esta semana/Este mês/30 dias).
+        start = period_start_date(self.request.query_params.get("period"))
+        if start is not None:
+            queryset = queryset.filter(opened_at__gte=start)
 
         # Workflow status filter (Aberta, Em execução, ...).
         status_param = self.request.query_params.get("status")
