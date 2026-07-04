@@ -8,6 +8,10 @@
   antigo faria o segundo refresh falhar com 401, limpar os cookies e jogar o usuário de volta para a
   tela de login. O logout encerra a sessão limpando os cookies. Tradeoff: um refresh token rotacionado
   permanece válido até expirar naturalmente.
+- A sessão só é encerrada em falha de autenticação **definitiva** (401): a consulta `/users/me/` e o
+  fluxo de refresh do `api-client` só deslogam o usuário quando a resposta é 401. Erros transitórios
+  (rede instável, 5xx, o backend reiniciando durante uma requisição) **não** derrubam a sessão -- a
+  requisição falha e pode ser repetida, mas o usuário continua logado.
 - Mitigação de CSRF via `SameSite=Lax` + allowlist estrita de `CORS_ALLOWED_ORIGINS` com
   `credentials: true`. Não há um esquema de double-submit token nesta v1 -- decisão deliberada para
   um app de demonstração/v1: toda requisição que altera estado ainda exige um JWT válido, que não é
