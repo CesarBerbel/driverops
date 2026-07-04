@@ -18,6 +18,7 @@ driverops/
 │       ├── suppliers/             # cadastro de fornecedores com endereço completo, soft delete
 │       ├── parts/                 # cadastro de peças em estoque vinculado a categorias/fornecedores, soft delete
 │       ├── services/              # catálogo de serviços, peças padrão (through) e pacotes de serviços, soft delete
+│       ├── orders/               # ordens de serviço (OS): veículo/cliente, itens cadastrados e avulsos, soft delete
 │       └── core/               # health check e concerns compartilhados
 └── frontend/                 # React + Vite + TS + Tailwind + shadcn/ui
     └── src/
@@ -31,6 +32,7 @@ driverops/
         │   ├── suppliers/        # cadastro de fornecedores (consome apps.suppliers)
         │   ├── parts/             # cadastro de peças em estoque (consome apps.parts e apps.suppliers)
         │   ├── services/          # serviços e pacotes de serviços (consome apps.services, apps.categories, apps.parts)
+        │   ├── orders/            # ordens de serviço (consome apps.orders + clientes/veículos/serviços/peças)
         │   ├── profile/        # página de perfil
         │   └── landing/        # página pública
         ├── components/
@@ -44,7 +46,7 @@ driverops/
 
 ## Backend
 
-Sete apps Django: `accounts` (User customizado, autenticação JWT via cookies httpOnly, perfil,
+Oito apps Django: `accounts` (User customizado, autenticação JWT via cookies httpOnly, perfil,
 troca/recuperação de senha, permissão de superusuário, comando `seed_admin`), `categories` (um único
 modelo `Category` genérico com um discriminador `category_type` (`client`/`part`/`service`) atende
 as categorias de clientes, peças e serviços -- a unicidade do nome é escopada por
@@ -73,12 +75,18 @@ depende de `apps.categories` (FK `Service.category`, restrita a `category_type="
 `apps.parts` (`ServicePart.part`), nunca o contrário. É o primeiro app com **modelos de ligação**
 (`ServicePart`, `PackageService`) e os primeiros serializers com **escrita aninhada** -- todo o
 restante do backend usa apenas FKs simples. Os valores calculados (valor do serviço, total e final
-do pacote) são derivados no serializer e nunca persistidos.
+do pacote) são derivados no serializer e nunca persistidos. `apps.orders` (Ordens de Serviço) fica no
+topo dessa cadeia: depende de `apps.customers`, `apps.vehicles`, `apps.services` e `apps.parts`,
+nunca o contrário. Cada OS tem linhas (`WorkOrderService`, `WorkOrderPackage`, `WorkOrderPart`) que
+podem referenciar um cadastro (FK opcional) ou ser **avulsas** (FK nula + texto livre) -- o nome e o
+valor são congelados na linha (snapshot) para preservar o histórico. Os totais (serviços, pacotes,
+peças, bruto e final com desconto) são calculados no serializer, nunca persistidos, e o veículo é
+validado como pertencente ao cliente. Ver [Ordens de Serviço](orders.md).
 
 ## Frontend
 
 Organizado por feature (`auth`, `dashboard`, `settings`, `categories`, `customers`, `vehicles`,
-`suppliers`, `parts`, `profile`, `landing`), com componentes de layout
+`suppliers`, `parts`, `services`, `orders`, `profile`, `landing`), com componentes de layout
 (`AppShell`/`Topbar`/`UserMenu` -- apenas menu superior fixo, sem sidebar) e primitivos de UI
 (`components/ui`, estilo shadcn/ui) separados dos componentes de página. `lib/api-client.ts`
 centraliza o cliente axios com renovação automática de token em respostas 401; `lib/masks.ts`
@@ -92,14 +100,20 @@ consulta -- deixou de ser algo exclusivo de Clientes). `CustomerCombobox`
 usados respectivamente pelo formulário de veículos (cliente responsável) e pelo formulário de peças
 (fornecedor). `PartCombobox` e `ServiceCombobox` seguem a mesma estrutura como seletores
 "adicionar-à-lista" (múltiplos itens): o de peças alimenta a seção de peças padrão do serviço, e o
-de serviços alimenta a montagem do pacote.
+de serviços alimenta a montagem do pacote. `VehicleCombobox` (busca por placa, seleção única com
+autopreenchimento do cliente) e `PackageCombobox` (adicionar-à-lista) foram acrescentados para a
+Ordem de Serviço. Os cadastros inline reaproveitam os `QuickCreateDialog`/`FormSheet` existentes:
+`CustomerFormSheet` e `VehicleFormSheet` ganharam um callback opcional `onCreated` (e o de veículo
+aceita um cliente padrão) para devolver o registro recém-criado à OS e selecioná-lo sem perder os
+dados já preenchidos.
 
 Navegação administrativa é toda por drill-down de cards, sem menus/submenus dedicados: Dashboard →
 card "Configurações" → cards "Categorias de Clientes"/"de Peças"/"de Serviços" → CRUD, Dashboard →
 card "Clientes" → CRUD, Dashboard → card "Veículos" → CRUD, Dashboard → card "Fornecedores" → CRUD,
-Dashboard → card "Estoque" → CRUD de peças, e Dashboard → card "Serviços" → CRUD de serviços (com um
+Dashboard → card "Estoque" → CRUD de peças, Dashboard → card "Serviços" → CRUD de serviços (com um
 controle segmentado interno para alternar entre Serviços e Pacotes de Serviços, já que não há
-primitivo de abas). Isso é deliberado -- ver o card "Configurações" em
+primitivo de abas), e Dashboard → card "Ordens de Serviço" (em destaque, largura total) → lista de OS
+→ formulário de cadastro/edição em página própria (`/orders/new`, `/orders/:id`). Isso é deliberado -- ver o card "Configurações" em
 `features/settings/pages/SettingsPage.tsx` para o padrão a seguir ao adicionar novas áreas
 administrativas. As três telas de categorias são a mesma tela
 (`features/categories/components/CategoryManager.tsx`) parametrizada por tipo/título/descrição,

@@ -1,0 +1,173 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { Toaster } from "@/components/ui/sonner";
+import { OrderForm } from "@/features/orders/components/OrderForm";
+import * as ordersApi from "@/features/orders/api";
+import type { WorkOrder } from "@/features/orders/types";
+import * as customersApi from "@/features/customers/api";
+import * as vehiclesApi from "@/features/vehicles/api";
+import type { Vehicle } from "@/features/vehicles/types";
+import * as servicesApi from "@/features/services/api";
+import type { Service } from "@/features/services/types";
+import * as partsApi from "@/features/parts/api";
+
+vi.mock("@/features/orders/api");
+vi.mock("@/features/customers/api");
+vi.mock("@/features/vehicles/api");
+vi.mock("@/features/services/api");
+vi.mock("@/features/parts/api");
+
+function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
+  return {
+    id: 1,
+    customer: 1,
+    customer_name: "Maria Silva",
+    customer_whatsapp: "11987654321",
+    license_plate: "ABC1234",
+    brand: "Fiat",
+    model: "Uno",
+    version: "",
+    manufacture_year: null,
+    model_year: null,
+    color: "",
+    mileage: null,
+    fuel_type: "",
+    transmission: "",
+    steering: "",
+    doors: null,
+    air_conditioning: null,
+    is_modified: null,
+    modification_notes: "",
+    vehicle_type: "",
+    usage_category: "",
+    chassis: "",
+    renavam: "",
+    fipe_code: "",
+    notes: "",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function service(overrides: Partial<Service> = {}): Service {
+  return {
+    id: 10,
+    name: "Troca de óleo",
+    category: 1,
+    category_name: "Mecânica",
+    description: "",
+    labor_cost: "100.00",
+    estimated_minutes: null,
+    notes: "",
+    standard_parts: [],
+    value: "100.00",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+function renderForm(onSuccess = vi.fn()) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <OrderForm order={null} onSuccess={onSuccess} onCancel={vi.fn()} />
+      </MemoryRouter>
+      <Toaster />
+    </QueryClientProvider>,
+  );
+  return { onSuccess };
+}
+
+describe("OrderForm", () => {
+  beforeEach(() => {
+    vi.mocked(ordersApi.createWorkOrder).mockReset();
+    vi.mocked(customersApi.listCustomers).mockReset().mockResolvedValue([]);
+    vi.mocked(vehiclesApi.listVehicles).mockReset().mockResolvedValue([]);
+    vi.mocked(servicesApi.listServices).mockReset().mockResolvedValue([]);
+    vi.mocked(servicesApi.listServicePackages).mockReset().mockResolvedValue([]);
+    vi.mocked(partsApi.listParts).mockReset().mockResolvedValue([]);
+  });
+
+  it("blocks submit and shows required-field errors when empty", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await user.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(await screen.findByText("Selecione um veículo.")).toBeInTheDocument();
+    expect(screen.getByText("Selecione um cliente.")).toBeInTheDocument();
+    expect(screen.getByText("O relato do cliente é obrigatório.")).toBeInTheDocument();
+    expect(ordersApi.createWorkOrder).not.toHaveBeenCalled();
+  });
+
+  it("auto-fills the customer when a vehicle is picked by plate", async () => {
+    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.click(screen.getByPlaceholderText("Buscar veículo pela placa..."));
+    await user.click(await screen.findByRole("button", { name: /ABC-1234/ }));
+
+    // Customer name and a clickable WhatsApp link appear automatically.
+    expect(screen.getByText("Maria Silva")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /98765-4321/ });
+    expect(link).toHaveAttribute("href", "https://wa.me/5511987654321");
+  });
+
+  it("adds a service line, computes totals, and submits the payload", async () => {
+    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    vi.mocked(servicesApi.listServices).mockResolvedValue([service()]);
+    vi.mocked(ordersApi.createWorkOrder).mockResolvedValue({ id: 5 } as WorkOrder);
+    const { onSuccess } = renderForm();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByPlaceholderText("Buscar veículo pela placa..."));
+    await user.click(await screen.findByRole("button", { name: /ABC-1234/ }));
+
+    await user.type(screen.getByLabelText("Relato do cliente"), "Barulho no motor");
+
+    await user.click(screen.getByPlaceholderText("Buscar serviço pelo nome..."));
+    await user.click(await screen.findByRole("button", { name: /Troca de óleo/ }));
+
+    expect(screen.getByTestId("order-services-total")).toHaveTextContent("R$ 100,00");
+    expect(screen.getByTestId("order-gross-total")).toHaveTextContent("R$ 100,00");
+    expect(screen.getByTestId("order-final-value")).toHaveTextContent("R$ 100,00");
+
+    await user.click(screen.getByRole("button", { name: "Salvar" }));
+    await waitFor(() =>
+      expect(ordersApi.createWorkOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customer: 1,
+          vehicle: 1,
+          customer_report: "Barulho no motor",
+          service_items: [
+            { service: 10, description: "Troca de óleo", quantity: "1", unit_price: "100" },
+          ],
+        }),
+      ),
+    );
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+  });
+
+  it("adds a custom (avulso) service line requiring a description", async () => {
+    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.click(screen.getByPlaceholderText("Buscar veículo pela placa..."));
+    await user.click(await screen.findByRole("button", { name: /ABC-1234/ }));
+    await user.type(screen.getByLabelText("Relato do cliente"), "x");
+
+    await user.click(screen.getByRole("button", { name: "Serviço avulso" }));
+    // The avulso row exposes an editable description input.
+    expect(screen.getByPlaceholderText("Descrição do item avulso")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(await screen.findByText("Informe uma descrição.")).toBeInTheDocument();
+  });
+});

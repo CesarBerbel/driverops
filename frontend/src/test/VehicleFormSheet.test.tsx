@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -56,6 +56,7 @@ async function selectCustomer(user: ReturnType<typeof userEvent.setup>, name = "
 describe("VehicleFormSheet", () => {
   beforeEach(() => {
     vi.mocked(vehiclesApi.createVehicle).mockReset();
+    vi.mocked(customersApi.createCustomer).mockReset();
     vi.mocked(customersApi.listCustomers).mockReset();
     vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
   });
@@ -153,6 +154,28 @@ describe("VehicleFormSheet", () => {
     expect(
       await screen.findByText("O ano do modelo não pode ser anterior ao ano de fabricação."),
     ).toBeInTheDocument();
+    expect(vehiclesApi.createVehicle).not.toHaveBeenCalled();
+  });
+
+  it("creates a customer inline and selects it without submitting the vehicle form", async () => {
+    vi.mocked(customersApi.createCustomer).mockResolvedValue(
+      customer({ id: 7, name: "Bob Builder" }),
+    );
+    const user = userEvent.setup();
+    renderSheet();
+
+    await user.type(screen.getByLabelText("Placa"), "abc1234");
+    await user.click(screen.getByRole("button", { name: /adicionar cliente/i }));
+
+    const dialog = await screen.findByRole("dialog", { name: /novo cliente/i });
+    await user.type(within(dialog).getByLabelText("Nome"), "Bob Builder");
+    await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() => expect(customersApi.createCustomer).toHaveBeenCalled());
+    // The new customer is selected in the vehicle form and the plate is kept...
+    expect(await screen.findByText("Bob Builder")).toBeInTheDocument();
+    expect(screen.getByLabelText("Placa")).toHaveValue("ABC1234");
+    // ...and the inline save must NOT have submitted the vehicle form.
     expect(vehiclesApi.createVehicle).not.toHaveBeenCalled();
   });
 

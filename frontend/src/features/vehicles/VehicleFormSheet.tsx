@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
 import { onlyDigits } from "@/lib/masks";
+import { CustomerFormSheet } from "@/features/customers/CustomerFormSheet";
 import type { Customer } from "@/features/customers/types";
 
 import { createVehicle, getVehicle, updateVehicle } from "./api";
@@ -129,9 +130,23 @@ interface VehicleFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicleId: number | null;
+  // Fired with the saved vehicle -- lets a caller (e.g. inline creation from an
+  // Ordem de Serviço) grab the new record and auto-select it.
+  onCreated?: (vehicle: Vehicle) => void;
+  // When creating, pre-link (and lock) the customer -- used when the OS already
+  // knows which customer the new vehicle belongs to.
+  defaultCustomerId?: number | null;
+  defaultCustomerName?: string;
 }
 
-export function VehicleFormSheet({ open, onOpenChange, vehicleId }: VehicleFormSheetProps) {
+export function VehicleFormSheet({
+  open,
+  onOpenChange,
+  vehicleId,
+  onCreated,
+  defaultCustomerId,
+  defaultCustomerName,
+}: VehicleFormSheetProps) {
   const isEditMode = vehicleId !== null;
 
   const { data: vehicle } = useQuery({
@@ -143,6 +158,11 @@ export function VehicleFormSheet({ open, onOpenChange, vehicleId }: VehicleFormS
   // Gate on the data itself, not `isLoading` -- see CustomerFormSheet for why:
   // isLoading can read false for one render right after `enabled` flips true.
   const isWaitingForData = isEditMode && !vehicle;
+
+  const createDefaults: VehicleFormValues =
+    defaultCustomerId != null
+      ? { ...EMPTY_VALUES, customer_id: defaultCustomerId }
+      : EMPTY_VALUES;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -165,9 +185,10 @@ export function VehicleFormSheet({ open, onOpenChange, vehicleId }: VehicleFormS
           <VehicleForm
             key={vehicleId ?? "create"}
             vehicleId={vehicleId}
-            defaultValues={vehicle ? toFormValues(vehicle) : EMPTY_VALUES}
-            defaultCustomerName={vehicle?.customer_name ?? ""}
+            defaultValues={vehicle ? toFormValues(vehicle) : createDefaults}
+            defaultCustomerName={vehicle?.customer_name ?? defaultCustomerName ?? ""}
             onClose={() => onOpenChange(false)}
+            onCreated={onCreated}
           />
         )}
       </SheetContent>
@@ -180,15 +201,18 @@ function VehicleForm({
   defaultValues,
   defaultCustomerName,
   onClose,
+  onCreated,
 }: {
   vehicleId: number | null;
   defaultValues: VehicleFormValues;
   defaultCustomerName: string;
   onClose: () => void;
+  onCreated?: (vehicle: Vehicle) => void;
 }) {
   const queryClient = useQueryClient();
   const isEditMode = vehicleId !== null;
   const [customerName, setCustomerName] = useState(defaultCustomerName);
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
 
   const {
     control,
@@ -209,10 +233,11 @@ function VehicleForm({
       const payload = toPayload(values);
       return isEditMode ? updateVehicle(vehicleId, payload) : createVehicle(payload);
     },
-    onSuccess: async () => {
+    onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["vehicles"] });
       await queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast.success(isEditMode ? "Veículo atualizado." : "Veículo criado.");
+      onCreated?.(saved);
       onClose();
     },
     onError: (error) => {
@@ -232,7 +257,13 @@ function VehicleForm({
 
   return (
     <form
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
+      onSubmit={(event) => {
+        // Stop the submit from bubbling to an ancestor form when this sheet is
+        // opened inline (e.g. from an Ordem de Serviço) -- React re-dispatches
+        // bubbling events through the portal along the component tree.
+        event.stopPropagation();
+        handleSubmit((values) => mutation.mutate(values))(event);
+      }}
       className="flex flex-1 flex-col overflow-hidden"
       noValidate
     >
@@ -243,7 +274,19 @@ function VehicleForm({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="customer_id">Cliente responsável</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="customer_id">Cliente responsável</Label>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => setCustomerSheetOpen(true)}
+                >
+                  <UserPlus className="size-3" />
+                  Adicionar cliente
+                </Button>
+              </div>
               <CustomerCombobox
                 selectedName={customerName}
                 onSelect={handleSelectCustomer}
@@ -659,6 +702,14 @@ function VehicleForm({
           Salvar
         </Button>
       </SheetFooter>
+
+      {/* Cadastro inline de cliente -- volta selecionado sem perder os dados do veículo. */}
+      <CustomerFormSheet
+        open={customerSheetOpen}
+        onOpenChange={setCustomerSheetOpen}
+        customerId={null}
+        onCreated={handleSelectCustomer}
+      />
     </form>
   );
 }
