@@ -3,12 +3,16 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.accounts.permissions import HasModulePermission
+
 from .models import Service, ServicePackage
 from .serializers import ServicePackageSerializer, ServiceSerializer
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
     serializer_class = ServiceSerializer
+    permission_classes = [HasModulePermission]
+    permission_module = "services"
 
     def get_queryset(self):
         queryset = Service.objects.select_related("category").prefetch_related(
@@ -51,6 +55,8 @@ class ServiceViewSet(viewsets.ModelViewSet):
 
 class ServicePackageViewSet(viewsets.ModelViewSet):
     serializer_class = ServicePackageSerializer
+    permission_classes = [HasModulePermission]
+    permission_module = "packages"
 
     def get_queryset(self):
         queryset = ServicePackage.objects.prefetch_related(

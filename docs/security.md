@@ -1,5 +1,11 @@
 # Segurança (escopo v1)
 
+- **Controle de acesso por função (RBAC):** perfis + permissões granulares (`modulo.acao`) validados
+  no **backend** (`HasModulePermission`/`require_permission`) e no **frontend** (guards de rota +
+  ocultação de ações). O **superuser** tem acesso total; a tela de permissões é **exclusiva** dele;
+  usuários sem permissão recebem **403** mesmo chamando a API direto. Usuários desativados não
+  acessam o sistema; ações sensíveis vão para a **auditoria**. Ver
+  [Usuários e Permissões](users-permissions.md).
 - Autenticação via JWT (access + refresh) entregue em cookies `httpOnly`, nunca expostos ao
   JavaScript da página. O refresh token é **rotacionado** a cada uso (`ROTATE_REFRESH_TOKENS`),
   emitindo um novo token. O token anterior **não** é invalidado imediatamente

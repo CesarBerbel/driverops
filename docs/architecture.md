@@ -10,8 +10,9 @@ driverops/
 ├── backend/                 # Django + DRF
 │   ├── config/               # settings (base/dev/prod), urls, wsgi/asgi
 │   └── apps/
-│       ├── accounts/          # User customizado, autenticação JWT via cookies,
-│       │                      # perfil, troca/recuperação de senha, seed_admin
+│       ├── accounts/          # User customizado, autenticação JWT via cookies, perfil,
+│       │                      # troca/recuperação de senha, seed_admin, e o RBAC:
+│       │                      # perfis, permissões, auditoria (ver users-permissions.md)
 │       ├── categories/         # CRUD de categorias (clientes, peças, serviços) com soft delete
 │       ├── customers/           # cadastro de clientes com endereço completo
 │       ├── vehicles/             # cadastro de veículos vinculado a clientes, soft delete

@@ -17,6 +17,12 @@ const USER: User = {
   is_staff: false,
   is_superuser: false,
   date_joined: "2026-01-01T00:00:00Z",
+  role: null,
+  role_name: null,
+  technical_specialty: "",
+  technical_specialty_display: "",
+  force_password_change: false,
+  permissions: [],
 };
 
 // Minimal axios-error shape (axios.isAxiosError only checks `isAxiosError`).

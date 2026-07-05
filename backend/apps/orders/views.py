@@ -5,6 +5,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.accounts.permissions import HasModulePermission
 from apps.core.periods import period_start_date
 
 from .models import WorkOrder
@@ -15,6 +16,10 @@ from .status_transitions import can_transition
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
     serializer_class = WorkOrderSerializer
+    permission_classes = [HasModulePermission]
+    permission_module = "orders"
+    # Arrastar/mudar status é uma edição da OS.
+    permission_action_map = {"move": "edit"}
 
     def get_queryset(self):
         queryset = WorkOrder.objects.select_related(

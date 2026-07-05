@@ -9,6 +9,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Variáveis de ambiente](environment-variables.md) | Tabela completa das variáveis usadas pelo `docker-compose.yml` |
 | [Banco de dados e migrations](database.md) | Como e quando as migrations rodam |
 | [Superusuário](superuser.md) | Criação/atualização idempotente do superusuário de desenvolvimento |
+| [Usuários e Permissões (RBAC)](users-permissions.md) | Perfis, especialidades técnicas, permissões granulares, superuser × Administrador, matriz de permissões, auditoria |
 | [Comandos do Makefile](makefile.md) | Todos os alvos do `Makefile` e os comandos Docker equivalentes |
 | [Testes e lint](testing.md) | Como rodar e o que cada suíte cobre |
 | [Build de produção](build.md) | Geração do bundle de produção do frontend |

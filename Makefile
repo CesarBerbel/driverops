@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help install up down restart logs migrate makemigrations seed-admin createsuperuser \
-        test test-backend test-frontend lint build shell-backend shell-frontend psql seed-scenarios
+        test test-backend test-frontend lint build shell-backend shell-frontend psql seed-scenarios \
+        seed-rbac
 
 ## Show available targets
 help:
@@ -15,6 +16,7 @@ help:
 	@echo "  make seed-admin       Cria/atualiza o superusuario (idempotente)"
 	@echo "  make createsuperuser  Alias de 'make seed-admin'"
 	@echo "  make seed-scenarios   Popula catalogo + 10 cenarios de OS (dev/teste)"
+	@echo "  make seed-rbac        (Re)cria permissoes + perfis do RBAC (idempotente)"
 	@echo "  make test             Roda os testes de backend e frontend"
 	@echo "  make lint             Roda lint de backend e frontend"
 	@echo "  make build            Builda o frontend para producao"
@@ -67,6 +69,10 @@ createsuperuser: seed-admin
 ## Seed demo catalog + 10 realistic Ordem de Serviço scenarios (dev/test only, re-runnable)
 seed-scenarios:
 	docker compose exec backend python manage.py seed_scenarios
+
+## (Re)create RBAC permissions + roles from the catalog (idempotent)
+seed-rbac:
+	docker compose exec backend python manage.py seed_rbac
 
 ## Run backend (pytest) and frontend (vitest) test suites
 test: test-backend test-frontend

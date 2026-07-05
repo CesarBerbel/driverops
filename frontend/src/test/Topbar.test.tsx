@@ -6,7 +6,13 @@ import { Topbar } from "@/components/layout/Topbar";
 
 vi.mock("@/features/auth/useAuth", () => ({
   useAuth: () => ({
-    user: { id: 1, email: "user@example.com", full_name: "Jane Doe", is_superuser: false },
+    user: {
+      id: 1,
+      email: "user@example.com",
+      full_name: "Jane Doe",
+      is_superuser: true,
+      permissions: [],
+    },
     logout: vi.fn(),
   }),
 }));

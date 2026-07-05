@@ -3,12 +3,16 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.accounts.permissions import HasModulePermission
+
 from .models import Vehicle
 from .serializers import DUPLICATE_PLATE_MESSAGE, VehicleSerializer
 
 
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
+    permission_classes = [HasModulePermission]
+    permission_module = "vehicles"
 
     def get_queryset(self):
         queryset = Vehicle.objects.select_related("customer").all()
