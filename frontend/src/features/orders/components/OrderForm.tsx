@@ -576,7 +576,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
         <CardContent>
           <OrderLineList
             title="Peças cadastradas ou avulsas"
-            helper="A baixa automática de estoque será implementada em uma fase futura."
+            helper="Adicione peças do catálogo, cadastre uma nova ou informe uma peça avulsa."
             namePrefix="part_items"
             control={control}
             register={register}
