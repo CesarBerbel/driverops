@@ -271,12 +271,6 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           <CardTitle className="text-base">Dados principais</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          {isEditMode && (
-            <div className="space-y-2">
-              <Label>Número da OS</Label>
-              <Input value={`Nº ${order.number}`} readOnly disabled />
-            </div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="opened_at">Data de abertura</Label>
             <Input

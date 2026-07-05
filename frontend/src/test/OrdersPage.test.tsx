@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Toaster } from "@/components/ui/sonner";
@@ -85,6 +85,25 @@ describe("OrdersPage", () => {
       active: "active",
       status: undefined,
     });
+  });
+
+  it("opens the editor when the clickable OS number is clicked", async () => {
+    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([workOrder()]);
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/orders"]}>
+          <Routes>
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/:id" element={<div>EDITOR DA OS</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const table = await screen.findByRole("table");
+    await user.click(within(table).getByRole("button", { name: "OS 0001" }));
+    expect(await screen.findByText("EDITOR DA OS")).toBeInTheDocument();
   });
 
   it("lists an OS with number, plate, customer and a clickable WhatsApp link", async () => {
