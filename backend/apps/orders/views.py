@@ -12,6 +12,7 @@ from .models import WorkOrder
 from .serializers import WorkOrderSerializer
 from .status_groups import OPERATIONAL_STATUSES
 from .status_transitions import can_transition
+from .stock import deduct_stock_for_order
 
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
@@ -94,6 +95,22 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def perform_update(self, serializer):
+        # Captura o status antes de salvar para detectar a transição para
+        # "Finalizada" (status também pode mudar por PATCH no editor da OS, não
+        # só pelo arrastar no Kanban -- ver `move`).
+        old_status = serializer.instance.status
+        order = serializer.save()
+        self._maybe_deduct_stock(order, old_status)
+
+    def _maybe_deduct_stock(self, order, old_status):
+        """Dá baixa das peças ao entrar em 'Finalizada' (idempotente)."""
+        if (
+            order.status == WorkOrder.Status.FINISHED
+            and old_status != WorkOrder.Status.FINISHED
+        ):
+            deduct_stock_for_order(order, self.request.user)
+
     def destroy(self, request, *args, **kwargs):
         order = self.get_object()
         order.is_active = False
@@ -134,7 +151,9 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
         if new_status != order.status:
+            old_status = order.status
             order.status = new_status
             order.save(update_fields=["status", "updated_at"])
+            self._maybe_deduct_stock(order, old_status)
         serializer = WorkOrderSerializer(order, context=self.get_serializer_context())
         return Response(serializer.data)

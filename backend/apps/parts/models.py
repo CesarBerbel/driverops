@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -63,3 +64,53 @@ class Part(models.Model):
         return (
             self.min_quantity is not None and self.current_quantity <= self.min_quantity
         )
+
+
+class StockMovement(models.Model):
+    """Registro imutável de uma movimentação de estoque de uma peça.
+
+    Cada linha é um fato histórico -- nunca editada nem apagada. O saldo da peça
+    (`Part.current_quantity`) é a soma dos efeitos das movimentações; guardamos
+    `resulting_quantity` (o saldo logo após o movimento) para auditoria e para
+    exibir o extrato sem recomputar. O campo `quantity` é sempre positivo; o
+    sinal/efeito é dado por `kind`:
+
+    - entrada (`in`):   saldo += quantity
+    - saída  (`out`):   saldo -= quantity
+    - ajuste (`adjust`): saldo := quantity (contagem física; `quantity` é o novo
+      saldo absoluto, não um delta)
+    """
+
+    class Kind(models.TextChoices):
+        IN = "in", "Entrada"
+        OUT = "out", "Saída"
+        ADJUST = "adjust", "Ajuste"
+
+    part = models.ForeignKey(Part, on_delete=models.PROTECT, related_name="movements")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    # Decimal (nunca float) -- mesmo motivo de Part.current_quantity.
+    quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    resulting_quantity = models.DecimalField(max_digits=12, decimal_places=2)
+    reason = models.CharField(max_length=200, blank=True)
+    # Preenchido automaticamente quando a baixa vem da finalização de uma OS.
+    order = models.ForeignKey(
+        "orders.WorkOrder",
+        on_delete=models.SET_NULL,
+        related_name="stock_movements",
+        null=True,
+        blank=True,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="stock_movements",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} de {self.quantity} ({self.part.name})"

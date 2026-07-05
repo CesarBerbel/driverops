@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  ArrowLeftRight,
   Boxes,
   Info,
   Pencil,
@@ -26,6 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/features/auth/Can";
+import { usePermissionCheck } from "@/features/auth/usePermission";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -43,6 +45,7 @@ import { formatQuantityBRL } from "@/lib/masks";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { deletePart, listParts, reactivatePart } from "../api";
+import { StockMovementDialog } from "../components/StockMovementDialog";
 import { PART_STATUS_OPTIONS, UNIT_OF_MEASURE_LABELS } from "../constants";
 import { PartFormSheet } from "../PartFormSheet";
 import type { Part, PartStatusFilter } from "../types";
@@ -58,8 +61,11 @@ export function PartsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingPartId, setEditingPartId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
+  const [movementTarget, setMovementTarget] = useState<Part | null>(null);
 
   const queryClient = useQueryClient();
+  const can = usePermissionCheck();
+  const canMoveStock = can("parts.stock_move") || can("parts.stock_adjust");
 
   const {
     data: parts,
@@ -236,6 +242,16 @@ export function PartsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      {statusFilter !== "inactive" && canMoveStock && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Movimentar estoque"
+                          onClick={() => setMovementTarget(part)}
+                        >
+                          <ArrowLeftRight className="size-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -274,6 +290,12 @@ export function PartsPage() {
       )}
 
       <PartFormSheet open={sheetOpen} onOpenChange={setSheetOpen} partId={editingPartId} />
+
+      <StockMovementDialog
+        open={movementTarget !== null}
+        onOpenChange={(open) => !open && setMovementTarget(null)}
+        part={movementTarget}
+      />
 
       <AlertDialog
         open={deleteTarget !== null}
