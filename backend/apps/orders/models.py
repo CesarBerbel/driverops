@@ -144,6 +144,16 @@ class WorkOrderPart(models.Model):
     description = models.CharField(max_length=200, blank=True)
     quantity = models.DecimalField(max_digits=12, decimal_places=2, default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Peça associada a um serviço da OS (cadastrado ou avulso). Usada no orçamento
+    # para aprovar/recusar a peça em conjunto com o serviço. A associação é feita
+    # por índice no payload (as linhas usam replace-all) -- ver o serializer.
+    linked_service = models.ForeignKey(
+        WorkOrderService,
+        on_delete=models.SET_NULL,
+        related_name="linked_parts",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ["id"]

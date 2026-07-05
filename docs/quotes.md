@@ -98,13 +98,20 @@ aprovados exige **nova versão**.
 
 ### Peça vinculada ao serviço
 
-Quando uma peça da OS é a **peça padrão** de um serviço presente na mesma OS, ela é **vinculada** a
-esse serviço no orçamento (`QuoteItem.linked_service`, definido no snapshot). Itens vinculados são
-**aprovados/recusados em conjunto** — não é possível recusar a peça sem recusar o serviço nem
-vice-versa. Na interface a peça aparece **aninhada** sob o serviço (sem controle próprio de
-aprovar/recusar, seguindo a decisão do serviço); no backend, a decisão da peça vinculada sempre segue
-a do serviço (`apply_item_decisions`), independentemente do que o frontend enviar. Peças avulsas ou
-não vinculadas continuam com decisão independente.
+Uma peça pode ser **vinculada a um serviço** da OS de duas formas:
+
+- **Manual (inclui peças avulsas):** no formulário da OS, cada linha de peça tem um campo
+  **"Serviço vinculado"** que lista os serviços da OS. A associação é persistida em
+  `WorkOrderPart.linked_service` (por índice no payload, já que as linhas usam replace-all) e flui
+  para o orçamento no snapshot. Funciona também para **peças avulsas** e **serviços avulsos**.
+- **Automática:** quando uma peça é a **peça padrão** de um serviço presente na mesma OS, o vínculo é
+  inferido no snapshot (via `ServicePart`). A associação manual tem **precedência** sobre a automática.
+
+Itens vinculados são **aprovados/recusados em conjunto** — não é possível recusar a peça sem recusar
+o serviço nem vice-versa. Na interface de aprovação a peça aparece **aninhada** sob o serviço (sem
+controle próprio de aprovar/recusar, seguindo a decisão do serviço); no backend, a decisão da peça
+vinculada sempre segue a do serviço (`apply_item_decisions`), independentemente do que o frontend
+enviar. Peças avulsas ou não vinculadas continuam com decisão independente.
 
 ### Impacto na OS
 

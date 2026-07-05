@@ -135,6 +135,12 @@ class WorkOrderPartSerializer(_WorkOrderLineSerializer):
         queryset=Part.objects.all(), required=False, allow_null=True
     )
     part_name = serializers.CharField(source="part.name", read_only=True)
+    # Índice (na lista de serviços da OS) do serviço ao qual esta peça está
+    # vinculada, ou null. Enviado na escrita e recalculado na leitura -- as linhas
+    # usam replace-all, então o índice é a chave estável (não o id do serviço).
+    linked_service_index = serializers.IntegerField(
+        required=False, allow_null=True, write_only=True
+    )
 
     class Meta:
         model = WorkOrderPart
@@ -147,7 +153,21 @@ class WorkOrderPartSerializer(_WorkOrderLineSerializer):
             "unit_price",
             "line_total",
             "is_custom",
+            "linked_service_index",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        index = None
+        linked_id = getattr(instance, "linked_service_id", None)
+        if linked_id:
+            service_ids = list(
+                instance.order.service_items.values_list("id", flat=True)
+            )
+            if linked_id in service_ids:
+                index = service_ids.index(linked_id)
+        data["linked_service_index"] = index
+        return data
 
 
 class WorkOrderSerializer(serializers.ModelSerializer):
@@ -330,21 +350,37 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     # --- nested writes (replace-all, same strategy as ServicePackage) ---
 
     def _write_lines(self, order, service_items, package_items, part_items):
+        created_services = None
         if service_items is not None:
             order.service_items.all().delete()
-            WorkOrderService.objects.bulk_create(
-                WorkOrderService(order=order, **item) for item in service_items
+            created_services = WorkOrderService.objects.bulk_create(
+                [WorkOrderService(order=order, **item) for item in service_items]
             )
         if package_items is not None:
             order.package_items.all().delete()
             WorkOrderPackage.objects.bulk_create(
-                WorkOrderPackage(order=order, **item) for item in package_items
+                [WorkOrderPackage(order=order, **item) for item in package_items]
             )
         if part_items is not None:
             order.part_items.all().delete()
-            WorkOrderPart.objects.bulk_create(
-                WorkOrderPart(order=order, **item) for item in part_items
+            # Serviços disponíveis para vincular: os recriados neste save ou, num
+            # update parcial sem service_items, os já existentes (ordenados por id).
+            services = (
+                created_services
+                if created_services is not None
+                else list(order.service_items.all())
             )
+            new_parts = []
+            for item in part_items:
+                item = dict(item)
+                index = item.pop("linked_service_index", None)
+                linked = None
+                if index is not None and 0 <= index < len(services):
+                    linked = services[index]
+                new_parts.append(
+                    WorkOrderPart(order=order, linked_service=linked, **item)
+                )
+            WorkOrderPart.objects.bulk_create(new_parts)
 
     def create(self, validated_data):
         service_items = validated_data.pop("service_items", [])

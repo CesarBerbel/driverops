@@ -17,6 +17,8 @@ export const orderLineSchema = z.object({
     const parsed = parseCurrencyBRL(value);
     return parsed !== null && parsed >= 0;
   }, "Informe um valor não negativo."),
+  // Só usado por peças: índice do serviço vinculado na lista de serviços da OS.
+  linked_service_index: z.number().nullable().optional(),
 });
 
 export type OrderLineValues = z.infer<typeof orderLineSchema>;

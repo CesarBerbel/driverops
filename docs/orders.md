@@ -13,6 +13,10 @@ A partir de uma OS salva é possível gerar um **[Orçamento](quotes.md)** (snap
 aprovação por assinatura física, no tablet ou por link enviado por e-mail). O painel de Orçamentos
 fica abaixo do formulário da OS.
 
+Cada linha de **peça** tem um campo **"Serviço vinculado"** que permite associá-la a um serviço da OS
+(inclusive peças e serviços **avulsos**). No orçamento, a peça vinculada é aprovada/recusada em
+conjunto com o serviço — ver [Orçamento da OS](quotes.md#peça-vinculada-ao-serviço).
+
 - **Branch:** `feature/ordem-servico`
 - **App backend:** `apps.orders` (modelos `WorkOrder`, `WorkOrderService`, `WorkOrderPackage`,
   `WorkOrderPart`)

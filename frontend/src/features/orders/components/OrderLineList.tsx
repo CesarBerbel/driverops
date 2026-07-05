@@ -11,12 +11,27 @@ import { CurrencyInput } from "@/components/shared/CurrencyInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrencyBRL } from "@/lib/masks";
 
 import type { OrderFormValues, OrderLineValues } from "../schemas";
 import { lineSubtotal } from "../lib/orderMapping";
 
 type LinePrefix = "service_items" | "package_items" | "part_items";
+
+// Sentinel do Select ("Nenhum") -- Radix não aceita value vazio.
+const NO_SERVICE = "none";
+
+export interface ServiceLinkOption {
+  index: number;
+  label: string;
+}
 
 function sanitizeQuantity(value: string): string {
   const cleaned = value.replace(/[^\d,]/g, "");
@@ -40,6 +55,9 @@ interface OrderLineListProps {
   remove: (index: number) => void;
   register: UseFormRegister<OrderFormValues>;
   errors?: FieldErrors<OrderFormValues>[LinePrefix];
+  // Quando presente (apenas para Peças), habilita o select "Serviço vinculado"
+  // por linha. A peça vinculada é aprovada/recusada junto com o serviço no orçamento.
+  serviceOptions?: ServiceLinkOption[];
 }
 
 export function OrderLineList({
@@ -57,6 +75,7 @@ export function OrderLineList({
   remove,
   register,
   errors,
+  serviceOptions,
 }: OrderLineListProps) {
   return (
     <div className="space-y-4">
@@ -165,6 +184,56 @@ export function OrderLineList({
                     </Button>
                   </div>
                 </div>
+
+                {serviceOptions && (
+                  <div className="mt-2 flex flex-col gap-1 border-t pt-2 sm:flex-row sm:items-center sm:gap-2">
+                    <Label className="text-[11px] text-muted-foreground sm:w-32 sm:shrink-0">
+                      Serviço vinculado
+                    </Label>
+                    {serviceOptions.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Adicione um serviço para poder vincular esta peça.
+                      </p>
+                    ) : (
+                      <Controller
+                        control={control}
+                        name={`${namePrefix}.${index}.linked_service_index`}
+                        render={({ field: linkField }) => (
+                          <Select
+                            value={
+                              linkField.value == null
+                                ? NO_SERVICE
+                                : String(linkField.value)
+                            }
+                            onValueChange={(value) =>
+                              linkField.onChange(
+                                value === NO_SERVICE ? null : Number(value),
+                              )
+                            }
+                          >
+                            <SelectTrigger
+                              className="h-8 w-full sm:max-w-xs"
+                              aria-label="Serviço vinculado"
+                            >
+                              <SelectValue placeholder="Nenhum" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={NO_SERVICE}>Nenhum</SelectItem>
+                              {serviceOptions.map((option) => (
+                                <SelectItem
+                                  key={option.index}
+                                  value={String(option.index)}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}

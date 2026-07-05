@@ -46,26 +46,29 @@ def create_quote_from_order(order, user=None, valid_until=None):
         created_by=user,
     )
 
-    # Serviços primeiro (para obter os ids e vincular as peças depois).
-    service_items = []  # (QuoteItem, catalog_service_id)
-    for si in order.service_items.all():
-        service_items.append(
-            (
-                QuoteItem(
-                    quote=quote,
-                    kind=QuoteItem.Kind.SERVICE,
-                    description=_line_description(si, si.service),
-                    quantity=si.quantity,
-                    unit_price=si.unit_price,
-                    is_custom=si.service_id is None,
-                ),
-                si.service_id,
-            )
+    # Serviços primeiro (para obter os ids e vincular as peças depois). A ordem é
+    # preservada, então o i-ésimo serviço da OS vira o i-ésimo item de serviço.
+    order_services = list(order.service_items.all())
+    quote_services = [
+        QuoteItem(
+            quote=quote,
+            kind=QuoteItem.Kind.SERVICE,
+            description=_line_description(si, si.service),
+            quantity=si.quantity,
+            unit_price=si.unit_price,
+            is_custom=si.service_id is None,
         )
-    QuoteItem.objects.bulk_create([row[0] for row in service_items])
-    service_item_by_catalog = {
-        catalog_id: item for item, catalog_id in service_items if catalog_id
-    }
+        for si in order_services
+    ]
+    QuoteItem.objects.bulk_create(quote_services)
+    # Mapas para vincular as peças: por serviço da OS (associação manual, inclui
+    # avulsos) e por serviço de catálogo (associação automática por peça padrão).
+    service_item_by_wo = {}
+    service_item_by_catalog = {}
+    for si, qsi in zip(order_services, quote_services):
+        service_item_by_wo[si.id] = qsi
+        if si.service_id:
+            service_item_by_catalog.setdefault(si.service_id, qsi)
 
     QuoteItem.objects.bulk_create(
         [
@@ -84,8 +87,12 @@ def create_quote_from_order(order, user=None, valid_until=None):
     part_to_service = _part_to_service_map(order)
     part_items = []
     for pi in order.part_items.all():
+        # Associação manual na OS tem precedência (funciona também para avulsas);
+        # senão, cai na associação automática por peça padrão do catálogo.
         linked = None
-        if pi.part_id and pi.part_id in part_to_service:
+        if pi.linked_service_id and pi.linked_service_id in service_item_by_wo:
+            linked = service_item_by_wo[pi.linked_service_id]
+        elif pi.part_id and pi.part_id in part_to_service:
             linked = service_item_by_catalog.get(part_to_service[pi.part_id])
         part_items.append(
             QuoteItem(

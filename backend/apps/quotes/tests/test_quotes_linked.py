@@ -67,6 +67,47 @@ def test_linked_part_approved_with_service(auth_client, linked_work_order):
     assert statuses["Fluido de freio"] == "rejected"
 
 
+def test_manual_avulso_link_flows_into_the_quote(auth_client, customer, vehicle):
+    # OS com serviço avulso + peça avulsa vinculada manualmente (índice 0).
+    order_id = auth_client.post(
+        "/api/work-orders/",
+        data={
+            "customer": customer.id,
+            "vehicle": vehicle.id,
+            "opened_at": "2026-07-04",
+            "customer_report": "Freio",
+            "service_items": [
+                {
+                    "service": None,
+                    "description": "Serviço avulso",
+                    "quantity": "1",
+                    "unit_price": "100.00",
+                }
+            ],
+            "part_items": [
+                {
+                    "part": None,
+                    "description": "Peça avulsa",
+                    "quantity": "1",
+                    "unit_price": "40.00",
+                    "linked_service_index": 0,
+                }
+            ],
+        },
+        content_type="application/json",
+    ).json()["id"]
+
+    body = auth_client.post(
+        "/api/quotes/",
+        data={"work_order": order_id},
+        content_type="application/json",
+    ).json()
+    service = _by_desc(body["items"], "Serviço avulso")
+    part = _by_desc(body["items"], "Peça avulsa")
+    # A peça avulsa fica vinculada ao serviço no orçamento (mesmo sem catálogo).
+    assert part["linked_service"] == service["id"]
+
+
 def test_public_partial_respects_link(linked_work_order, user):
     quote = create_quote_from_order(linked_work_order, user=user)
     quote.status = "sent"
