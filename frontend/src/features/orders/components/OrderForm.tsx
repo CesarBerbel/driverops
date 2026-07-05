@@ -136,6 +136,12 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
     setValue("expected_delivery", addDaysISO(openedAt, defaultDeliveryDays));
   }, [isEditMode, deliveryTouched, defaultDeliveryDays, openedAt, setValue]);
 
+  // Opções do select "Serviço vinculado" das peças (por índice na lista de serviços).
+  const serviceLinkOptions = (watchedServices ?? []).map((line, index) => ({
+    index,
+    label: line.name?.trim() || `Serviço ${index + 1}`,
+  }));
+
   const servicesTotal = (watchedServices ?? []).reduce((sum, l) => sum + lineSubtotal(l), 0);
   const packagesTotal = (watchedPackages ?? []).reduce((sum, l) => sum + lineSubtotal(l), 0);
   const partsTotal = (watchedParts ?? []).reduce((sum, l) => sum + lineSubtotal(l), 0);
@@ -600,6 +606,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
             onAddCustom={addCustom(partArray.append)}
             customLabel="Peça avulsa"
             emptyLabel="Nenhuma peça adicionada ainda."
+            serviceOptions={serviceLinkOptions}
           />
         </CardContent>
       </Card>

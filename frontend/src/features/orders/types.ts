@@ -48,6 +48,8 @@ export interface WorkOrderPartItem {
   unit_price: string;
   line_total: string;
   is_custom: boolean;
+  // Índice do serviço vinculado na lista de serviços da OS (ou null).
+  linked_service_index: number | null;
 }
 
 export interface WorkOrder {
@@ -102,5 +104,8 @@ export interface WorkOrderPayload {
   discount_value: string;
   service_items: (WorkOrderLinePayload & { service: number | null })[];
   package_items: (WorkOrderLinePayload & { package: number | null })[];
-  part_items: (WorkOrderLinePayload & { part: number | null })[];
+  part_items: (WorkOrderLinePayload & {
+    part: number | null;
+    linked_service_index: number | null;
+  })[];
 }

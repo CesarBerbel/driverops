@@ -80,7 +80,10 @@ export function toFormValues(order: WorkOrder): OrderFormValues {
     internal_notes: order.internal_notes,
     service_items: order.service_items.map((i) => lineToForm(i, i.service)),
     package_items: order.package_items.map((i) => lineToForm(i, i.package)),
-    part_items: order.part_items.map((i) => lineToForm(i, i.part)),
+    part_items: order.part_items.map((i) => ({
+      ...lineToForm(i, i.part),
+      linked_service_index: i.linked_service_index,
+    })),
     discount_type: order.discount_type,
     discount_value:
       order.discount_type === "percent"
@@ -129,6 +132,7 @@ export function toPayload(values: OrderFormValues): Partial<WorkOrderPayload> {
     })),
     part_items: values.part_items.map((l) => ({
       part: l.ref_id,
+      linked_service_index: l.linked_service_index ?? null,
       ...lineToPayload(l),
     })),
   };

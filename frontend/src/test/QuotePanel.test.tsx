@@ -28,12 +28,31 @@ function quote(overrides: Partial<Quote> = {}): Quote {
     discount_value: "0.00",
     valid_until: null,
     public_token: "tok123",
-    items: [],
+    items: [
+      {
+        id: 1,
+        kind: "service",
+        kind_display: "Serviço",
+        description: "Troca de óleo",
+        quantity: "1",
+        unit_price: "160.00",
+        subtotal: "160.00",
+        is_custom: false,
+        notes: "",
+        status: "pending",
+        status_display: "Pendente",
+        linked_service: null,
+      },
+    ],
     totals: {
       services_total: "160.00",
       packages_total: "0.00",
       parts_total: "0.00",
       gross_total: "160.00",
+      total_quoted: "160.00",
+      total_approved: "0.00",
+      total_rejected: "0.00",
+      total_pending: "160.00",
       discount_value: "0.00",
       final_value: "160.00",
     },
@@ -103,12 +122,36 @@ describe("QuotePanel", () => {
     renderPanel();
 
     await user.click(await screen.findByRole("button", { name: "Aprovar presencial" }));
-    await user.click(await screen.findByRole("button", { name: "Confirmar aprovação" }));
+    await user.click(await screen.findByRole("button", { name: "Registrar decisão" }));
 
     await waitFor(() =>
       expect(quotesApi.approveQuotePhysical).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ client_name: "André Carvalho" }),
+        expect.objectContaining({
+          client_name: "André Carvalho",
+          approved_item_ids: [1],
+        }),
+      ),
+    );
+  });
+
+  it("registers a partial approval (rejecting an item) via the physical dialog", async () => {
+    vi.mocked(quotesApi.listQuotes).mockResolvedValue([quote()]);
+    vi.mocked(quotesApi.approveQuotePhysical).mockResolvedValue(
+      quote({ status: "partially_approved", status_display: "Aprovado parcialmente" }),
+    );
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(await screen.findByRole("button", { name: "Aprovar presencial" }));
+    // Recusa o único item -> approved_item_ids fica vazio.
+    await user.click(await screen.findByRole("button", { name: "Recusar Troca de óleo" }));
+    await user.click(screen.getByRole("button", { name: "Registrar decisão" }));
+
+    await waitFor(() =>
+      expect(quotesApi.approveQuotePhysical).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ approved_item_ids: [] }),
       ),
     );
   });

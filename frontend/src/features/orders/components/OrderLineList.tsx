@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Link2, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Controller,
@@ -11,12 +11,27 @@ import { CurrencyInput } from "@/components/shared/CurrencyInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrencyBRL } from "@/lib/masks";
 
 import type { OrderFormValues, OrderLineValues } from "../schemas";
 import { lineSubtotal } from "../lib/orderMapping";
 
 type LinePrefix = "service_items" | "package_items" | "part_items";
+
+// Sentinel do Select ("Nenhum") -- Radix não aceita value vazio.
+const NO_SERVICE = "none";
+
+export interface ServiceLinkOption {
+  index: number;
+  label: string;
+}
 
 function sanitizeQuantity(value: string): string {
   const cleaned = value.replace(/[^\d,]/g, "");
@@ -40,6 +55,9 @@ interface OrderLineListProps {
   remove: (index: number) => void;
   register: UseFormRegister<OrderFormValues>;
   errors?: FieldErrors<OrderFormValues>[LinePrefix];
+  // Quando presente (apenas para Peças), habilita o select "Serviço vinculado"
+  // por linha. A peça vinculada é aprovada/recusada junto com o serviço no orçamento.
+  serviceOptions?: ServiceLinkOption[];
 }
 
 export function OrderLineList({
@@ -57,6 +75,7 @@ export function OrderLineList({
   remove,
   register,
   errors,
+  serviceOptions,
 }: OrderLineListProps) {
   return (
     <div className="space-y-4">
@@ -165,6 +184,41 @@ export function OrderLineList({
                     </Button>
                   </div>
                 </div>
+
+                {serviceOptions && serviceOptions.length > 0 && (
+                  <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Link2 className="size-3 shrink-0" />
+                    <Controller
+                      control={control}
+                      name={`${namePrefix}.${index}.linked_service_index`}
+                      render={({ field: linkField }) => (
+                        <Select
+                          value={
+                            linkField.value == null ? NO_SERVICE : String(linkField.value)
+                          }
+                          onValueChange={(value) =>
+                            linkField.onChange(value === NO_SERVICE ? null : Number(value))
+                          }
+                        >
+                          <SelectTrigger
+                            aria-label="Serviço vinculado"
+                            className="h-6 max-w-full gap-1 border-0 bg-transparent px-1 py-0 text-xs text-muted-foreground shadow-none hover:text-foreground focus-visible:ring-0 data-[placeholder]:text-muted-foreground/70"
+                          >
+                            <SelectValue placeholder="Vincular a um serviço" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NO_SERVICE}>Sem vínculo</SelectItem>
+                            {serviceOptions.map((option) => (
+                              <SelectItem key={option.index} value={String(option.index)}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                )}
               </li>
             );
           })}

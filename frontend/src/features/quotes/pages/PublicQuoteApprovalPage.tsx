@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import {
@@ -25,6 +25,7 @@ import { formatCurrencyBRL } from "@/lib/masks";
 
 import { approvePublicQuote, getPublicQuote, rejectPublicQuote } from "../api";
 import type { PublicQuote, QuoteItem } from "../types";
+import { QuoteItemDecisionList, approvedTotal } from "../components/QuoteItemDecisionList";
 
 function money(value: string) {
   return formatCurrencyBRL(Number(value));
@@ -40,10 +41,27 @@ function ItemGroup({ title, items }: { title: string; items: QuoteItem[] }) {
           {items.map((item, index) => (
             <tr key={index} className="border-b last:border-0">
               <td className="py-1.5">
-                {item.description}
+                <span
+                  className={
+                    item.status === "rejected"
+                      ? "text-muted-foreground line-through"
+                      : ""
+                  }
+                >
+                  {item.description}
+                </span>
                 {item.is_custom && (
                   <span className="ml-1 text-[10px] uppercase text-muted-foreground">
                     avulso
+                  </span>
+                )}
+                {item.status !== "pending" && (
+                  <span
+                    className={`ml-2 text-[10px] font-medium uppercase ${
+                      item.status === "approved" ? "text-emerald-600" : "text-red-600"
+                    }`}
+                  >
+                    {item.status_display}
                   </span>
                 )}
               </td>
@@ -86,9 +104,20 @@ export function PublicQuoteApprovalPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [reason, setReason] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [approvedIds, setApprovedIds] = useState<number[]>([]);
+
+  // Todos os itens começam aprovados; o cliente recusa o que não quiser.
+  useEffect(() => {
+    if (data?.can_decide) setApprovedIds(data.items.map((item) => item.id));
+  }, [data]);
 
   const approveMutation = useMutation({
-    mutationFn: () => approvePublicQuote(token, { client_name: clientName.trim(), terms_accepted: termsAccepted }),
+    mutationFn: () =>
+      approvePublicQuote(token, {
+        client_name: clientName.trim(),
+        terms_accepted: termsAccepted,
+        approved_item_ids: approvedIds,
+      }),
     onSuccess: (updated) => queryClient.setQueryData(quoteKey, updated),
     onError: (error) => setErrorMsg(extractErrorMessage(error, "Não foi possível aprovar.")),
   });
@@ -119,6 +148,8 @@ export function PublicQuoteApprovalPage() {
 
   const q: PublicQuote = data;
   const canDecide = q.can_decide;
+  const decided = ["partially_approved", "approved", "rejected"].includes(q.status);
+  const liveApproved = approvedTotal(q.items, approvedIds);
 
   return (
     <div className="min-h-svh bg-muted/30 py-6">
@@ -187,23 +218,50 @@ export function PublicQuoteApprovalPage() {
 
         {/* Itens */}
         <section className="space-y-4 rounded-xl border bg-card p-5">
-          <ItemGroup title="Serviços" items={q.items.filter((i) => i.kind === "service")} />
-          <ItemGroup title="Pacotes" items={q.items.filter((i) => i.kind === "package")} />
-          <ItemGroup title="Peças" items={q.items.filter((i) => i.kind === "part")} />
+          {canDecide ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Aprove ou recuse cada item. O valor aprovado é atualizado em tempo real.
+              </p>
+              <QuoteItemDecisionList
+                items={q.items}
+                approvedIds={approvedIds}
+                onChange={setApprovedIds}
+              />
+              <div className="space-y-1 border-t pt-3 text-sm">
+                <Row label="Total orçado" value={money(q.totals.total_quoted)} />
+                <div className="flex items-center justify-between border-t pt-2 text-base font-semibold">
+                  <span>Total aprovado</span>
+                  <span className="text-primary">
+                    {formatCurrencyBRL(approvedTotal(q.items, approvedIds))}
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <ItemGroup title="Serviços" items={q.items.filter((i) => i.kind === "service")} />
+              <ItemGroup title="Pacotes" items={q.items.filter((i) => i.kind === "package")} />
+              <ItemGroup title="Peças" items={q.items.filter((i) => i.kind === "part")} />
 
-          <div className="space-y-1 border-t pt-3 text-sm">
-            <Row label="Total de serviços" value={money(q.totals.services_total)} />
-            <Row label="Total de pacotes" value={money(q.totals.packages_total)} />
-            <Row label="Total de peças" value={money(q.totals.parts_total)} />
-            <Row label="Total bruto" value={money(q.totals.gross_total)} />
-            {q.discount_type !== "none" && Number(q.totals.discount_value) > 0 && (
-              <Row label="Desconto" value={`- ${money(q.totals.discount_value)}`} />
-            )}
-            <div className="flex items-center justify-between border-t pt-2 text-base font-semibold">
-              <span>Valor final</span>
-              <span className="text-primary">{money(q.totals.final_value)}</span>
-            </div>
-          </div>
+              <div className="space-y-1 border-t pt-3 text-sm">
+                <Row label="Total orçado" value={money(q.totals.total_quoted)} />
+                {decided && (
+                  <>
+                    <Row label="Total aprovado" value={money(q.totals.total_approved)} />
+                    <Row label="Total recusado" value={money(q.totals.total_rejected)} />
+                  </>
+                )}
+                {q.discount_type !== "none" && Number(q.totals.discount_value) > 0 && (
+                  <Row label="Desconto" value={`- ${money(q.totals.discount_value)}`} />
+                )}
+                <div className="flex items-center justify-between border-t pt-2 text-base font-semibold">
+                  <span>{decided ? "Valor final aprovado" : "Valor final"}</span>
+                  <span className="text-primary">{money(q.totals.final_value)}</span>
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
         {/* Termos */}
@@ -249,7 +307,12 @@ export function PublicQuoteApprovalPage() {
                 <AlertDialogTrigger asChild>
                   <Button
                     className="flex-1"
-                    disabled={!clientName.trim() || !termsAccepted || approveMutation.isPending}
+                    disabled={
+                      !clientName.trim() ||
+                      !termsAccepted ||
+                      approvedIds.length === 0 ||
+                      approveMutation.isPending
+                    }
                   >
                     <CheckCircle2 className="size-4" />
                     Aprovar orçamento
@@ -259,8 +322,10 @@ export function PublicQuoteApprovalPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar aprovação</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Ao confirmar, você autoriza a execução dos serviços descritos neste
-                      orçamento no valor de {money(q.totals.final_value)}.
+                      Ao confirmar, você autoriza a execução{" "}
+                      <strong>apenas dos itens aprovados</strong> ({approvedIds.length} de{" "}
+                      {q.items.length}) no valor de {formatCurrencyBRL(liveApproved)}. Os
+                      itens recusados não serão executados sem nova autorização.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -329,6 +394,15 @@ function StatusBanner({ quote }: { quote: PublicQuote }) {
         tone="success"
         icon={<CheckCircle2 className="size-5" />}
         text={`Orçamento aprovado${quote.client_name ? ` por ${quote.client_name}` : ""}. Obrigado!`}
+      />
+    );
+  }
+  if (quote.status === "partially_approved") {
+    return (
+      <Banner
+        tone="success"
+        icon={<CheckCircle2 className="size-5" />}
+        text={`Orçamento aprovado parcialmente${quote.client_name ? ` por ${quote.client_name}` : ""}. Apenas os itens aprovados serão executados.`}
       />
     );
   }

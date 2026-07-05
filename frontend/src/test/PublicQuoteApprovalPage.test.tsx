@@ -27,6 +27,7 @@ function publicQuote(overrides: Partial<PublicQuote> = {}): PublicQuote {
     discount_type: "none",
     items: [
       {
+        id: 1,
         kind: "service",
         kind_display: "Serviço",
         description: "Substituição de velas",
@@ -35,15 +36,36 @@ function publicQuote(overrides: Partial<PublicQuote> = {}): PublicQuote {
         subtotal: "160.00",
         is_custom: false,
         notes: "",
+        status: "pending",
+        status_display: "Pendente",
+        linked_service: null,
+      },
+      {
+        id: 2,
+        kind: "part",
+        kind_display: "Peça",
+        description: "Velas de ignição",
+        quantity: "4",
+        unit_price: "40.00",
+        subtotal: "160.00",
+        is_custom: false,
+        notes: "",
+        status: "pending",
+        status_display: "Pendente",
+        linked_service: null,
       },
     ],
     totals: {
       services_total: "160.00",
       packages_total: "0.00",
-      parts_total: "0.00",
-      gross_total: "160.00",
+      parts_total: "160.00",
+      gross_total: "320.00",
+      total_quoted: "320.00",
+      total_approved: "0.00",
+      total_rejected: "0.00",
+      total_pending: "320.00",
       discount_value: "0.00",
-      final_value: "160.00",
+      final_value: "320.00",
     },
     client_name: "",
     decided_at: null,
@@ -95,8 +117,10 @@ describe("PublicQuoteApprovalPage", () => {
     expect(screen.getByText("André Carvalho")).toBeInTheDocument();
     expect(screen.getByText("Substituição de velas")).toBeInTheDocument();
     expect(screen.getByText("Validade de 7 dias.")).toBeInTheDocument();
-    // Final value appears (currency formatted).
-    expect(screen.getAllByText("R$ 160,00").length).toBeGreaterThan(0);
+    // Totals appear (currency formatted): orçado e aprovado ao vivo.
+    expect(screen.getByText("Total orçado")).toBeInTheDocument();
+    expect(screen.getByText("Total aprovado")).toBeInTheDocument();
+    expect(screen.getAllByText("R$ 320,00").length).toBeGreaterThan(0);
   });
 
   it("blocks approval until name and terms are provided", async () => {
@@ -130,6 +154,31 @@ describe("PublicQuoteApprovalPage", () => {
       expect(quotesApi.approvePublicQuote).toHaveBeenCalledWith("tok123", {
         client_name: "André Carvalho",
         terms_accepted: true,
+        approved_item_ids: [1, 2],
+      }),
+    );
+  });
+
+  it("supports partial approval (rejecting one item)", async () => {
+    vi.mocked(quotesApi.getPublicQuote).mockResolvedValue(publicQuote());
+    vi.mocked(quotesApi.approvePublicQuote).mockResolvedValue(
+      publicQuote({ status: "partially_approved", can_decide: false }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    // Recusa a peça (id 2), mantém o serviço (id 1) aprovado.
+    await user.click(await screen.findByRole("button", { name: "Recusar Velas de ignição" }));
+    await user.type(screen.getByLabelText("Seu nome"), "André");
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: /Aprovar orçamento/ }));
+    await user.click(screen.getByRole("button", { name: "Confirmar aprovação" }));
+
+    await waitFor(() =>
+      expect(quotesApi.approvePublicQuote).toHaveBeenCalledWith("tok123", {
+        client_name: "André",
+        terms_accepted: true,
+        approved_item_ids: [1],
       }),
     );
   });

@@ -14,9 +14,31 @@ def item_subtotal(item):
     return money(total if total > 0 else Decimal("0"))
 
 
+def _apply_discount(base, discount_type, discount_value):
+    """Desconto aplicado sobre uma base (nunca deixa a base negativa).
+
+    Regra da aprovação parcial: o desconto incide sobre a base considerada
+    (proposta inteira antes da decisão; apenas os itens aprovados após a
+    decisão). Percentual preserva a proporção; fixo é limitado à base.
+    """
+    if discount_type == "percent":
+        discount = base * (discount_value or Decimal("0")) / Decimal("100")
+    elif discount_type == "fixed":
+        discount = min(discount_value or Decimal("0"), base)
+    else:
+        discount = Decimal("0")
+    return money(discount if discount > 0 else Decimal("0"))
+
+
 def compute_totals(quote):
     """Totais do orçamento (Decimals) calculados a partir das linhas -- backend
-    é a fonte da verdade. Nunca persistidos."""
+    é a fonte da verdade. Nunca persistidos.
+
+    Suporta aprovação parcial: separa orçado/aprovado/recusado/pendente. Antes de
+    qualquer decisão (rascunho/enviado/visualizado), a base do valor final é a
+    proposta inteira; após a decisão, apenas os itens aprovados compõem o valor
+    final aprovado. Itens recusados/pendentes nunca entram no valor final.
+    """
     items = list(quote.items.all())
 
     def kind_total(kind):
@@ -24,20 +46,30 @@ def compute_totals(quote):
             sum((item_subtotal(i) for i in items if i.kind == kind), Decimal("0"))
         )
 
-    gross = money(sum((item_subtotal(i) for i in items), Decimal("0")))
-    discount = Decimal("0")
-    if quote.discount_type == "percent":
-        discount = gross * (quote.discount_value or Decimal("0")) / Decimal("100")
-    elif quote.discount_type == "fixed":
-        discount = quote.discount_value or Decimal("0")
-    discount = money(discount)
-    final = gross - discount
-    final = money(final if final > 0 else Decimal("0"))
+    def status_total(status):
+        return money(
+            sum((item_subtotal(i) for i in items if i.status == status), Decimal("0"))
+        )
+
+    total_quoted = money(sum((item_subtotal(i) for i in items), Decimal("0")))
+    total_approved = status_total("approved")
+    total_rejected = status_total("rejected")
+    total_pending = status_total("pending")
+
+    decided = quote.status in ("partially_approved", "approved", "rejected")
+    base = total_approved if decided else total_quoted
+    discount = _apply_discount(base, quote.discount_type, quote.discount_value)
+    final = money(max(base - discount, Decimal("0")))
+
     return {
         "services_total": kind_total("service"),
         "packages_total": kind_total("package"),
         "parts_total": kind_total("part"),
-        "gross_total": gross,
+        "gross_total": total_quoted,
+        "total_quoted": total_quoted,
+        "total_approved": total_approved,
+        "total_rejected": total_rejected,
+        "total_pending": total_pending,
         "discount_value": discount,
         "final_value": final,
     }

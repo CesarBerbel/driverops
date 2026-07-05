@@ -9,10 +9,12 @@ from .models import Quote, QuoteItem
 class QuoteItemSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
     kind_display = serializers.CharField(source="get_kind_display", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = QuoteItem
         fields = [
+            "id",
             "kind",
             "kind_display",
             "description",
@@ -21,6 +23,9 @@ class QuoteItemSerializer(serializers.ModelSerializer):
             "subtotal",
             "is_custom",
             "notes",
+            "status",
+            "status_display",
+            "linked_service",
         ]
 
     def get_subtotal(self, obj):

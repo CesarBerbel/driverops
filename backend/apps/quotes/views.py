@@ -18,7 +18,11 @@ from .emails import send_quote_approval_email
 from .models import Quote
 from .pdf import render_quote_pdf
 from .serializers import PublicQuoteSerializer, QuoteSerializer
-from .services import advance_order_after_approval, create_quote_from_order
+from .services import (
+    advance_order_after_approval,
+    apply_item_decisions,
+    create_quote_from_order,
+)
 
 
 def _client_ip(request):
@@ -127,7 +131,9 @@ class QuoteViewSet(viewsets.ModelViewSet):
         blocked = self._reject_if_terminal(quote)
         if blocked:
             return blocked
-        quote.status = Quote.Status.APPROVED
+        # approved_item_ids ausente => aprovação integral (compatível).
+        result = apply_item_decisions(quote, request.data.get("approved_item_ids"))
+        quote.status = result
         quote.approval_channel = Quote.Channel.PHYSICAL
         quote.approved_by = request.user
         quote.decided_at = timezone.now()
@@ -137,7 +143,8 @@ class QuoteViewSet(viewsets.ModelViewSet):
         quote.approval_note = request.data.get("note", "")
         quote.terms_accepted = True
         quote.save()
-        advance_order_after_approval(quote.work_order)
+        if result != Quote.Status.REJECTED:
+            advance_order_after_approval(quote.work_order)
         return Response(self.get_serializer(quote).data)
 
     @action(detail=True, methods=["post"], url_path="approve-tablet")
@@ -160,15 +167,17 @@ class QuoteViewSet(viewsets.ModelViewSet):
                 {"signature": ["A assinatura é obrigatória para aprovar no tablet."]},
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
+        result = apply_item_decisions(quote, request.data.get("approved_item_ids"))
         quote.signature_image = signature
-        quote.status = Quote.Status.APPROVED
+        quote.status = result
         quote.approval_channel = Quote.Channel.TABLET
         quote.approved_by = request.user
         quote.decided_at = timezone.now()
         quote.client_name = client_name
         quote.terms_accepted = True
         quote.save()
-        advance_order_after_approval(quote.work_order)
+        if result != Quote.Status.REJECTED:
+            advance_order_after_approval(quote.work_order)
         return Response(self.get_serializer(quote).data)
 
     @action(detail=True, methods=["post"])
@@ -177,6 +186,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
         blocked = self._reject_if_terminal(quote)
         if blocked:
             return blocked
+        apply_item_decisions(quote, [])  # recusa todos os itens
         quote.status = Quote.Status.REJECTED
         quote.decided_at = timezone.now()
         quote.rejection_reason = request.data.get("reason", "")
@@ -270,7 +280,9 @@ class PublicQuoteApproveView(_PublicQuoteBase):
                 {"client_name": ["Informe seu nome para aprovar."]},
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
-        quote.status = Quote.Status.APPROVED
+        # Aprovação parcial: approved_item_ids ausente => aprova todos.
+        result = apply_item_decisions(quote, request.data.get("approved_item_ids"))
+        quote.status = result
         quote.approval_channel = Quote.Channel.EMAIL_LINK
         quote.decided_at = timezone.now()
         quote.client_name = client_name
@@ -278,7 +290,8 @@ class PublicQuoteApproveView(_PublicQuoteBase):
         quote.decision_ip = _client_ip(request)
         quote.decision_user_agent = request.META.get("HTTP_USER_AGENT", "")[:500]
         quote.save()
-        advance_order_after_approval(quote.work_order)
+        if result != Quote.Status.REJECTED:
+            advance_order_after_approval(quote.work_order)
         return Response(PublicQuoteSerializer(quote, context={"request": request}).data)
 
 
@@ -292,6 +305,7 @@ class PublicQuoteRejectView(_PublicQuoteBase):
                 },
                 status=http_status.HTTP_409_CONFLICT,
             )
+        apply_item_decisions(quote, [])  # recusa todos os itens
         quote.status = Quote.Status.REJECTED
         quote.approval_channel = Quote.Channel.EMAIL_LINK
         quote.decided_at = timezone.now()

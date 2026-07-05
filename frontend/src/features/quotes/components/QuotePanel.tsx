@@ -43,13 +43,21 @@ import {
 } from "../api";
 import { formatDateTimeBr, quoteStatusClass } from "../quoteStatus";
 import type { Quote } from "../types";
+import { QuoteItemDecisionList, approvedTotal } from "./QuoteItemDecisionList";
 import { TabletSignatureDialog } from "./TabletSignatureDialog";
 
 interface QuotePanelProps {
   orderId: number;
 }
 
-const TERMINAL = ["approved", "rejected", "expired", "canceled"];
+const TERMINAL = [
+  "partially_approved",
+  "approved",
+  "rejected",
+  "expired",
+  "canceled",
+];
+const DECIDED = ["partially_approved", "approved", "rejected"];
 
 export function QuotePanel({ orderId }: QuotePanelProps) {
   const queryClient = useQueryClient();
@@ -66,6 +74,7 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
   const [physicalTarget, setPhysicalTarget] = useState<Quote | null>(null);
   const [physicalName, setPhysicalName] = useState("");
   const [physicalNote, setPhysicalNote] = useState("");
+  const [physicalApprovedIds, setPhysicalApprovedIds] = useState<number[]>([]);
   const [tabletTarget, setTabletTarget] = useState<Quote | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Quote | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -100,23 +109,55 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
   });
 
   const physicalMutation = useMutation({
-    mutationFn: ({ id, name, note }: { id: number; name: string; note: string }) =>
-      approveQuotePhysical(id, { client_name: name, note }),
+    mutationFn: ({
+      id,
+      name,
+      note,
+      approvedIds,
+    }: {
+      id: number;
+      name: string;
+      note: string;
+      approvedIds: number[];
+    }) =>
+      approveQuotePhysical(id, {
+        client_name: name,
+        note,
+        approved_item_ids: approvedIds,
+      }),
     onSuccess: () => {
       invalidate();
       setPhysicalTarget(null);
-      toast.success("Orçamento aprovado (assinatura física).", { id: "quote-approved" });
+      toast.success("Decisão do orçamento registrada (assinatura física).", {
+        id: "quote-approved",
+      });
     },
     onError,
   });
 
   const tabletMutation = useMutation({
-    mutationFn: ({ id, name, signature }: { id: number; name: string; signature: string }) =>
-      approveQuoteTablet(id, { client_name: name, signature }),
+    mutationFn: ({
+      id,
+      name,
+      signature,
+      approvedIds,
+    }: {
+      id: number;
+      name: string;
+      signature: string;
+      approvedIds: number[];
+    }) =>
+      approveQuoteTablet(id, {
+        client_name: name,
+        signature,
+        approved_item_ids: approvedIds,
+      }),
     onSuccess: () => {
       invalidate();
       setTabletTarget(null);
-      toast.success("Orçamento aprovado (assinatura no tablet).", { id: "quote-approved" });
+      toast.success("Decisão do orçamento registrada (assinatura no tablet).", {
+        id: "quote-approved",
+      });
     },
     onError,
   });
@@ -214,9 +255,13 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
                     {quote.sent_at && ` · Enviado em ${formatDateTimeBr(quote.sent_at)}`}
                   </p>
 
-                  {terminal && quote.status === "approved" && (
+                  {(quote.status === "approved" ||
+                    quote.status === "partially_approved") && (
                     <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
-                      Aprovado por {quote.client_name} · {quote.channel_display} ·{" "}
+                      {quote.status === "partially_approved"
+                        ? "Aprovado parcialmente"
+                        : "Aprovado"}{" "}
+                      por {quote.client_name} · {quote.channel_display} ·{" "}
                       {formatDateTimeBr(quote.decided_at)}
                       {quote.decision_ip && ` · IP ${quote.decision_ip}`}
                     </p>
@@ -227,6 +272,57 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
                       {quote.rejection_reason && ` · ${quote.rejection_reason}`}
                     </p>
                   )}
+
+                  {DECIDED.includes(quote.status) && (
+                    <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2">
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Orçado</p>
+                          <p className="font-medium">
+                            {formatCurrencyBRL(Number(quote.totals.total_quoted))}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Aprovado</p>
+                          <p className="font-medium text-emerald-700 dark:text-emerald-400">
+                            {formatCurrencyBRL(Number(quote.totals.total_approved))}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Recusado</p>
+                          <p className="font-medium text-red-700 dark:text-red-400">
+                            {formatCurrencyBRL(Number(quote.totals.total_rejected))}
+                          </p>
+                        </div>
+                      </div>
+                      <ul className="space-y-0.5 border-t pt-1.5 text-xs">
+                        {quote.items.map((item) => (
+                          <li key={item.id} className="flex items-center justify-between gap-2">
+                            <span
+                              className={cn(
+                                "truncate",
+                                item.status === "rejected" &&
+                                  "text-muted-foreground line-through",
+                              )}
+                            >
+                              {item.description}
+                            </span>
+                            <span
+                              className={cn(
+                                "shrink-0 font-medium",
+                                item.status === "approved"
+                                  ? "text-emerald-700 dark:text-emerald-400"
+                                  : "text-red-700 dark:text-red-400",
+                              )}
+                            >
+                              {item.status_display}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {quote.signature_image && (
                     <img
                       src={quote.signature_image}
@@ -265,6 +361,7 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
                           onClick={() => {
                             setPhysicalName(quote.customer_name ?? "");
                             setPhysicalNote("");
+                            setPhysicalApprovedIds(quote.items.map((i) => i.id));
                             setPhysicalTarget(quote);
                           }}
                         >
@@ -352,14 +449,32 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
         open={physicalTarget !== null}
         onOpenChange={(o) => !o && setPhysicalTarget(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Aprovação com assinatura física</DialogTitle>
             <DialogDescription>
-              Registre a aprovação presencial após o cliente assinar o orçamento impresso.
+              Marque os itens aprovados pelo cliente (a partir do PDF assinado) e registre a
+              decisão.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            {physicalTarget && (
+              <>
+                <QuoteItemDecisionList
+                  items={physicalTarget.items}
+                  approvedIds={physicalApprovedIds}
+                  onChange={setPhysicalApprovedIds}
+                />
+                <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3 text-sm">
+                  <span className="text-muted-foreground">Valor final aprovado</span>
+                  <span className="text-base font-semibold">
+                    {formatCurrencyBRL(
+                      approvedTotal(physicalTarget.items, physicalApprovedIds),
+                    )}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="space-y-2">
               <Label htmlFor="physical-name">Nome do cliente</Label>
               <Input
@@ -390,11 +505,12 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
                   id: physicalTarget.id,
                   name: physicalName.trim(),
                   note: physicalNote.trim(),
+                  approvedIds: physicalApprovedIds,
                 })
               }
             >
               <Check className="size-4" />
-              Confirmar aprovação
+              Registrar decisão
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -442,9 +558,9 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
         open={tabletTarget !== null}
         onOpenChange={(o) => !o && setTabletTarget(null)}
         isPending={tabletMutation.isPending}
-        onConfirm={(name, signature) =>
+        onConfirm={(name, signature, approvedIds) =>
           tabletTarget &&
-          tabletMutation.mutate({ id: tabletTarget.id, name, signature })
+          tabletMutation.mutate({ id: tabletTarget.id, name, signature, approvedIds })
         }
       />
     </Card>
