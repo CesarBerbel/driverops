@@ -384,6 +384,27 @@ def test_domain_action_permission_is_granular(tecnico_role):
     assert denied.status_code == 403
 
 
+def test_change_password_clears_force_flag(db):
+    u = User.objects.create_user(
+        email="fp@example.com", password="StrongPass123", full_name="FP"
+    )
+    u.force_password_change = True
+    u.save()
+    c = _client_for("fp@example.com")
+    response = c.post(
+        "/api/users/change-password/",
+        data={
+            "current_password": "StrongPass123",
+            "new_password": "NewStrong456",
+            "new_password_confirm": "NewStrong456",
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 204
+    u.refresh_from_db()
+    assert u.force_password_change is False
+
+
 def test_audit_requires_permission(user, superuser_client):
     assert _client_for(user.email).get("/api/audit/").status_code == 403
     assert superuser_client.get("/api/audit/").status_code == 200

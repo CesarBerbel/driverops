@@ -130,6 +130,8 @@ class ChangePasswordView(APIView):
 
         user = request.user
         user.set_password(serializer.validated_data["new_password"])
+        # Trocar a senha satisfaz a exigência de troca no primeiro acesso.
+        user.force_password_change = False
         user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -166,6 +168,8 @@ class PasswordResetConfirmView(APIView):
 
         user = serializer.validated_data["user"]
         user.set_password(serializer.validated_data["new_password"])
+        # Redefinir a senha (inclui o fluxo de convite) satisfaz a troca exigida.
+        user.force_password_change = False
         user.save()
         return Response(
             {"detail": "Senha redefinida com sucesso."}, status=status.HTTP_200_OK

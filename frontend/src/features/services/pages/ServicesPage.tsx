@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -118,10 +119,10 @@ export function ServicesPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Serviços</h1>
           <p className="text-muted-foreground">Cadastre e gerencie os serviços oferecidos.</p>
         </div>
-        <Button onClick={openCreateSheet}>
+        <Can code="services.create"><Button onClick={openCreateSheet}>
           <Plus />
           Novo serviço
-        </Button>
+        </Button></Can>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -210,10 +211,10 @@ export function ServicesPage() {
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado ainda.</p>
-                <Button size="sm" onClick={openCreateSheet}>
+                <Can code="services.create"><Button size="sm" onClick={openCreateSheet}>
                   <Plus />
                   Novo serviço
-                </Button>
+                </Button></Can>
               </>
             )}
           </CardContent>

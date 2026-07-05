@@ -4,6 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/features/auth/useAuth", () => ({
+  useAuth: () => ({ user: { id: 1, is_superuser: true, permissions: [] } }),
+}));
+
 import { Toaster } from "@/components/ui/sonner";
 import * as ordersApi from "@/features/orders/api";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { ForcePasswordChangeGate } from "@/features/auth/ForcePasswordChangeGate";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { PublicOnlyRoute } from "@/features/auth/PublicOnlyRoute";
 import { RequirePermission } from "@/features/auth/RequirePermission";
@@ -46,6 +47,7 @@ export function AppRoutes() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
+        <Route element={<ForcePasswordChangeGate />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/kanban" element={<KanbanPage />} />
@@ -77,6 +79,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission code="audit.view" />}>
             <Route path="/audit" element={<AuditPage />} />
           </Route>
+        </Route>
         </Route>
       </Route>
 
