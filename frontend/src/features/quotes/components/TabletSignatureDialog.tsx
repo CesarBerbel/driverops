@@ -14,13 +14,14 @@ import { Label } from "@/components/ui/label";
 import { formatCurrencyBRL } from "@/lib/masks";
 
 import type { Quote } from "../types";
+import { QuoteItemDecisionList, approvedTotal } from "./QuoteItemDecisionList";
 import { SignaturePad } from "./SignaturePad";
 
 interface TabletSignatureDialogProps {
   quote: Quote | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (clientName: string, signature: string) => void;
+  onConfirm: (clientName: string, signature: string, approvedIds: number[]) => void;
   isPending: boolean;
 }
 
@@ -33,15 +34,19 @@ export function TabletSignatureDialog({
 }: TabletSignatureDialogProps) {
   const [clientName, setClientName] = useState("");
   const [signature, setSignature] = useState<string | null>(null);
+  const [approvedIds, setApprovedIds] = useState<number[]>([]);
 
   useEffect(() => {
     if (open && quote) {
       setClientName(quote.customer_name ?? "");
       setSignature(null);
+      // Todos aprovados por padrão; o cliente desmarca o que não quer.
+      setApprovedIds(quote.items.map((item) => item.id));
     }
   }, [open, quote]);
 
   const canConfirm = clientName.trim().length > 0 && signature !== null;
+  const approvedValue = quote ? approvedTotal(quote.items, approvedIds) : 0;
 
   return (
     <Dialog open={open && quote !== null} onOpenChange={onOpenChange}>
@@ -56,15 +61,17 @@ export function TabletSignatureDialog({
 
         {quote && (
           <div className="space-y-4">
-            <div className="rounded-md border bg-muted/30 p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Orçamento {String(quote.number).padStart(4, "0")} · v{quote.version}
-                </span>
-                <span className="font-semibold">
-                  {formatCurrencyBRL(Number(quote.totals.final_value))}
-                </span>
-              </div>
+            <QuoteItemDecisionList
+              items={quote.items}
+              approvedIds={approvedIds}
+              onChange={setApprovedIds}
+            />
+
+            <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3 text-sm">
+              <span className="text-muted-foreground">Valor final aprovado</span>
+              <span className="text-base font-semibold">
+                {formatCurrencyBRL(approvedValue)}
+              </span>
             </div>
 
             <div className="space-y-2">
@@ -84,7 +91,7 @@ export function TabletSignatureDialog({
 
             <p className="text-xs text-muted-foreground">
               Ao confirmar, o cliente declara que revisou o orçamento e autoriza a
-              execução dos serviços descritos.
+              execução <strong>apenas dos itens aprovados</strong>.
             </p>
           </div>
         )}
@@ -95,7 +102,9 @@ export function TabletSignatureDialog({
           </Button>
           <Button
             disabled={!canConfirm || isPending}
-            onClick={() => onConfirm(clientName.trim(), signature as string)}
+            onClick={() =>
+              onConfirm(clientName.trim(), signature as string, approvedIds)
+            }
           >
             Confirmar aprovação
           </Button>

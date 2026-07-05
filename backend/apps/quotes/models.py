@@ -25,7 +25,8 @@ class Quote(models.Model):
         DRAFT = "draft", "Rascunho"
         SENT = "sent", "Enviado"
         VIEWED = "viewed", "Visualizado"
-        APPROVED = "approved", "Aprovado"
+        PARTIALLY_APPROVED = "partially_approved", "Aprovado parcialmente"
+        APPROVED = "approved", "Aprovado integralmente"
         REJECTED = "rejected", "Recusado"
         EXPIRED = "expired", "Expirado"
         CANCELED = "canceled", "Cancelado"
@@ -36,8 +37,16 @@ class Quote(models.Model):
         EMAIL_LINK = "email_link", "Link por e-mail"
 
     # Estados terminais: não permitem nova decisão nem edição direta (exige nova
-    # versão). Alinhado às regras de bloqueio pós-aprovação.
-    TERMINAL_STATUSES = ["approved", "rejected", "expired", "canceled"]
+    # versão). Aprovação parcial também é terminal para aquela versão.
+    TERMINAL_STATUSES = [
+        "partially_approved",
+        "approved",
+        "rejected",
+        "expired",
+        "canceled",
+    ]
+    # Estados que já representam uma decisão do cliente (aprovação/recusa).
+    DECIDED_STATUSES = ["partially_approved", "approved", "rejected"]
     # Estados em que o cliente ainda pode decidir pelo link público.
     DECIDABLE_STATUSES = ["sent", "viewed"]
 
@@ -144,6 +153,11 @@ class QuoteItem(models.Model):
         PACKAGE = "package", "Pacote"
         PART = "part", "Peça"
 
+    class ItemStatus(models.TextChoices):
+        PENDING = "pending", "Pendente"
+        APPROVED = "approved", "Aprovado"
+        REJECTED = "rejected", "Recusado"
+
     quote = models.ForeignKey(Quote, on_delete=models.CASCADE, related_name="items")
     kind = models.CharField(max_length=10, choices=Kind.choices)
     description = models.CharField(max_length=200)
@@ -151,6 +165,10 @@ class QuoteItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_custom = models.BooleanField(default=False)
     notes = models.CharField(max_length=200, blank=True)
+    # Decisão individual do cliente (aprovação parcial). "pending" até a decisão.
+    status = models.CharField(
+        max_length=10, choices=ItemStatus.choices, default=ItemStatus.PENDING
+    )
 
     class Meta:
         ordering = ["id"]

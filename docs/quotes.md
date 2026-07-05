@@ -39,21 +39,69 @@ Os e-mails de aprovação usam o SMTP de desenvolvimento (**Mailpit**, http://lo
 | `draft` (Rascunho) | Criado, ainda não enviado/decidido. |
 | `sent` (Enviado) | Link enviado por e-mail ao cliente. |
 | `viewed` (Visualizado) | Cliente abriu a página pública. |
-| `approved` (Aprovado) | Aprovado (física / tablet / link). Terminal. |
-| `rejected` (Recusado) | Recusado pelo cliente/oficina. Terminal. |
+| `partially_approved` (Aprovado parcialmente) | Parte dos itens aprovada, parte recusada. Terminal. |
+| `approved` (Aprovado integralmente) | Todos os itens aprovados. Terminal. |
+| `rejected` (Recusado) | Todos os itens recusados. Terminal. |
 | `expired` (Expirado) | Passou da validade sem decisão. Terminal. |
 | `canceled` (Cancelado) | Cancelado internamente. Terminal. |
 
 Estados **terminais** não permitem nova decisão nem edição direta — para revisar, gere uma **nova
 versão** (novo orçamento a partir da OS).
 
+### Status por item (aprovação parcial)
+
+Cada linha do orçamento (`QuoteItem`) tem status individual: `pending` (Pendente), `approved`
+(Aprovado) ou `rejected` (Recusado). Antes da decisão todos ficam pendentes; ao decidir, cada item
+vira aprovado ou recusado. O status geral do orçamento é derivado dos itens:
+
+- todos aprovados → **Aprovado integralmente**;
+- alguns aprovados e outros recusados → **Aprovado parcialmente**;
+- todos recusados → **Recusado**.
+
 ## Itens e valores
 
 O orçamento exibe, separadamente: serviços, pacotes e peças (cadastrados e avulsos, com a marca
-"avulso"). Cada item tem descrição, quantidade, valor unitário e subtotal. Os totais
-(**mão de obra/serviços, pacotes, peças, bruto, desconto, valor final**) são **calculados no
-backend** (`apps/quotes/calc.py`) — o frontend nunca é a fonte da verdade. Valores em Real
-brasileiro (`R$ 0,00`); item sem valor aparece como `R$ 0,00`.
+"avulso"). Cada item tem descrição, tipo, quantidade, valor unitário, subtotal e (após decisão) a
+situação de aprovação. Os totais são **calculados no backend** (`apps/quotes/calc.py`) — o frontend
+apenas exibe o resultado. Valores em Real brasileiro (`R$ 0,00`); item sem valor aparece como
+`R$ 0,00`.
+
+Totais calculados: **total orçado**, **total aprovado**, **total recusado**, **total pendente**,
+desconto e **valor final (aprovado)**.
+
+- Antes da decisão, a base do valor final é a proposta inteira; após a decisão, apenas os itens
+  **aprovados** compõem o valor final. Itens recusados/pendentes nunca entram no valor aprovado.
+- **Desconto:** incide sobre a base considerada — percentual preserva a proporção; fixo é limitado à
+  base (nunca deixa o total negativo). Após aprovação parcial, o desconto é aplicado sobre o total
+  aprovado.
+
+Exemplo: total orçado `R$ 1.500,00`, aprovado `R$ 900,00`, recusado `R$ 600,00` →
+valor final aprovado `R$ 900,00` (menos eventual desconto sobre os aprovados).
+
+## Aprovação parcial
+
+O cliente pode aprovar **todos**, **nenhum** ou **parte** dos itens. Funciona para serviços, pacotes
+e peças (cadastrados e avulsos), nos três canais (física, tablet e link por e-mail):
+
+- **Física:** no diálogo "Aprovar presencial", o usuário marca os itens aprovados (a partir do PDF
+  assinado pelo cliente) e registra a decisão.
+- **Tablet:** o cliente seleciona item a item (com "Aprovar todos"/"Recusar todos"), revê o valor
+  final aprovado ao vivo e assina; a assinatura é obrigatória.
+- **Link por e-mail:** na página pública, o cliente aprova/recusa cada item, vê o **total aprovado
+  em tempo real**, aceita os termos e confirma.
+
+Regras: itens aprovados continuam vinculados à OS e liberados para execução; itens recusados
+permanecem no histórico do orçamento (não são executados nem entram no valor aprovado). A decisão por
+item é **persistida** (snapshot) junto com data/hora, canal, usuário interno (presencial), IP/user
+agent (link) e assinatura quando houver. Após a decisão o orçamento é terminal — alterar itens
+aprovados exige **nova versão**.
+
+### Impacto na OS
+
+Ao aprovar (integral ou parcialmente), a OS avança para **Aprovada** e reflete no Kanban. Apenas os
+itens aprovados ficam liberados para execução; os recusados permanecem no histórico do orçamento. Se
+tudo for recusado, a OS **não** avança. Para executar um item recusado depois, gere uma nova versão
+do orçamento.
 
 ## Snapshot e versionamento
 
@@ -101,13 +149,32 @@ confirmação e o status atual.
 
 ## PDF do orçamento
 
-Gerado com visual profissional (`apps/quotes/pdf.py` + template `quotes/quote_pdf.html`), contém:
-logo e dados da oficina (nome fantasia, razão social, CNPJ, contato), números da OS e do orçamento,
-data de emissão, validade, dados do cliente e do veículo/placa, relato, diagnóstico, itens
-(serviços/pacotes/peças com quantidade, valor unitário e subtotal), totais, desconto, valor final,
-termos, campo para assinatura física, **assinatura digital incorporada quando houver**, data/hora da
-aprovação e o rodapé configurado. Se um termo não estiver configurado, o PDF é gerado assim mesmo
-(sem quebrar); as quebras de linha dos termos são preservadas.
+Gerado com visual **compacto e profissional** (`apps/quotes/pdf.py` + template
+`quotes/quote_pdf.html`), otimizado para leitura rápida e impressão em preto e branco. Estrutura:
+
+- **Cabeçalho em duas áreas** — área da oficina (logo reduzido, nome fantasia, razão social, CNPJ,
+  telefone/WhatsApp, e-mail, endereço) e área do documento ("ORÇAMENTO", nº do orçamento, nº da OS,
+  emissão, validade, status).
+- **Logo reduzido:** limitado a ~**90×45px** mantendo a proporção. O logo é **redimensionado com
+  Pillow** no backend (xhtml2pdf não respeita `max-width`/`max-height` em imagens data-URI), de modo
+  que o cabeçalho fica compacto e o PDF leve. Sem logo, o PDF é gerado normalmente, sem área vazia.
+- **Cliente e veículo:** nome, CPF/CNPJ, contatos; placa **em destaque**, marca/modelo/versão, ano e
+  quilometragem quando disponíveis.
+- **Relato, diagnóstico** em blocos compactos (quebras de linha preservadas). Observações internas
+  **não** aparecem no PDF.
+- **Itens** em tabela compacta (serviços/pacotes/peças, com "avulso" quando aplicável), com coluna
+  **Situação** (Aprovado/Recusado) quando há decisão — itens recusados aparecem riscados, sem serem
+  ocultados (fazem parte do histórico da proposta).
+- **Resumo financeiro:** total orçado, total aprovado, total recusado, desconto e valor final
+  aprovado. Orçamento parcial recebe um **banner** "Orçamento aprovado parcialmente — somente os
+  itens marcados como Aprovado estão autorizados para execução".
+- **Termos** (orçamento, garantia, autorização) e, na aprovação parcial, um **texto complementar**
+  deixando claro que a autorização vale apenas para os itens aprovados.
+- **Assinatura** — campo para assinatura física e, quando houver, a **assinatura digital
+  incorporada** com nome do cliente, canal e data/hora da decisão. Rodapé configurado nas
+  Configurações.
+
+Se um termo não estiver configurado, o PDF é gerado assim mesmo (sem quebrar).
 
 ## Termos (das Configurações da OS)
 

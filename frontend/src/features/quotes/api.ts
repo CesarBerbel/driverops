@@ -29,7 +29,7 @@ export async function sendQuote(id: number, email?: string): Promise<Quote> {
 
 export async function approveQuotePhysical(
   id: number,
-  payload: { client_name?: string; note?: string },
+  payload: { client_name?: string; note?: string; approved_item_ids?: number[] },
 ): Promise<Quote> {
   const { data } = await apiClient.post<Quote>(
     `/quotes/${id}/approve-physical/`,
@@ -40,7 +40,7 @@ export async function approveQuotePhysical(
 
 export async function approveQuoteTablet(
   id: number,
-  payload: { client_name: string; signature: string },
+  payload: { client_name: string; signature: string; approved_item_ids?: number[] },
 ): Promise<Quote> {
   const { data } = await apiClient.post<Quote>(
     `/quotes/${id}/approve-tablet/`,
@@ -79,7 +79,7 @@ export async function getPublicQuote(token: string): Promise<PublicQuote> {
 
 export async function approvePublicQuote(
   token: string,
-  payload: { client_name: string; terms_accepted: boolean },
+  payload: { client_name: string; terms_accepted: boolean; approved_item_ids?: number[] },
 ): Promise<PublicQuote> {
   const { data } = await apiClient.post<PublicQuote>(
     `/public/quotes/${token}/approve/`,

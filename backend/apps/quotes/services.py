@@ -70,6 +70,37 @@ def create_quote_from_order(order, user=None, valid_until=None):
     return quote
 
 
+def apply_item_decisions(quote, approved_ids):
+    """Aplica a decisão do cliente item a item e devolve o status geral resultante.
+
+    ``approved_ids`` = ids dos itens aprovados; os demais são recusados. Se for
+    ``None``, aprova todos (aprovação integral -- mantém o comportamento anterior).
+    Regra do status geral:
+    - todos aprovados  -> "approved" (aprovado integralmente)
+    - todos recusados  -> "rejected"
+    - misto            -> "partially_approved"
+    Um orçamento sem itens é tratado como recusado (nada a executar).
+    """
+    items = list(quote.items.all())
+    approve_all = approved_ids is None
+    approved_set = set(approved_ids or [])
+
+    n_approved = 0
+    for item in items:
+        approved = approve_all or item.id in approved_set
+        item.status = item.ItemStatus.APPROVED if approved else item.ItemStatus.REJECTED
+        if approved:
+            n_approved += 1
+    if items:
+        QuoteItem.objects.bulk_update(items, ["status"])
+
+    if not items or n_approved == 0:
+        return Quote.Status.REJECTED
+    if n_approved == len(items):
+        return Quote.Status.APPROVED
+    return Quote.Status.PARTIALLY_APPROVED
+
+
 def advance_order_after_approval(order):
     """Avança a OS para 'Aprovada' quando o orçamento é aprovado.
 

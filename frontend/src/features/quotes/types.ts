@@ -2,6 +2,7 @@ export type QuoteStatus =
   | "draft"
   | "sent"
   | "viewed"
+  | "partially_approved"
   | "approved"
   | "rejected"
   | "expired"
@@ -11,7 +12,10 @@ export type QuoteChannel = "physical" | "tablet" | "email_link" | "";
 
 export type QuoteItemKind = "service" | "package" | "part";
 
+export type QuoteItemStatus = "pending" | "approved" | "rejected";
+
 export interface QuoteItem {
+  id: number;
   kind: QuoteItemKind;
   kind_display: string;
   description: string;
@@ -20,6 +24,8 @@ export interface QuoteItem {
   subtotal: string;
   is_custom: boolean;
   notes: string;
+  status: QuoteItemStatus;
+  status_display: string;
 }
 
 export interface QuoteTotals {
@@ -27,6 +33,10 @@ export interface QuoteTotals {
   packages_total: string;
   parts_total: string;
   gross_total: string;
+  total_quoted: string;
+  total_approved: string;
+  total_rejected: string;
+  total_pending: string;
   discount_value: string;
   final_value: string;
 }
