@@ -27,22 +27,22 @@ const TERM_FIELDS: {
   {
     name: "warranty_terms",
     label: "Termo de garantia",
-    description: "Usado futuramente nos PDFs de OS, orçamento e garantia.",
+    description: "Usado no PDF e na página de aprovação do orçamento.",
   },
   {
     name: "quote_terms",
     label: "Termo de orçamento",
-    description: "Usado futuramente nos PDFs de orçamento ou aprovação.",
+    description: "Usado no PDF e na página de aprovação do orçamento.",
   },
   {
     name: "service_authorization_terms",
     label: "Termo de autorização de serviço",
-    description: "Usado futuramente nos PDFs em que o cliente autoriza a execução.",
+    description: "Usado no orçamento, quando o cliente autoriza a execução dos serviços.",
   },
   {
     name: "customer_acknowledgment_terms",
     label: "Termo de ciência do cliente",
-    description: "Usado futuramente em documentos de aceite, retirada ou entrega do veículo.",
+    description: "Usado em documentos de aceite, retirada ou entrega do veículo.",
   },
   {
     name: "default_os_notes",
@@ -103,8 +103,8 @@ export function OrderSettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Configurações da OS</h1>
         <p className="text-muted-foreground">
-          Regras padrão e textos usados na criação, edição e geração futura de PDFs das Ordens de
-          Serviço.
+          Regras padrão e textos usados na criação e edição das Ordens de Serviço e na geração de
+          PDFs.
         </p>
       </div>
 
