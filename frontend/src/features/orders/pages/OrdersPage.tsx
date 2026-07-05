@@ -44,6 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Can } from "@/features/auth/Can";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL, formatPhone } from "@/lib/masks";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -130,10 +131,12 @@ export function OrdersPage() {
             Crie, acompanhe e finalize os atendimentos da oficina.
           </p>
         </div>
-        <Button onClick={() => navigate("/orders/new")}>
-          <Plus />
-          Nova OS
-        </Button>
+        <Can code="orders.create">
+          <Button onClick={() => navigate("/orders/new")}>
+            <Plus />
+            Nova OS
+          </Button>
+        </Can>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -208,10 +211,12 @@ export function OrdersPage() {
                 <p className="text-sm text-muted-foreground">
                   Nenhuma ordem de serviço cadastrada ainda.
                 </p>
-                <Button size="sm" onClick={() => navigate("/orders/new")}>
-                  <Plus />
-                  Nova OS
-                </Button>
+                <Can code="orders.create">
+                  <Button size="sm" onClick={() => navigate("/orders/new")}>
+                    <Plus />
+                    Nova OS
+                  </Button>
+                </Can>
               </>
             )}
           </CardContent>
@@ -294,24 +299,28 @@ export function OrdersPage() {
                         <Pencil className="size-4" />
                       </Button>
                       {isDisabledView ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Reativar OS"
-                          disabled={reactivateMutation.isPending}
-                          onClick={() => reactivateMutation.mutate(order.id)}
-                        >
-                          <RotateCcw className="size-4" />
-                        </Button>
+                        <Can code="orders.reactivate">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Reativar OS"
+                            disabled={reactivateMutation.isPending}
+                            onClick={() => reactivateMutation.mutate(order.id)}
+                          >
+                            <RotateCcw className="size-4" />
+                          </Button>
+                        </Can>
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Excluir OS"
-                          onClick={() => setDeleteTarget(order)}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
+                        <Can code="orders.delete">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Excluir OS"
+                            onClick={() => setDeleteTarget(order)}
+                          >
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        </Can>
                       )}
                     </div>
                   </TableCell>

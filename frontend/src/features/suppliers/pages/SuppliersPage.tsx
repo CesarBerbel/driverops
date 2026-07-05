@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -105,10 +106,10 @@ export function SuppliersPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Fornecedores</h1>
           <p className="text-muted-foreground">Cadastre os fornecedores de peças do sistema.</p>
         </div>
-        <Button onClick={openCreateSheet}>
+        <Can code="suppliers.create"><Button onClick={openCreateSheet}>
           <Plus />
           Novo fornecedor
-        </Button>
+        </Button></Can>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -185,10 +186,10 @@ export function SuppliersPage() {
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">Nenhum fornecedor cadastrado ainda.</p>
-                <Button size="sm" onClick={openCreateSheet}>
+                <Can code="suppliers.create"><Button size="sm" onClick={openCreateSheet}>
                   <Plus />
                   Novo fornecedor
-                </Button>
+                </Button></Can>
               </>
             )}
           </CardContent>

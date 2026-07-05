@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -113,10 +114,10 @@ export function PartsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Peças em Estoque</h1>
           <p className="text-muted-foreground">Cadastre e controle as peças em estoque.</p>
         </div>
-        <Button onClick={openCreateSheet}>
+        <Can code="parts.create"><Button onClick={openCreateSheet}>
           <Plus />
           Nova peça
-        </Button>
+        </Button></Can>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -192,10 +193,10 @@ export function PartsPage() {
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">Nenhuma peça cadastrada ainda.</p>
-                <Button size="sm" onClick={openCreateSheet}>
+                <Can code="parts.create"><Button size="sm" onClick={openCreateSheet}>
                   <Plus />
                   Nova peça
-                </Button>
+                </Button></Can>
               </>
             )}
           </CardContent>

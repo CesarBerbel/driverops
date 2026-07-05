@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -99,7 +100,7 @@ export function CustomersPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
           <p className="text-muted-foreground">Gerencie os clientes cadastrados no sistema.</p>
         </div>
-        <Button onClick={openCreateSheet}>Novo cliente</Button>
+        <Can code="customers.create"><Button onClick={openCreateSheet}>Novo cliente</Button></Can>
       </div>
 
       <div className="flex items-center gap-2">
@@ -149,9 +150,9 @@ export function CustomersPage() {
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">Nenhum cliente cadastrado ainda.</p>
-                <Button size="sm" onClick={openCreateSheet}>
+                <Can code="customers.create"><Button size="sm" onClick={openCreateSheet}>
                   Novo cliente
-                </Button>
+                </Button></Can>
               </>
             )}
           </CardContent>

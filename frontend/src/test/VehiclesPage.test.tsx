@@ -3,6 +3,10 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/features/auth/useAuth", () => ({
+  useAuth: () => ({ user: { id: 1, is_superuser: true, permissions: [] } }),
+}));
+
 import { Toaster } from "@/components/ui/sonner";
 import * as vehiclesApi from "@/features/vehicles/api";
 import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";

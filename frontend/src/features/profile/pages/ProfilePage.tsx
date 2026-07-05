@@ -49,12 +49,14 @@ export function ProfilePage() {
 
   const passwordMutation = useMutation({
     mutationFn: changePassword,
-    onSuccess: () => {
+    onSuccess: async () => {
       passwordForm.reset({
         current_password: "",
         new_password: "",
         new_password_confirm: "",
       });
+      // Atualiza o usuário (limpa "trocar senha no 1º acesso" se estava ativo).
+      await refetch();
       toast.success("Senha alterada com sucesso.");
     },
     onError: (error) => toast.error(extractErrorMessage(error, "Não foi possível alterar a senha.")),
@@ -101,6 +103,35 @@ export function ProfilePage() {
             </Button>
           </CardFooter>
         </form>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Perfil e acesso</CardTitle>
+          <CardDescription>Seu papel e nível de acesso no sistema.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Perfil</p>
+            <p className="text-sm font-medium">
+              {user.is_superuser ? "Superuser" : user.role_name || "—"}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Especialidade</p>
+            <p className="text-sm font-medium">
+              {user.technical_specialty_display || "—"}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Permissões</p>
+            <p className="text-sm font-medium">
+              {user.is_superuser
+                ? "Acesso total"
+                : `${user.permissions.length} permissõe(s)`}
+            </p>
+          </div>
+        </CardContent>
       </Card>
 
       <Card>
