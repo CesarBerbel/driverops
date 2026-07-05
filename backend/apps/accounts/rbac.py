@@ -182,13 +182,21 @@ def _codes_for_modules(module_keys, actions=None):
 ROLE_DEFS = {
     "administrador": {
         "name": "Administrador",
-        "description": "Responsável administrativo da oficina. Acesso amplo à "
-        "operação, sem gerenciar permissões globais nem ações críticas por padrão.",
-        # Todas as permissões não críticas + as ações operacionais de OS/orçamento
-        # necessárias no dia a dia (cancelar/finalizar/delete e stock ficam de fora).
+        "description": "Responsável administrativo da oficina. Gerencia usuários "
+        "(criar/editar/desativar), mas NÃO edita permissões globais (isso é "
+        "exclusivo do superuser) nem executa ações críticas por padrão.",
+        # Todas as permissões não críticas + ações operacionais de OS/orçamento +
+        # gerenciar usuários. NÃO inclui permissions.manage (edição de permissões),
+        # cancelar/finalizar OS, ajustes de estoque, etc.
         "codes": sorted(
             set(_non_critical_codes())
-            | {"orders.delete", "orders.reactivate", "quotes.cancel", "users.view"}
+            | {
+                "orders.delete",
+                "orders.reactivate",
+                "quotes.cancel",
+                "users.view",
+                "users.manage",
+            }
         ),
     },
     "atendente": {

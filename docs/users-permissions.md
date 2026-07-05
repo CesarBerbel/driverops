@@ -39,7 +39,7 @@ transforma outro usuário em superuser e não remove permissões do superuser.
 
 | Perfil | Resumo |
 |---|---|
-| **Administrador** | Responsável administrativo da oficina. Acesso amplo à operação, sem gerenciar permissões nem ações críticas por padrão. |
+| **Administrador** | Responsável administrativo da oficina. Acesso amplo à operação e **gerencia usuários** (criar/editar/desativar), mas **não edita permissões** (exclusivo do superuser) nem executa ações críticas por padrão. |
 | **Atendente** | Recepção: cadastro/consulta de clientes e veículos, abrir/editar OS, gerar/enviar orçamento. |
 | **Técnico** | Execução/diagnóstico: Kanban, ver OS, editar diagnóstico. Tem **especialidade técnica**. |
 | **Estoque** | Peças, estoque e fornecedores. |
@@ -84,7 +84,10 @@ Marcadas com `is_critical` no catálogo e destacadas com ícone na matriz. Como 
 
 ## Cadastro de usuários (`/users`)
 
-Acessível por quem tem `users.manage` (item **Usuários** no menu do usuário).
+Acessível por quem tem `users.manage` — **superuser** e **Administrador**. Chega-se por um card
+**"Usuários"** em **Configurações** (ou pelo item no menu do usuário). O **Administrador** cadastra,
+edita e desativa usuários, mas **não** ajusta permissões individuais: a ação "Ver permissões" e a
+matriz de permissões são **exclusivas do superuser**.
 
 - **Criar/editar** (nome, e-mail, telefone, WhatsApp, perfil, especialidade quando Técnico, status,
   observações). O **e-mail é o login**, obrigatório e único; o **nome** e o **perfil** são

@@ -30,6 +30,49 @@ def tecnico_role(db):
     return Role.objects.get(key="tecnico")
 
 
+@pytest.fixture
+def administrador_role(db):
+    return Role.objects.get(key="administrador")
+
+
+def test_administrador_manages_users_but_not_permissions(
+    administrador_role, atendente_role
+):
+    User.objects.create_user(
+        email="adm@example.com",
+        password="StrongPass123",
+        full_name="Admin Oficina",
+        role=administrador_role,
+    )
+    c = _client_for("adm@example.com")
+    # Pode CRIAR usuários.
+    created = c.post(
+        "/api/users/",
+        data={
+            "email": "novo@example.com",
+            "full_name": "Novo",
+            "role": atendente_role.id,
+            "password": "StrongPass123",
+        },
+        content_type="application/json",
+    )
+    assert created.status_code == 201
+    uid = created.json()["id"]
+    # Pode DESATIVAR usuários.
+    assert c.delete(f"/api/users/{uid}/").status_code == 204
+    # NÃO pode editar permissões (permissions.manage é exclusivo do superuser).
+    assert c.get(f"/api/users/{uid}/permissions/").status_code == 403
+    assert (
+        c.put(
+            f"/api/users/{uid}/permissions/",
+            data={"granted": [], "revoked": []},
+            content_type="application/json",
+        ).status_code
+        == 403
+    )
+    assert c.get("/api/permissions/catalog/").status_code == 403
+
+
 # --- catálogo semeado ---
 
 
