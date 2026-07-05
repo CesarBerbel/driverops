@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Link2, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Controller,
@@ -185,53 +185,38 @@ export function OrderLineList({
                   </div>
                 </div>
 
-                {serviceOptions && (
-                  <div className="mt-2 flex flex-col gap-1 border-t pt-2 sm:flex-row sm:items-center sm:gap-2">
-                    <Label className="text-[11px] text-muted-foreground sm:w-32 sm:shrink-0">
-                      Serviço vinculado
-                    </Label>
-                    {serviceOptions.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        Adicione um serviço para poder vincular esta peça.
-                      </p>
-                    ) : (
-                      <Controller
-                        control={control}
-                        name={`${namePrefix}.${index}.linked_service_index`}
-                        render={({ field: linkField }) => (
-                          <Select
-                            value={
-                              linkField.value == null
-                                ? NO_SERVICE
-                                : String(linkField.value)
-                            }
-                            onValueChange={(value) =>
-                              linkField.onChange(
-                                value === NO_SERVICE ? null : Number(value),
-                              )
-                            }
+                {serviceOptions && serviceOptions.length > 0 && (
+                  <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Link2 className="size-3 shrink-0" />
+                    <Controller
+                      control={control}
+                      name={`${namePrefix}.${index}.linked_service_index`}
+                      render={({ field: linkField }) => (
+                        <Select
+                          value={
+                            linkField.value == null ? NO_SERVICE : String(linkField.value)
+                          }
+                          onValueChange={(value) =>
+                            linkField.onChange(value === NO_SERVICE ? null : Number(value))
+                          }
+                        >
+                          <SelectTrigger
+                            aria-label="Serviço vinculado"
+                            className="h-6 max-w-full gap-1 border-0 bg-transparent px-1 py-0 text-xs text-muted-foreground shadow-none hover:text-foreground focus-visible:ring-0 data-[placeholder]:text-muted-foreground/70"
                           >
-                            <SelectTrigger
-                              className="h-8 w-full sm:max-w-xs"
-                              aria-label="Serviço vinculado"
-                            >
-                              <SelectValue placeholder="Nenhum" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={NO_SERVICE}>Nenhum</SelectItem>
-                              {serviceOptions.map((option) => (
-                                <SelectItem
-                                  key={option.index}
-                                  value={String(option.index)}
-                                >
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    )}
+                            <SelectValue placeholder="Vincular a um serviço" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NO_SERVICE}>Sem vínculo</SelectItem>
+                            {serviceOptions.map((option) => (
+                              <SelectItem key={option.index} value={String(option.index)}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                 )}
               </li>
