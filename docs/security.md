@@ -24,6 +24,10 @@
   para não revelar quais e-mails estão cadastrados.
 - Login e solicitação de redefinição de senha possuem *rate limiting* (`5/min` e `3/min`,
   respectivamente).
+- A página pública de aprovação de **[orçamento](quotes.md)** usa um **token seguro**
+  (`secrets.token_urlsafe`, não sequencial) e é limitada àquele orçamento: sem login, sem edição de
+  dados e sem acesso a outros orçamentos. Após a decisão (aprovar/recusar), o token não permite nova
+  decisão. A aprovação por link registra IP e user agent.
 
 ---
 Voltar para o [índice da documentação](README.md).

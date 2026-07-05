@@ -5,3 +5,5 @@ django-cors-headers>=4.4,<4.7
 psycopg[binary]>=3.2,<3.3
 python-dotenv>=1.0,<1.1
 gunicorn>=23.0,<24.0
+# Geração de PDF do orçamento (puro Python, sem dependências de sistema).
+xhtml2pdf>=0.2.16,<0.3

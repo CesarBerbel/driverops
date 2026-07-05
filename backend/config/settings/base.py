@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.services",
     "apps.orders",
     "apps.workshop",
+    "apps.quotes",
 ]
 
 MIDDLEWARE = [

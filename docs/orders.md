@@ -9,6 +9,10 @@ Reutiliza os módulos de [Clientes](customers.md), [Veículos](vehicles.md),
 **itens de linha** que podem tanto referenciar um cadastro (FK) quanto ser **avulsos** (texto livre,
 válidos apenas naquela OS).
 
+A partir de uma OS salva é possível gerar um **[Orçamento](quotes.md)** (snapshot dos itens, PDF e
+aprovação por assinatura física, no tablet ou por link enviado por e-mail). O painel de Orçamentos
+fica abaixo do formulário da OS.
+
 - **Branch:** `feature/ordem-servico`
 - **App backend:** `apps.orders` (modelos `WorkOrder`, `WorkOrderService`, `WorkOrderPackage`,
   `WorkOrderPart`)

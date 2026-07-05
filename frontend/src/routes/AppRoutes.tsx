@@ -16,6 +16,7 @@ import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
 import { PartsPage } from "@/features/parts/pages/PartsPage";
+import { PublicQuoteApprovalPage } from "@/features/quotes/pages/PublicQuoteApprovalPage";
 import { ProfilePage } from "@/features/profile/pages/ProfilePage";
 import { ServicePackagesPage } from "@/features/services/pages/ServicePackagesPage";
 import { ServicesPage } from "@/features/services/pages/ServicesPage";
@@ -30,6 +31,9 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+
+      {/* Página pública de aprovação do orçamento (acesso só pelo token, sem login). */}
+      <Route path="/orcamento/:token" element={<PublicQuoteApprovalPage />} />
 
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
