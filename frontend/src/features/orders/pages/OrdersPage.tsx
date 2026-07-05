@@ -234,7 +234,13 @@ export function OrdersPage() {
               {orders?.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
-                    {formatOrderNumber(order.number)}
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/orders/${order.id}`)}
+                      className="text-primary hover:underline focus-visible:underline focus-visible:outline-none"
+                    >
+                      {formatOrderNumber(order.number)}
+                    </button>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
