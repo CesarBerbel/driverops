@@ -41,6 +41,7 @@ function quote(overrides: Partial<Quote> = {}): Quote {
         notes: "",
         status: "pending",
         status_display: "Pendente",
+        linked_service: null,
       },
     ],
     totals: {

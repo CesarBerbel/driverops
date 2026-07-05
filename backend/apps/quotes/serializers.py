@@ -25,6 +25,7 @@ class QuoteItemSerializer(serializers.ModelSerializer):
             "notes",
             "status",
             "status_display",
+            "linked_service",
         ]
 
     def get_subtotal(self, obj):

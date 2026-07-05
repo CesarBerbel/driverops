@@ -169,6 +169,16 @@ class QuoteItem(models.Model):
     status = models.CharField(
         max_length=10, choices=ItemStatus.choices, default=ItemStatus.PENDING
     )
+    # Peça vinculada a um serviço (peça padrão do serviço). Itens vinculados são
+    # aprovados/recusados **em conjunto** com o serviço -- não se pode recusar um
+    # sem o outro. Nulo para serviços, pacotes e peças avulsas/independentes.
+    linked_service = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="linked_parts",
+    )
 
     class Meta:
         ordering = ["id"]
