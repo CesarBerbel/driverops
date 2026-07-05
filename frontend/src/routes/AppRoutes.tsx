@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { PublicOnlyRoute } from "@/features/auth/PublicOnlyRoute";
+import { RequirePermission } from "@/features/auth/RequirePermission";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
@@ -25,6 +26,9 @@ import { OrderSettingsPage } from "@/features/settings/pages/OrderSettingsPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { WorkshopProfilePage } from "@/features/settings/pages/WorkshopProfilePage";
 import { SuppliersPage } from "@/features/suppliers/pages/SuppliersPage";
+import { AuditPage } from "@/features/users/pages/AuditPage";
+import { PermissionsMatrixPage } from "@/features/users/pages/PermissionsMatrixPage";
+import { UsersPage } from "@/features/users/pages/UsersPage";
 import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";
 
 export function AppRoutes() {
@@ -63,6 +67,16 @@ export function AppRoutes() {
           <Route path="/orders/new" element={<OrderEditorPage />} />
           <Route path="/orders/:id" element={<OrderEditorPage />} />
 
+          {/* Usuários / permissões / auditoria (protegidos por permissão). */}
+          <Route element={<RequirePermission code="users.manage" />}>
+            <Route path="/users" element={<UsersPage />} />
+          </Route>
+          <Route element={<RequirePermission code="permissions.manage" />}>
+            <Route path="/users/:id/permissions" element={<PermissionsMatrixPage />} />
+          </Route>
+          <Route element={<RequirePermission code="audit.view" />}>
+            <Route path="/audit" element={<AuditPage />} />
+          </Route>
         </Route>
       </Route>
 

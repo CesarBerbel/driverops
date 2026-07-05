@@ -1,6 +1,8 @@
 from django.db.models import Count, Q
 from rest_framework import mixins, viewsets
 
+from apps.accounts.permissions import HasModulePermission
+
 from .models import Customer
 from .serializers import CustomerSerializer
 
@@ -16,6 +18,8 @@ class CustomerViewSet(
     # requested (only cadastrar/listar/editar/buscar), so no delete route
     # exists at all.
     serializer_class = CustomerSerializer
+    permission_classes = [HasModulePermission]
+    permission_module = "customers"
 
     def get_queryset(self):
         # "vehicles" is the related_name on apps.vehicles.Vehicle.customer --

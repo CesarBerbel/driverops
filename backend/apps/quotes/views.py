@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.permissions import HasModulePermission
 from apps.orders.models import WorkOrder
 
 from .emails import send_quote_approval_email
@@ -48,6 +49,17 @@ class QuoteViewSet(viewsets.ModelViewSet):
 
     serializer_class = QuoteSerializer
     http_method_names = ["get", "post", "delete"]
+    permission_classes = [HasModulePermission]
+    permission_module = "quotes"
+    permission_action_map = {
+        "cancel": "cancel",
+        "send": "send",
+        "approve_physical": "approve",
+        "approve_tablet": "approve",
+        "reject": "reject",
+        "pdf": "pdf",
+        "destroy": "cancel",
+    }
 
     def get_queryset(self):
         queryset = Quote.objects.select_related(

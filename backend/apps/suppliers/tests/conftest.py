@@ -14,9 +14,15 @@ def clear_throttle_cache():
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(
+    from apps.accounts.models import Role
+
+    u = User.objects.create_user(
         email="user@example.com", password="StrongPass123", full_name="Jane Doe"
     )
+    # Perfil Administrador (semeado) -> permissões amplas dos módulos de domínio.
+    u.role = Role.objects.filter(key="administrador").first()
+    u.save(update_fields=["role"])
+    return u
 
 
 @pytest.fixture

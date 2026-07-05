@@ -3,12 +3,16 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.accounts.permissions import HasModulePermission
+
 from .models import Part
 from .serializers import PartSerializer
 
 
 class PartViewSet(viewsets.ModelViewSet):
     serializer_class = PartSerializer
+    permission_classes = [HasModulePermission]
+    permission_module = "parts"
 
     def get_queryset(self):
         queryset = Part.objects.select_related("category", "supplier").all()

@@ -1,4 +1,4 @@
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, ScrollText, User as UserIcon, Users } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/features/auth/useAuth";
+import { usePermissionCheck } from "@/features/auth/usePermission";
 
 function getInitials(name: string, email: string) {
   const source = name.trim() || email;
@@ -25,10 +26,14 @@ function getInitials(name: string, email: string) {
 
 export function UserMenu() {
   const { user, logout } = useAuth();
+  const can = usePermissionCheck();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   if (!user) return null;
+
+  const canManageUsers = can("users.manage");
+  const canViewAudit = can("audit.view");
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -59,6 +64,18 @@ export function UserMenu() {
           <UserIcon />
           Perfil
         </DropdownMenuItem>
+        {canManageUsers && (
+          <DropdownMenuItem onClick={() => navigate("/users")}>
+            <Users />
+            Usuários
+          </DropdownMenuItem>
+        )}
+        {canViewAudit && (
+          <DropdownMenuItem onClick={() => navigate("/audit")}>
+            <ScrollText />
+            Auditoria
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" disabled={isLoggingOut} onClick={handleLogout}>
           <LogOut />

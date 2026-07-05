@@ -11,10 +11,35 @@ INVALID_RESET_LINK_MESSAGE = "Link de redefinição inválido ou expirado."
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Usuário logado (``/users/me/``) com o RBAC necessário para o frontend."""
+
+    role = serializers.CharField(source="role.key", read_only=True, default=None)
+    role_name = serializers.CharField(source="role.name", read_only=True, default=None)
+    technical_specialty_display = serializers.CharField(
+        source="get_technical_specialty_display", read_only=True, default=""
+    )
+    permissions = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["id", "email", "full_name", "is_staff", "is_superuser", "date_joined"]
-        read_only_fields = ["id", "email", "is_staff", "is_superuser", "date_joined"]
+        fields = [
+            "id",
+            "email",
+            "full_name",
+            "is_staff",
+            "is_superuser",
+            "date_joined",
+            "role",
+            "role_name",
+            "technical_specialty",
+            "technical_specialty_display",
+            "force_password_change",
+            "permissions",
+        ]
+        read_only_fields = fields
+
+    def get_permissions(self, obj):
+        return sorted(obj.effective_permission_codes())
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
