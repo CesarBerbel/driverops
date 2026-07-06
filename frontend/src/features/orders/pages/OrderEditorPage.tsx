@@ -1,16 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { QuotePanel } from "@/features/quotes/components/QuotePanel";
-
 import { getWorkOrder } from "../api";
-import { OrderAttachments } from "../components/OrderAttachments";
 import { OrderForm } from "../components/OrderForm";
-import { OrderStatusTimeline } from "../components/OrderStatusTimeline";
 import { formatOrderNumber } from "../lib/orderMapping";
 
 export function OrderEditorPage() {
@@ -33,22 +27,17 @@ export function OrderEditorPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" aria-label="Voltar" onClick={goToList}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {isEditMode
-              ? order
-                ? formatOrderNumber(order.number)
-                : "Ordem de Serviço"
-              : "Nova Ordem de Serviço"}
-          </h1>
-          <p className="text-muted-foreground">
-            Identifique o veículo pela placa -- o cliente é preenchido automaticamente.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {isEditMode
+            ? order
+              ? formatOrderNumber(order.number)
+              : "Ordem de Serviço"
+            : "Nova Ordem de Serviço"}
+        </h1>
+        <p className="text-muted-foreground">
+          Identifique o veículo pela placa -- o cliente é preenchido automaticamente.
+        </p>
       </div>
 
       {isWaitingForData ? (
@@ -58,22 +47,12 @@ export function OrderEditorPage() {
           <Skeleton className="h-32 w-full" />
         </div>
       ) : (
-        <>
-          <OrderForm
-            key={orderId ?? "create"}
-            order={order ?? null}
-            onSuccess={goToList}
-            onCancel={goToList}
-          />
-          {/* Anexos, histórico e orçamento só existem para uma OS já salva. */}
-          {isEditMode && orderId !== null && (
-            <>
-              <OrderAttachments orderId={orderId} />
-              <OrderStatusTimeline orderId={orderId} />
-              <QuotePanel orderId={orderId} />
-            </>
-          )}
-        </>
+        <OrderForm
+          key={orderId ?? "create"}
+          order={order ?? null}
+          onSuccess={goToList}
+          onCancel={goToList}
+        />
       )}
     </div>
   );

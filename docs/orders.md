@@ -69,27 +69,53 @@ Lista de OS → filtro de status            → por status da OS ou "Desabilitad
 Lista de OS → "Excluir" (por linha)       → confirmação → desabilita a OS (soft delete)
 ```
 
-O formulário é uma **página** (não um drawer), pois é extenso, e ocupa a **largura total**. Em telas
-grandes os blocos ficam em **duas colunas**; no mobile empilham na ordem numerada abaixo. Além do
+O formulário é uma **página** (não um drawer), pois é extenso, e ocupa a **largura total**. Além do
 botão "Nova OS" na lista, há um atalho **"Nova OS" sempre visível no menu superior** (`/orders/new`).
 
-- **Coluna esquerda:** Dados principais, Veículo, Cliente, Relato do cliente, Diagnóstico técnico,
-  Observações internas.
-- **Coluna direita:** Serviços, Pacotes de serviços, Peças utilizadas, Valores.
+## Tela de OS em abas
 
-Blocos:
+O cadastro e a edição da OS são organizados em **abas** (`ServiceOrderTabs`), reduzindo a poluição
+visual e separando as informações por contexto. A troca de aba é **instantânea** (não recarrega a
+página) e **preserva os dados já preenchidos** — o formulário é um único `react-hook-form`, então
+sair e voltar de uma aba nunca perde o que foi digitado. No mobile/tablet a barra de abas tem
+**rolagem horizontal** e aceita **swipe** por toque.
 
-1. Dados principais (número gerado, data de abertura, previsão de entrega, quilometragem e o
-   **Status da OS** ao lado da quilometragem)
-2. **Veículo** (vem **antes** do cliente)
-3. **Cliente**
-4. Relato do cliente
-5. Diagnóstico técnico
-6. Serviços
-7. Pacotes de serviços
-8. Peças utilizadas
-9. Valores
-10. Observações internas
+As sete abas, nesta ordem:
+
+1. **Veículo e cliente** — os blocos aparecem **obrigatoriamente** nesta ordem: **Veículo primeiro**
+   (a placa é a prioridade operacional), **Cliente** logo abaixo (preenchido automaticamente ao
+   escolher o veículo) e, por fim, os **Dados principais** da OS (data de abertura, previsão de
+   entrega, quilometragem, **Status** e **Técnico responsável**).
+2. **Relato e diagnóstico** — relato do cliente (obrigatório), diagnóstico técnico e **observações
+   internas** (uso interno; não aparecem no PDF nem na página pública do cliente).
+3. **Serviços e peças** — serviços, pacotes e peças (cadastrados ou avulsos), com cadastro inline.
+4. **Fotos** — anexos/fotos da OS (ver [Anexos](#anexos)). Só em OS já salva.
+5. **Orçamento** — o [orçamento da OS](quotes.md). Só em OS já salva.
+6. **Resumo e valores** — resumo consolidado (veículo, cliente, status, contagem de itens) e o bloco
+   de **Valores** (totais + desconto + valor final, calculados no backend).
+7. **Histórico** — a [linha do tempo de status](#histórico-de-status-linha-do-tempo). Só em OS já salva.
+
+As abas **Fotos**, **Orçamento** e **Histórico** ficam **desabilitadas ao criar** uma OS nova (com
+dica "Salve a OS para ..."), pois dependem de uma OS já existente.
+
+### Barra de ações
+
+No topo do formulário há uma **barra de ações persistente**: **Voltar** (à lista), **Kanban OS**
+(abre o [Kanban](kanban.md)), **Salvar** (salva e volta à lista) e **Salvar e continuar** (salva e
+permanece no editor — ao criar, abre o editor da OS recém-criada para liberar Fotos/Orçamento/Histórico).
+
+### Validação por aba
+
+Cada campo é mapeado à sua aba. Se um campo obrigatório inválido está numa aba **não visível**, a aba
+exibe um **indicador de erro** (ícone) na barra. Ao tentar salvar com erros, o sistema **leva o
+usuário para a primeira aba com erro** (na ordem Veículo/cliente → Relato → Itens → Resumo), para que
+a mensagem fique visível. A aba **Histórico** é somente leitura e não exige validação.
+
+### Responsividade
+
+- **Desktop:** abas no topo; cards em grid quando cabível; tabelas para itens; galeria de fotos em grid.
+- **Tablet/Mobile:** abas com **rolagem horizontal** + **swipe**; campos e cards empilham em largura
+  total; na primeira aba a ordem **Veículo → Cliente → Dados da OS** é preservada ao empilhar.
 
 ## Veículo antes do cliente (prioridade: placa)
 
