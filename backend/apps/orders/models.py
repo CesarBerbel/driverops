@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Max
 
@@ -39,6 +40,15 @@ class WorkOrder(models.Model):
     )
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.OPEN
+    )
+    # Técnico responsável pela OS. Opcional; atribuído/trocado a qualquer momento.
+    # SET_NULL para nunca apagar a OS ao desativar/excluir um usuário.
+    assigned_technician = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="assigned_orders",
+        null=True,
+        blank=True,
     )
     opened_at = models.DateField()
     expected_delivery = models.DateField(null=True, blank=True)
@@ -164,3 +174,67 @@ class WorkOrderPart(models.Model):
 
     def __str__(self):
         return self.description or (self.part.name if self.part else "Peça")
+
+
+class OrderStatusHistory(models.Model):
+    """Linha do tempo das mudanças de status de uma OS.
+
+    Registrada automaticamente pelo `WorkOrderViewSet` a cada troca de status
+    (criação, arrastar no Kanban ou editar). Imutável -- nunca editada nem
+    apagada (a não ser em cascata, se a OS for removida fisicamente, o que o
+    sistema não faz: OS usa soft delete).
+    """
+
+    order = models.ForeignKey(
+        WorkOrder, on_delete=models.CASCADE, related_name="status_history"
+    )
+    # Vazio = criação da OS (não havia status anterior).
+    from_status = models.CharField(max_length=20, blank=True)
+    to_status = models.CharField(max_length=20)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    note = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        verbose_name_plural = "order status histories"
+
+    def __str__(self):
+        return f"OS #{self.order.number}: {self.from_status or '—'} -> {self.to_status}"
+
+
+def order_attachment_path(instance, filename):
+    # Agrupa por OS: media/orders/<número>/<arquivo>.
+    return f"orders/{instance.order_id}/{filename}"
+
+
+class OrderAttachment(models.Model):
+    """Arquivo anexado a uma OS (foto do veículo, laudo, nota, etc.)."""
+
+    order = models.ForeignKey(
+        WorkOrder, on_delete=models.CASCADE, related_name="attachments"
+    )
+    file = models.FileField(upload_to=order_attachment_path)
+    original_name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=100, blank=True)
+    size = models.PositiveIntegerField(default=0)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return self.original_name

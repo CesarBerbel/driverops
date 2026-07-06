@@ -39,6 +39,7 @@ export const orderSchema = z
       "finished",
       "canceled",
     ]),
+    assigned_technician_id: z.number().nullable(),
     opened_at: z.string().min(1, "Informe a data de abertura."),
     expected_delivery: z.string().optional(),
     current_mileage: z.string().optional(),

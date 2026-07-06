@@ -1,6 +1,8 @@
 from django.contrib import admin
 
 from .models import (
+    OrderAttachment,
+    OrderStatusHistory,
     WorkOrder,
     WorkOrderPackage,
     WorkOrderPart,
@@ -44,3 +46,16 @@ class WorkOrderAdmin(admin.ModelAdmin):
         WorkOrderPackageInline,
         WorkOrderPartInline,
     ]
+
+
+@admin.register(OrderStatusHistory)
+class OrderStatusHistoryAdmin(admin.ModelAdmin):
+    list_display = ["order", "from_status", "to_status", "changed_by", "created_at"]
+    list_filter = ["to_status", "created_at"]
+    search_fields = ["order__number"]
+
+
+@admin.register(OrderAttachment)
+class OrderAttachmentAdmin(admin.ModelAdmin):
+    list_display = ["order", "original_name", "content_type", "size", "created_at"]
+    search_fields = ["order__number", "original_name"]

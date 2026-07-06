@@ -1,4 +1,4 @@
-import { AlertTriangle, MoveRight } from "lucide-react";
+import { AlertTriangle, MoveRight, Wrench } from "lucide-react";
 
 import { ContactLink } from "@/components/shared/ContactLink";
 import { Button } from "@/components/ui/button";
@@ -133,6 +133,12 @@ export function ServiceOrderPlateCard({
       <div className="mt-2 space-y-1 border-t pt-2 text-[11px] text-muted-foreground">
         {order.vehicle_description && (
           <p className="truncate">{order.vehicle_description}</p>
+        )}
+        {order.assigned_technician_name && (
+          <p className="flex items-center gap-1 truncate">
+            <Wrench className="size-3 shrink-0" />
+            {order.assigned_technician_name}
+          </p>
         )}
         <div className="flex items-center justify-between gap-2">
           <span className="font-semibold text-foreground">

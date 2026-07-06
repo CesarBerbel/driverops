@@ -67,9 +67,9 @@ Conteúdo obrigatório do card:
 - **Nome do cliente** — ex.: `Mariana Souza`.
 - **WhatsApp clicável** — ex.: `(11) 98888-1234`.
 
-Informações adicionais discretas: marca/modelo do veículo, valor total da OS, previsão de entrega e
-**indicador de atraso** (ícone de alerta quando a OS está vencida). Esses extras não competem com a
-placa, a OS, o cliente e o WhatsApp.
+Informações adicionais discretas: marca/modelo do veículo, **técnico responsável** (quando atribuído,
+com ícone de chave), valor total da OS, previsão de entrega e **indicador de atraso** (ícone de alerta
+quando a OS está vencida). Esses extras não competem com a placa, a OS, o cliente e o WhatsApp.
 
 ### WhatsApp no card
 
@@ -119,10 +119,11 @@ Fixos no topo, com busca **debounced** (300 ms):
 
 - **Busca** por número da OS, placa, nome do cliente e telefone/WhatsApp.
 - **Período de abertura** (Todo o período / Hoje / Esta semana / Este mês).
+- **Técnico** — filtra pelas OS atribuídas a um técnico (ver [Técnico responsável](orders.md#técnico-responsável)).
 - **Atrasadas** — apenas OS com previsão de entrega vencida e ainda em andamento.
-- **Limpar filtros** — reseta busca, período e atraso.
+- **Limpar filtros** — reseta busca, período, técnico e atraso.
 
-Os filtros são **refletidos na URL** (`?q=...&period=...&overdue=true`), permitindo compartilhar ou
+Os filtros são **refletidos na URL** (`?q=...&period=...&technician=...&overdue=true`), permitindo compartilhar ou
 recarregar a tela sem perder o estado. Abrir/fechar o modal de OS preserva filtros, coluna e posição
 de scroll. Quando nenhum resultado é encontrado, um estado vazio é exibido.
 

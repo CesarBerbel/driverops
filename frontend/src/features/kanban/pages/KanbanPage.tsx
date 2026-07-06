@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { listWorkOrders, type OrderPeriod } from "@/features/orders/api";
+import { listTechnicians, listWorkOrders, type OrderPeriod } from "@/features/orders/api";
 import type { OrderStatus } from "@/features/orders/types";
 import { getKanbanSettings } from "@/features/settings/api";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -35,9 +35,18 @@ export function KanbanPage() {
     () => (searchParams.get("period") as OrderPeriod) || "all",
   );
   const [overdue, setOverdue] = useState(() => searchParams.get("overdue") === "true");
+  const [technician, setTechnician] = useState(
+    () => searchParams.get("technician") ?? "all",
+  );
 
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   const effectiveSearch = searchInput === "" ? "" : debouncedSearch;
+
+  const techniciansQuery = useQuery({
+    queryKey: ["technicians"],
+    queryFn: listTechnicians,
+  });
+  const technicians = techniciansQuery.data ?? [];
 
   // Reflect the filters in the URL so a Kanban view can be shared or reloaded
   // without losing state.
@@ -46,8 +55,9 @@ export function KanbanPage() {
     if (effectiveSearch) params.set("q", effectiveSearch);
     if (period !== "all") params.set("period", period);
     if (overdue) params.set("overdue", "true");
+    if (technician !== "all") params.set("technician", technician);
     setSearchParams(params, { replace: true });
-  }, [effectiveSearch, period, overdue, setSearchParams]);
+  }, [effectiveSearch, period, overdue, technician, setSearchParams]);
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ["kanban-settings"],
@@ -64,6 +74,7 @@ export function KanbanPage() {
     visibleColumns.join(","),
     period,
     overdue,
+    technician,
     effectiveSearch,
   ];
 
@@ -80,17 +91,20 @@ export function KanbanPage() {
         statuses: visibleColumns,
         period,
         overdue,
+        technician: technician === "all" ? undefined : Number(technician),
         search: effectiveSearch || undefined,
         active: "active",
       }),
   });
 
-  const hasFilters = Boolean(effectiveSearch) || period !== "all" || overdue;
+  const hasFilters =
+    Boolean(effectiveSearch) || period !== "all" || overdue || technician !== "all";
 
   function clearFilters() {
     setSearchInput("");
     setPeriod("all");
     setOverdue(false);
+    setTechnician("all");
   }
 
   const loading = settingsLoading || (visibleColumns.length > 0 && isLoading);
@@ -133,6 +147,19 @@ export function KanbanPage() {
               {PERIOD_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={technician} onValueChange={setTechnician}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Técnico" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os técnicos</SelectItem>
+              {technicians.map((tech) => (
+                <SelectItem key={tech.id} value={String(tech.id)}>
+                  {tech.name}
                 </SelectItem>
               ))}
             </SelectContent>
