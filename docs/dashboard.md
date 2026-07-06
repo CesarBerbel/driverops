@@ -111,7 +111,9 @@ cliente e **telefone/WhatsApp clicável**, data de abertura e previsão, relato 
 
 O modal traz um botão em destaque **"Abrir OS"** que leva à **tela completa e editável** da OS
 (`/orders/:id`), e uma ação **"Fechar"**. Fechar mantém o usuário na aba OS, sem perder os filtros.
-É responsivo (centralizado no desktop, quase tela cheia no mobile).
+É **largo** (aproveita bem a tela): no desktop o conteúdo fica em **duas colunas** — detalhes
+(cliente, datas, relato, diagnóstico, observações) à esquerda e **itens** (serviços, pacotes, peças) à
+direita, com o veículo/placa no topo e o valor total no rodapé. No mobile empilha em uma coluna só.
 
 ### Filtros da aba OS
 
