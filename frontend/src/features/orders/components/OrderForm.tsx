@@ -388,7 +388,9 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
       <ServiceOrderTabs tabs={tabs} active={activeTab} onChange={setActiveTab}>
         {/* Aba 1 -- Veículo (primeiro), Cliente e dados principais da OS. */}
         {activeTab === "main" && (
-          <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+            {/* Coluna esquerda: Veículo e Cliente. */}
+            <div className="space-y-6">
             {/* Veículo (antes do cliente -- a placa é a prioridade operacional) */}
             <Card>
               <CardHeader>
@@ -490,8 +492,10 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
                 )}
               </CardContent>
             </Card>
+            </div>
 
-            {/* Dados principais da OS (abaixo de veículo e cliente) */}
+            {/* Coluna direita: dados principais da OS. */}
+            <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Dados principais</CardTitle>
@@ -597,6 +601,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         )}
 

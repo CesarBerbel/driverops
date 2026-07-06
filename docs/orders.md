@@ -82,10 +82,11 @@ sair e voltar de uma aba nunca perde o que foi digitado. No mobile/tablet a barr
 
 As sete abas, nesta ordem:
 
-1. **Veículo e cliente** — os blocos aparecem **obrigatoriamente** nesta ordem: **Veículo primeiro**
-   (a placa é a prioridade operacional), **Cliente** logo abaixo (preenchido automaticamente ao
-   escolher o veículo) e, por fim, os **Dados principais** da OS (data de abertura, previsão de
-   entrega, quilometragem, **Status** e **Técnico responsável**).
+1. **Veículo e cliente** — no desktop, **duas colunas**: à **esquerda** o **Veículo** (a placa é a
+   prioridade operacional) e o **Cliente** logo abaixo (preenchido automaticamente ao escolher o
+   veículo); à **direita**, os **Dados principais** da OS (data de abertura, previsão de entrega,
+   quilometragem, **Status** e **Técnico responsável**). No tablet/mobile as colunas empilham,
+   preservando a ordem **Veículo → Cliente → Dados principais**.
 2. **Relato e diagnóstico** — relato do cliente (obrigatório), diagnóstico técnico e **observações
    internas** (uso interno; não aparecem no PDF nem na página pública do cliente).
 3. **Serviços e peças** — serviços, pacotes e peças (cadastrados ou avulsos), com cadastro inline.
