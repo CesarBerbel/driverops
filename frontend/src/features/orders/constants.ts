@@ -1,4 +1,21 @@
-import type { OrderDiscountType, OrderStatus } from "./types";
+import type { AttachmentCategory, OrderDiscountType, OrderStatus } from "./types";
+
+export const ATTACHMENT_CATEGORY_OPTIONS: {
+  value: AttachmentCategory;
+  label: string;
+}[] = [
+  { value: "entry", label: "Entrada do veículo" },
+  { value: "external_damage", label: "Avaria externa" },
+  { value: "internal_damage", label: "Avaria interna" },
+  { value: "engine", label: "Motor" },
+  { value: "suspension", label: "Suspensão" },
+  { value: "brakes", label: "Freios" },
+  { value: "damaged_part", label: "Peça danificada" },
+  { value: "in_progress", label: "Serviço em andamento" },
+  { value: "completed", label: "Serviço concluído" },
+  { value: "delivery", label: "Entrega do veículo" },
+  { value: "other", label: "Outros" },
+];
 
 export const ORDER_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "open", label: "Aberta" },

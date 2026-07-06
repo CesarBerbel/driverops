@@ -13,6 +13,7 @@ vi.mock("@/features/orders/api", async (importOriginal) => {
     ...actual,
     listAttachments: vi.fn(),
     uploadAttachment: vi.fn(),
+    updateAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
   };
 });
@@ -31,6 +32,9 @@ function attachment(overrides: Partial<OrderAttachment> = {}): OrderAttachment {
     original_name: "foto.png",
     content_type: "image/png",
     size: 2048,
+    category: "other",
+    category_display: "Outros",
+    caption: "",
     uploaded_by_name: "Admin",
     is_image: true,
     created_at: "2026-07-05T12:00:00Z",
@@ -60,7 +64,7 @@ describe("OrderAttachments", () => {
     expect(await screen.findByText("foto.png")).toBeInTheDocument();
   });
 
-  it("uploads a selected file", async () => {
+  it("uploads a selected file with the chosen category and caption", async () => {
     const user = userEvent.setup();
     renderAttachments();
     await screen.findByText("foto.png");
@@ -68,14 +72,18 @@ describe("OrderAttachments", () => {
     const file = new File(["data"], "nota.pdf", { type: "application/pdf" });
     await user.upload(input, file);
     await waitFor(() => expect(ordersApi.uploadAttachment).toHaveBeenCalledTimes(1));
-    expect(ordersApi.uploadAttachment).toHaveBeenCalledWith(1, file);
+    expect(ordersApi.uploadAttachment).toHaveBeenCalledWith(1, file, {
+      category: "other",
+      caption: "",
+    });
   });
 
-  it("hides upload/delete for a user without orders.edit", async () => {
+  it("hides the upload controls and per-item actions for a view-only user", async () => {
     auth.user = { is_superuser: false, permissions: ["orders.view"] };
     renderAttachments();
     await screen.findByText("foto.png");
-    expect(screen.queryByRole("button", { name: /Anexar arquivo/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Anexar/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Remover/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Editar/ })).toBeNull();
   });
 });

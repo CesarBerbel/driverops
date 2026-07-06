@@ -82,10 +82,11 @@ sair e voltar de uma aba nunca perde o que foi digitado. No mobile/tablet a barr
 
 As sete abas, nesta ordem:
 
-1. **Veículo e cliente** — os blocos aparecem **obrigatoriamente** nesta ordem: **Veículo primeiro**
-   (a placa é a prioridade operacional), **Cliente** logo abaixo (preenchido automaticamente ao
-   escolher o veículo) e, por fim, os **Dados principais** da OS (data de abertura, previsão de
-   entrega, quilometragem, **Status** e **Técnico responsável**).
+1. **Veículo e cliente** — no desktop, **duas colunas**: à **esquerda** o **Veículo** (a placa é a
+   prioridade operacional) e o **Cliente** logo abaixo (preenchido automaticamente ao escolher o
+   veículo); à **direita**, os **Dados principais** da OS (data de abertura, previsão de entrega,
+   quilometragem, **Status** e **Técnico responsável**). No tablet/mobile as colunas empilham,
+   preservando a ordem **Veículo → Cliente → Dados principais**.
 2. **Relato e diagnóstico** — relato do cliente (obrigatório), diagnóstico técnico e **observações
    internas** (uso interno; não aparecem no PDF nem na página pública do cliente).
 3. **Serviços e peças** — serviços, pacotes e peças (cadastrados ou avulsos), com cadastro inline.
@@ -170,13 +171,22 @@ nela -- cada uma vira uma movimentação de saída vinculada à OS. A baixa é i
 vale tanto pelo arrastar no Kanban quanto pela mudança de status no editor. Detalhes e regras em
 [Peças e Estoque → Baixa automática ao finalizar a OS](parts.md#baixa-automática-ao-finalizar-a-os).
 
-### Histórico de status (linha do tempo)
+### Histórico da OS (linha do tempo de eventos)
 
-Cada mudança de status é registrada automaticamente (modelo `OrderStatusHistory`): a criação da OS, o
-arrastar no Kanban e as edições de status no editor. Cada linha guarda o status anterior, o novo, o
-usuário responsável e o horário. O editor da OS mostra a **linha do tempo** ("Histórico de status",
-mais recente primeiro); a listagem vem de `GET /api/work-orders/{id}/status-history/`. É um registro
-imutável -- útil para auditar o andamento do atendimento sem depender da memória da equipe.
+A aba **Histórico** mostra uma **linha do tempo unificada e auditável** (modelo `OrderEvent`,
+append-only, somente leitura), registrada automaticamente. Os eventos capturados:
+
+- **OS criada** e **mudanças de status** (criação, arrastar no Kanban, edição — com o de/para).
+- **Foto/anexo adicionado** e **removido**.
+- **Orçamento**: criado, enviado, aprovado, **aprovado parcialmente** e recusado — incluindo as
+  decisões pelo **cliente** na página pública (canal "Link por e-mail").
+
+Cada evento exibe **data/hora, usuário responsável (ou o cliente), tipo, descrição e canal**. A aba
+permite **filtrar por tipo de evento**. A listagem vem de `GET /api/work-orders/{id}/events/`
+(parâmetro opcional `?type=`). É somente leitura — nenhum evento é editado ou apagado pela interface.
+
+> O modelo `OrderStatusHistory` (de/para de status) continua existindo, alimentando
+> `GET /api/work-orders/{id}/status-history/`; a timeline da interface usa o `OrderEvent`, mais amplo.
 
 ## Técnico responsável
 
@@ -189,12 +199,25 @@ card mostra o técnico atribuído.
 
 ## Anexos
 
-Cada OS pode receber **anexos** (fotos do veículo, laudos, notas) -- imagens ou PDF, até **10 MB** por
-arquivo. No editor, o bloco "Anexos" permite enviar, baixar (abre em nova aba) e remover arquivos;
-imagens aparecem como miniatura. Enviar/remover exige `orders.edit`; qualquer um que veja a OS
-(`orders.view`) consegue listar e baixar. Endpoints: `GET/POST /api/work-orders/{id}/attachments/` e
-`DELETE /api/work-orders/{id}/attachments/{anexo_id}/`. Os arquivos são gravados em `MEDIA_ROOT`
-(`media/orders/<id>/`) e servidos por `/media/` (ver [Variáveis de ambiente](environment-variables.md)).
+A aba **Fotos** concentra fotos e anexos da OS (entrada do veículo, avarias, motor, andamento do
+serviço, entrega, etc.) -- imagens ou PDF, até **10 MB** por arquivo.
+
+Cada anexo tem uma **categoria** (Entrada do veículo, Avaria externa/interna, Motor, Suspensão,
+Freios, Peça danificada, Serviço em andamento, Serviço concluído, Entrega do veículo, Outros) e uma
+**legenda** opcional, escolhidas no envio e **editáveis** depois. A galeria mostra miniatura,
+categoria e legenda; clicar numa imagem abre a **visualização ampliada** (lightbox). No mobile/tablet,
+o seletor de arquivo permite usar a **câmera** do aparelho.
+
+Enviar/editar/remover exige `orders.edit`; quem só vê a OS (`orders.view`) consegue **listar e
+baixar**. Endpoints:
+
+- `GET/POST /api/work-orders/{id}/attachments/` -- lista / envia (multipart: `file`, `category`, `caption`).
+- `PATCH /api/work-orders/{id}/attachments/{anexo_id}/` -- edita categoria/legenda.
+- `DELETE /api/work-orders/{id}/attachments/{anexo_id}/` -- remove.
+
+Os arquivos são gravados em `MEDIA_ROOT` (`media/orders/<id>/`) e servidos por `/media/` (ver
+[Variáveis de ambiente](environment-variables.md)). Cada upload/remoção também registra um evento na
+[linha do tempo da OS](#histórico-da-os-linha-do-tempo-de-eventos).
 
 ## Itens da OS: cadastrados e avulsos
 
@@ -305,8 +328,10 @@ Todas as rotas exigem autenticação (cookie JWT):
 | POST | `/api/work-orders/{id}/reactivate/` | Reativa uma OS desabilitada |
 | POST | `/api/work-orders/{id}/move/` | Muda o status respeitando o fluxo do Kanban |
 | GET | `/api/work-orders/{id}/status-history/` | Linha do tempo de status (mais recente primeiro) |
+| GET | `/api/work-orders/{id}/events/` | Linha do tempo unificada (filtro opcional `?type=`) |
 | GET | `/api/work-orders/technicians/` | Técnicos ativos, para o seletor de responsável |
-| GET/POST | `/api/work-orders/{id}/attachments/` | Lista / envia anexos (imagem ou PDF, 10 MB) |
+| GET/POST | `/api/work-orders/{id}/attachments/` | Lista / envia anexos (`file`, `category`, `caption`; imagem ou PDF, 10 MB) |
+| PATCH | `/api/work-orders/{id}/attachments/{anexo_id}/` | Edita categoria/legenda do anexo |
 | DELETE | `/api/work-orders/{id}/attachments/{anexo_id}/` | Remove um anexo |
 
 Parâmetros de listagem:

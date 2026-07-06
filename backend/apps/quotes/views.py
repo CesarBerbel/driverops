@@ -13,7 +13,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import HasModulePermission
-from apps.orders.models import WorkOrder
+from apps.orders.history import record_event
+from apps.orders.models import OrderEvent, WorkOrder
 
 from .emails import send_quote_approval_email
 from .models import Quote
@@ -31,6 +32,26 @@ def _client_ip(request):
     if forwarded:
         return forwarded.split(",")[0].strip()
     return request.META.get("REMOTE_ADDR")
+
+
+_QUOTE_DECISION_EVENTS = {
+    Quote.Status.APPROVED: OrderEvent.Type.QUOTE_APPROVED,
+    Quote.Status.PARTIALLY_APPROVED: OrderEvent.Type.QUOTE_PARTIALLY_APPROVED,
+    Quote.Status.REJECTED: OrderEvent.Type.QUOTE_REJECTED,
+}
+
+
+def _record_quote_decision(quote, channel, actor=None):
+    """Registra na timeline da OS a decisão do orçamento (aprovado/parcial/recusado)."""
+    event_type = _QUOTE_DECISION_EVENTS.get(quote.status)
+    if event_type:
+        record_event(
+            quote.work_order,
+            event_type,
+            f"Orçamento #{quote.number}",
+            actor=actor,
+            channel=channel,
+        )
 
 
 def _decode_signature(data_uri, name):
@@ -79,6 +100,12 @@ class QuoteViewSet(viewsets.ModelViewSet):
             order,
             user=request.user,
             valid_until=request.data.get("valid_until") or None,
+        )
+        record_event(
+            order,
+            OrderEvent.Type.QUOTE_CREATED,
+            f"Orçamento #{quote.number}",
+            actor=request.user,
         )
         serializer = self.get_serializer(quote)
         return Response(serializer.data, status=http_status.HTTP_201_CREATED)
@@ -135,6 +162,13 @@ class QuoteViewSet(viewsets.ModelViewSet):
             ]
         )
         send_quote_approval_email(quote, email)
+        record_event(
+            quote.work_order,
+            OrderEvent.Type.QUOTE_SENT,
+            f"Orçamento #{quote.number} para {email}",
+            actor=request.user,
+            channel="Link por e-mail",
+        )
         return Response(self.get_serializer(quote).data)
 
     @action(detail=True, methods=["post"], url_path="approve-physical")
@@ -157,6 +191,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
         quote.save()
         if result != Quote.Status.REJECTED:
             advance_order_after_approval(quote.work_order)
+        _record_quote_decision(quote, "Presencial", actor=request.user)
         return Response(self.get_serializer(quote).data)
 
     @action(detail=True, methods=["post"], url_path="approve-tablet")
@@ -190,6 +225,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
         quote.save()
         if result != Quote.Status.REJECTED:
             advance_order_after_approval(quote.work_order)
+        _record_quote_decision(quote, "Assinatura no tablet", actor=request.user)
         return Response(self.get_serializer(quote).data)
 
     @action(detail=True, methods=["post"])
@@ -205,6 +241,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
         quote.save(
             update_fields=["status", "decided_at", "rejection_reason", "updated_at"]
         )
+        _record_quote_decision(quote, "Presencial", actor=request.user)
         return Response(self.get_serializer(quote).data)
 
     @action(
@@ -304,6 +341,7 @@ class PublicQuoteApproveView(_PublicQuoteBase):
         quote.save()
         if result != Quote.Status.REJECTED:
             advance_order_after_approval(quote.work_order)
+        _record_quote_decision(quote, "Link por e-mail")
         return Response(PublicQuoteSerializer(quote, context={"request": request}).data)
 
 
@@ -326,4 +364,5 @@ class PublicQuoteRejectView(_PublicQuoteBase):
         quote.decision_ip = _client_ip(request)
         quote.decision_user_agent = request.META.get("HTTP_USER_AGENT", "")[:500]
         quote.save()
+        _record_quote_decision(quote, "Link por e-mail")
         return Response(PublicQuoteSerializer(quote, context={"request": request}).data)

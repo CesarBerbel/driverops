@@ -1,6 +1,7 @@
 import pytest
 from django.core import mail
 
+from apps.orders.models import OrderEvent
 from apps.quotes.models import Quote
 
 pytestmark = pytest.mark.django_db
@@ -100,6 +101,22 @@ def test_approve_physical_advances_the_os(auth_client, work_order):
     assert body["client_name"] == "Maria Silva"
     work_order.refresh_from_db()
     assert work_order.status == "approved"
+
+
+def test_quote_lifecycle_records_os_events(auth_client, work_order):
+    # Criar -> enviar -> aprovar registra eventos na timeline da OS.
+    quote = _create(auth_client, work_order).json()
+    auth_client.post(f"/api/quotes/{quote['id']}/send/")
+    auth_client.post(
+        f"/api/quotes/{quote['id']}/approve-physical/",
+        content_type="application/json",
+    )
+    types = set(
+        OrderEvent.objects.filter(order=work_order).values_list("event_type", flat=True)
+    )
+    assert OrderEvent.Type.QUOTE_CREATED in types
+    assert OrderEvent.Type.QUOTE_SENT in types
+    assert OrderEvent.Type.QUOTE_APPROVED in types
 
 
 def test_approve_tablet_requires_signature(auth_client, work_order):

@@ -12,6 +12,7 @@ from apps.workshop.models import OrderSettings
 
 from .models import (
     OrderAttachment,
+    OrderEvent,
     OrderStatusHistory,
     WorkOrder,
     WorkOrderPackage,
@@ -484,6 +485,9 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
 class OrderAttachmentSerializer(serializers.ModelSerializer):
     uploaded_by_name = serializers.SerializerMethodField()
     is_image = serializers.SerializerMethodField()
+    category_display = serializers.CharField(
+        source="get_category_display", read_only=True
+    )
 
     class Meta:
         model = OrderAttachment
@@ -493,11 +497,24 @@ class OrderAttachmentSerializer(serializers.ModelSerializer):
             "original_name",
             "content_type",
             "size",
+            "category",
+            "category_display",
+            "caption",
             "uploaded_by_name",
             "is_image",
             "created_at",
         ]
-        read_only_fields = fields
+        read_only_fields = [
+            "id",
+            "file",
+            "original_name",
+            "content_type",
+            "size",
+            "category_display",
+            "uploaded_by_name",
+            "is_image",
+            "created_at",
+        ]
 
     def get_uploaded_by_name(self, obj):
         if obj.uploaded_by_id is None:
@@ -506,6 +523,30 @@ class OrderAttachmentSerializer(serializers.ModelSerializer):
 
     def get_is_image(self, obj):
         return (obj.content_type or "").startswith("image/")
+
+
+class OrderEventSerializer(serializers.ModelSerializer):
+    event_type_display = serializers.CharField(
+        source="get_event_type_display", read_only=True
+    )
+    actor_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderEvent
+        fields = [
+            "id",
+            "event_type",
+            "event_type_display",
+            "description",
+            "actor_name",
+            "channel",
+            "created_at",
+        ]
+
+    def get_actor_name(self, obj):
+        if obj.actor_id is None:
+            return None
+        return obj.actor.full_name or obj.actor.email
 
 
 class TechnicianSerializer(serializers.ModelSerializer):
