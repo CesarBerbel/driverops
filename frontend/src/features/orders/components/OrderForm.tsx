@@ -69,8 +69,8 @@ import {
 import { orderSchema, type OrderFormValues } from "../schemas";
 import type { OrderDiscountType, WorkOrder } from "../types";
 import { OrderAttachments } from "./OrderAttachments";
+import { OrderEventTimeline } from "./OrderEventTimeline";
 import { OrderLineList } from "./OrderLineList";
-import { OrderStatusTimeline } from "./OrderStatusTimeline";
 import { ServiceOrderTabs, type ServiceOrderTabDef } from "./ServiceOrderTabs";
 import { QuotePanel } from "@/features/quotes/components/QuotePanel";
 
@@ -916,9 +916,9 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           </div>
         )}
 
-        {/* Aba 7 -- Histórico da OS (apenas em OS já salva). */}
+        {/* Aba 7 -- Histórico da OS (timeline unificada, apenas em OS já salva). */}
         {activeTab === "history" && orderId !== null && (
-          <OrderStatusTimeline orderId={orderId} />
+          <OrderEventTimeline orderId={orderId} />
         )}
       </ServiceOrderTabs>
 

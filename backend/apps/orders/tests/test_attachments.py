@@ -48,7 +48,48 @@ def test_upload_image_returns_201(auth_client, order):
     body = response.json()
     assert body["original_name"] == "foto.png"
     assert body["is_image"] is True
+    # Sem categoria informada -> "Outros".
+    assert body["category"] == "other"
     assert OrderAttachment.objects.filter(order=order).count() == 1
+
+
+def test_upload_with_category_and_caption(auth_client, order):
+    response = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/",
+        data={
+            "file": _png(),
+            "category": "external_damage",
+            "caption": "Risco na porta",
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["category"] == "external_damage"
+    assert body["category_display"] == "Avaria externa"
+    assert body["caption"] == "Risco na porta"
+
+
+def test_invalid_category_falls_back_to_other(auth_client, order):
+    response = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/",
+        data={"file": _png(), "category": "banana"},
+    )
+    assert response.status_code == 201
+    assert response.json()["category"] == "other"
+
+
+def test_patch_updates_category_and_caption(auth_client, order):
+    created = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": _png()}
+    ).json()
+    response = auth_client.patch(
+        f"/api/work-orders/{order.id}/attachments/{created['id']}/",
+        data={"category": "engine", "caption": "Vazamento"},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.json()["category"] == "engine"
+    assert response.json()["caption"] == "Vazamento"
 
 
 def test_upload_pdf_is_allowed(auth_client, order):

@@ -1,8 +1,11 @@
 import { apiClient } from "@/lib/api-client";
 
 import type {
+  AttachmentCategory,
   OrderActiveFilter,
   OrderAttachment,
+  OrderEvent,
+  OrderEventType,
   OrderStatus,
   OrderStatusHistoryEntry,
   Technician,
@@ -122,12 +125,27 @@ export async function listAttachments(orderId: number): Promise<OrderAttachment[
 export async function uploadAttachment(
   orderId: number,
   file: File,
+  meta: { category?: AttachmentCategory; caption?: string } = {},
 ): Promise<OrderAttachment> {
   const form = new FormData();
   form.append("file", file);
+  if (meta.category) form.append("category", meta.category);
+  if (meta.caption) form.append("caption", meta.caption);
   const { data } = await apiClient.post<OrderAttachment>(
     `/work-orders/${orderId}/attachments/`,
     form,
+  );
+  return data;
+}
+
+export async function updateAttachment(
+  orderId: number,
+  attachmentId: number,
+  payload: { category?: AttachmentCategory; caption?: string },
+): Promise<OrderAttachment> {
+  const { data } = await apiClient.patch<OrderAttachment>(
+    `/work-orders/${orderId}/attachments/${attachmentId}/`,
+    payload,
   );
   return data;
 }
@@ -137,4 +155,15 @@ export async function deleteAttachment(
   attachmentId: number,
 ): Promise<void> {
   await apiClient.delete(`/work-orders/${orderId}/attachments/${attachmentId}/`);
+}
+
+export async function listOrderEvents(
+  orderId: number,
+  type?: OrderEventType,
+): Promise<OrderEvent[]> {
+  const { data } = await apiClient.get<OrderEvent[]>(
+    `/work-orders/${orderId}/events/`,
+    { params: { type } },
+  );
+  return data;
 }

@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import (
     OrderAttachment,
+    OrderEvent,
     OrderStatusHistory,
     WorkOrder,
     WorkOrderPackage,
@@ -57,5 +58,20 @@ class OrderStatusHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(OrderAttachment)
 class OrderAttachmentAdmin(admin.ModelAdmin):
-    list_display = ["order", "original_name", "content_type", "size", "created_at"]
-    search_fields = ["order__number", "original_name"]
+    list_display = [
+        "order",
+        "original_name",
+        "category",
+        "content_type",
+        "size",
+        "created_at",
+    ]
+    list_filter = ["category"]
+    search_fields = ["order__number", "original_name", "caption"]
+
+
+@admin.register(OrderEvent)
+class OrderEventAdmin(admin.ModelAdmin):
+    list_display = ["order", "event_type", "description", "actor", "created_at"]
+    list_filter = ["event_type", "created_at"]
+    search_fields = ["order__number", "description"]

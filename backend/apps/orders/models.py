@@ -217,6 +217,19 @@ def order_attachment_path(instance, filename):
 class OrderAttachment(models.Model):
     """Arquivo anexado a uma OS (foto do veículo, laudo, nota, etc.)."""
 
+    class Category(models.TextChoices):
+        ENTRY = "entry", "Entrada do veículo"
+        EXTERNAL_DAMAGE = "external_damage", "Avaria externa"
+        INTERNAL_DAMAGE = "internal_damage", "Avaria interna"
+        ENGINE = "engine", "Motor"
+        SUSPENSION = "suspension", "Suspensão"
+        BRAKES = "brakes", "Freios"
+        DAMAGED_PART = "damaged_part", "Peça danificada"
+        IN_PROGRESS = "in_progress", "Serviço em andamento"
+        COMPLETED = "completed", "Serviço concluído"
+        DELIVERY = "delivery", "Entrega do veículo"
+        OTHER = "other", "Outros"
+
     order = models.ForeignKey(
         WorkOrder, on_delete=models.CASCADE, related_name="attachments"
     )
@@ -224,6 +237,10 @@ class OrderAttachment(models.Model):
     original_name = models.CharField(max_length=255)
     content_type = models.CharField(max_length=100, blank=True)
     size = models.PositiveIntegerField(default=0)
+    category = models.CharField(
+        max_length=20, choices=Category.choices, default=Category.OTHER
+    )
+    caption = models.CharField(max_length=255, blank=True)
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -238,3 +255,47 @@ class OrderAttachment(models.Model):
 
     def __str__(self):
         return self.original_name
+
+
+class OrderEvent(models.Model):
+    """Linha do tempo unificada da OS: status, fotos e ciclo do orçamento.
+
+    Registro imutável (append-only), somente leitura na interface. Complementa o
+    OrderStatusHistory (que continua guardando o de/para de status) com os demais
+    eventos relevantes do atendimento.
+    """
+
+    class Type(models.TextChoices):
+        CREATED = "created", "OS criada"
+        STATUS_CHANGED = "status_changed", "Status alterado"
+        ATTACHMENT_ADDED = "attachment_added", "Foto/anexo adicionado"
+        ATTACHMENT_REMOVED = "attachment_removed", "Foto/anexo removido"
+        QUOTE_CREATED = "quote_created", "Orçamento criado"
+        QUOTE_SENT = "quote_sent", "Orçamento enviado"
+        QUOTE_APPROVED = "quote_approved", "Orçamento aprovado"
+        QUOTE_PARTIALLY_APPROVED = (
+            "quote_partially_approved",
+            "Orçamento aprovado parcialmente",
+        )
+        QUOTE_REJECTED = "quote_rejected", "Orçamento recusado"
+
+    order = models.ForeignKey(
+        WorkOrder, on_delete=models.CASCADE, related_name="events"
+    )
+    event_type = models.CharField(max_length=30, choices=Type.choices)
+    description = models.CharField(max_length=255, blank=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    channel = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"OS #{self.order_id}: {self.get_event_type_display()}"

@@ -133,13 +133,50 @@ export interface OrderStatusHistoryEntry {
   created_at: string;
 }
 
+export type AttachmentCategory =
+  | "entry"
+  | "external_damage"
+  | "internal_damage"
+  | "engine"
+  | "suspension"
+  | "brakes"
+  | "damaged_part"
+  | "in_progress"
+  | "completed"
+  | "delivery"
+  | "other";
+
 export interface OrderAttachment {
   id: number;
   file: string;
   original_name: string;
   content_type: string;
   size: number;
+  category: AttachmentCategory;
+  category_display: string;
+  caption: string;
   uploaded_by_name: string | null;
   is_image: boolean;
+  created_at: string;
+}
+
+export type OrderEventType =
+  | "created"
+  | "status_changed"
+  | "attachment_added"
+  | "attachment_removed"
+  | "quote_created"
+  | "quote_sent"
+  | "quote_approved"
+  | "quote_partially_approved"
+  | "quote_rejected";
+
+export interface OrderEvent {
+  id: number;
+  event_type: OrderEventType;
+  event_type_display: string;
+  description: string;
+  actor_name: string | null;
+  channel: string;
   created_at: string;
 }

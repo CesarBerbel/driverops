@@ -9,10 +9,11 @@ from rest_framework.response import Response
 from apps.accounts.permissions import HasModulePermission
 from apps.core.periods import period_start_date
 
-from .history import record_status_change
-from .models import OrderAttachment, WorkOrder
+from .history import record_event, record_status_change
+from .models import OrderAttachment, OrderEvent, WorkOrder
 from .serializers import (
     OrderAttachmentSerializer,
+    OrderEventSerializer,
     OrderStatusHistorySerializer,
     TechnicianSerializer,
     WorkOrderSerializer,
@@ -38,6 +39,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
     permission_action_map = {
         "move": "edit",
         "status_history": "view",
+        "events": "view",
         "technicians": "view",
         "attachments": "view",
         "attachment": "edit",
@@ -124,6 +126,12 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         order = serializer.save()
         # Primeira entrada da linha do tempo (from vazio = criação).
         record_status_change(order, "", order.status, self.request.user)
+        record_event(
+            order,
+            OrderEvent.Type.CREATED,
+            "OS criada",
+            actor=self.request.user,
+        )
 
     def perform_update(self, serializer):
         # Captura o status antes de salvar para detectar a transição para
@@ -136,7 +144,15 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
     def _on_status_change(self, order, old_status):
         """Registra o histórico e dá baixa de estoque quando o status muda."""
         if order.status != old_status:
+            labels = dict(WorkOrder.Status.choices)
             record_status_change(order, old_status, order.status, self.request.user)
+            record_event(
+                order,
+                OrderEvent.Type.STATUS_CHANGED,
+                f"{labels.get(old_status, old_status)} → "
+                f"{labels.get(order.status, order.status)}",
+                actor=self.request.user,
+            )
         self._maybe_deduct_stock(order, old_status)
 
     def _maybe_deduct_stock(self, order, old_status):
@@ -201,6 +217,16 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         history = order.status_history.select_related("changed_by").all()
         return Response(OrderStatusHistorySerializer(history, many=True).data)
 
+    @action(detail=True, methods=["get"])
+    def events(self, request, pk=None):
+        """Linha do tempo unificada da OS: status, fotos e ciclo do orçamento."""
+        order = self.get_object()
+        items = order.events.select_related("actor").all()
+        event_type = request.query_params.get("type")
+        if event_type:
+            items = items.filter(event_type=event_type)
+        return Response(OrderEventSerializer(items, many=True).data)
+
     @action(detail=False, methods=["get"])
     def technicians(self, request):
         """Técnicos ativos, para o seletor de técnico responsável da OS."""
@@ -245,13 +271,25 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
 
+        category = request.data.get("category") or OrderAttachment.Category.OTHER
+        if category not in OrderAttachment.Category.values:
+            category = OrderAttachment.Category.OTHER
+
         attachment = OrderAttachment.objects.create(
             order=order,
             file=upload,
             original_name=upload.name[:255],
             content_type=content_type[:100],
             size=upload.size,
+            category=category,
+            caption=(request.data.get("caption") or "")[:255],
             uploaded_by=request.user,
+        )
+        record_event(
+            order,
+            OrderEvent.Type.ATTACHMENT_ADDED,
+            attachment.original_name,
+            actor=request.user,
         )
         return Response(
             OrderAttachmentSerializer(attachment).data,
@@ -260,16 +298,35 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=["delete"],
+        methods=["patch", "delete"],
         url_path="attachments/(?P<attachment_id>[^/.]+)",
     )
     def attachment(self, request, pk=None, attachment_id=None):
-        """Remove um anexo da OS (exige orders.edit -- ver o permission_action_map)."""
+        """Edita (PATCH: categoria/legenda) ou remove (DELETE) um anexo da OS.
+
+        Exige orders.edit (ver o permission_action_map).
+        """
         order = self.get_object()
         try:
             item = order.attachments.get(pk=attachment_id)
         except OrderAttachment.DoesNotExist:
             return Response(status=http_status.HTTP_404_NOT_FOUND)
+
+        if request.method == "PATCH":
+            serializer = OrderAttachmentSerializer(
+                item, data=request.data, partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
+        name = item.original_name
         item.file.delete(save=False)
         item.delete()
+        record_event(
+            order,
+            OrderEvent.Type.ATTACHMENT_REMOVED,
+            name,
+            actor=request.user,
+        )
         return Response(status=http_status.HTTP_204_NO_CONTENT)
