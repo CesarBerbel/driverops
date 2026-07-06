@@ -1,8 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Car, Loader2, MessageCircle, Plus, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  Car,
+  KanbanSquare,
+  Loader2,
+  MessageCircle,
+  Plus,
+  Save,
+  UserPlus,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { CurrencyInput } from "@/components/shared/CurrencyInput";
@@ -58,7 +68,28 @@ import {
 } from "../lib/orderMapping";
 import { orderSchema, type OrderFormValues } from "../schemas";
 import type { OrderDiscountType, WorkOrder } from "../types";
+import { OrderAttachments } from "./OrderAttachments";
 import { OrderLineList } from "./OrderLineList";
+import { OrderStatusTimeline } from "./OrderStatusTimeline";
+import { ServiceOrderTabs, type ServiceOrderTabDef } from "./ServiceOrderTabs";
+import { QuotePanel } from "@/features/quotes/components/QuotePanel";
+
+// Mapeia cada campo do formulário à sua aba, para indicar erro na aba certa e
+// pular para a primeira aba com erro ao tentar salvar.
+const TAB_FIELDS: Record<string, (keyof OrderFormValues)[]> = {
+  main: [
+    "vehicle_id",
+    "customer_id",
+    "opened_at",
+    "expected_delivery",
+    "current_mileage",
+    "status",
+    "assigned_technician_id",
+  ],
+  report: ["customer_report", "diagnosis", "internal_notes"],
+  items: ["service_items", "package_items", "part_items"],
+  summary: ["discount_type", "discount_value"],
+};
 
 function percentInput(value: string): string {
   const cleaned = value.replace(/[^\d,]/g, "");
@@ -81,7 +112,13 @@ interface OrderFormProps {
 
 export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const isEditMode = order !== null;
+  const orderId = order?.id ?? null;
+
+  const [activeTab, setActiveTab] = useState("main");
+  // "Salvar" volta para a lista; "Salvar e continuar" permanece no editor.
+  const stayAfterSaveRef = useRef(false);
 
   const [customerName, setCustomerName] = useState(order?.customer_name ?? "");
   const [customerWhatsapp, setCustomerWhatsapp] = useState(order?.customer_whatsapp ?? "");
@@ -126,6 +163,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   const discountType = useWatch({ control, name: "discount_type" });
   const discountValue = useWatch({ control, name: "discount_value" });
   const openedAt = useWatch({ control, name: "opened_at" });
+  const statusValue = useWatch({ control, name: "status" });
 
   // Prefill the expected delivery from the global default deadline (data de
   // abertura + prazo padrão) on new OS, until the user edits it by hand. Editing
@@ -165,15 +203,70 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
       const payload = toPayload(values);
       return isEditMode ? updateWorkOrder(order.id, payload) : createWorkOrder(payload);
     },
-    onSuccess: async () => {
+    onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["work-orders"] });
       toast.success(isEditMode ? "Ordem de serviço atualizada." : "Ordem de serviço criada.");
+      if (stayAfterSaveRef.current) {
+        // "Salvar e continuar": ao criar, abre o editor da OS recém-criada (para
+        // acessar Fotos/Orçamento/Histórico); ao editar, permanece na tela.
+        if (!isEditMode) navigate(`/orders/${saved.id}`);
+        return;
+      }
       onSuccess();
     },
     onError: (error) => {
       toast.error(extractErrorMessage(error, "Não foi possível salvar a ordem de serviço."));
     },
   });
+
+  // Ao submeter com erros, leva o usuário para a primeira aba (na ordem) que os
+  // contém, para que campos obrigatórios inválidos fiquem visíveis.
+  function focusFirstErrorTab(formErrors: typeof errors) {
+    const tabOrder = ["main", "report", "items", "summary"];
+    const firstTab = tabOrder.find((key) =>
+      TAB_FIELDS[key].some((field) => field in formErrors),
+    );
+    if (firstTab) setActiveTab(firstTab);
+  }
+
+  const submit = (stay: boolean) =>
+    handleSubmit(
+      (values) => {
+        stayAfterSaveRef.current = stay;
+        mutation.mutate(values);
+      },
+      (formErrors) => focusFirstErrorTab(formErrors),
+    );
+
+  const saving = isSubmitting || mutation.isPending;
+
+  const tabHasError = (key: string) =>
+    TAB_FIELDS[key]?.some((field) => Boolean(errors[field])) ?? false;
+
+  const tabs: ServiceOrderTabDef[] = [
+    { key: "main", label: "Veículo e cliente", hasError: tabHasError("main") },
+    { key: "report", label: "Relato e diagnóstico", hasError: tabHasError("report") },
+    { key: "items", label: "Serviços e peças", hasError: tabHasError("items") },
+    {
+      key: "photos",
+      label: "Fotos",
+      disabled: !isEditMode,
+      disabledHint: "Salve a OS para anexar fotos.",
+    },
+    {
+      key: "budget",
+      label: "Orçamento",
+      disabled: !isEditMode,
+      disabledHint: "Salve a OS para gerar o orçamento.",
+    },
+    { key: "summary", label: "Resumo e valores", hasError: tabHasError("summary") },
+    {
+      key: "history",
+      label: "Histórico",
+      disabled: !isEditMode,
+      disabledHint: "Salve a OS para ver o histórico.",
+    },
+  ];
 
   // --- vehicle / customer linking ---
 
@@ -269,496 +362,565 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit((values) => mutation.mutate(values))}
-      className="space-y-6"
-      noValidate
-    >
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
-        {/* Coluna esquerda: identificação, veículo (antes do cliente), cliente, relato, diagnóstico. */}
-        <div className="space-y-6">
-      {/* 1. Dados principais */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Dados principais</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="opened_at">Data de abertura</Label>
-            <Input
-              id="opened_at"
-              type="date"
-              aria-invalid={Boolean(errors.opened_at)}
-              {...register("opened_at")}
-            />
-            {errors.opened_at && (
-              <p className="text-sm text-destructive">{errors.opened_at.message}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="expected_delivery">Previsão de entrega</Label>
-            <Controller
-              control={control}
-              name="expected_delivery"
-              render={({ field }) => (
-                <Input
-                  id="expected_delivery"
-                  type="date"
-                  value={field.value ?? ""}
-                  onChange={(event) => {
-                    // A manual edit stops the automatic prefill from overriding it.
-                    setDeliveryTouched(true);
-                    field.onChange(event.target.value);
-                  }}
-                />
-              )}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="current_mileage">Quilometragem atual</Label>
-            <Controller
-              control={control}
-              name="current_mileage"
-              render={({ field }) => (
-                <Input
-                  id="current_mileage"
-                  inputMode="numeric"
-                  placeholder="Ex.: 85000"
-                  value={field.value ? formatQuantityBRL(Number(onlyDigits(field.value))) : ""}
-                  onChange={(event) => field.onChange(onlyDigits(event.target.value))}
-                />
-              )}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status da OS</Label>
-            <Controller
-              control={control}
-              name="status"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="status" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ORDER_STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="assigned_technician">Técnico responsável</Label>
-            <Controller
-              control={control}
-              name="assigned_technician_id"
-              render={({ field }) => (
-                <Select
-                  value={field.value == null ? "none" : String(field.value)}
-                  onValueChange={(value) =>
-                    field.onChange(value === "none" ? null : Number(value))
-                  }
-                >
-                  <SelectTrigger id="assigned_technician" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sem técnico</SelectItem>
-                    {technicians.map((tech) => (
-                      <SelectItem key={tech.id} value={String(tech.id)}>
-                        {tech.name}
-                        {tech.technical_specialty_display
-                          ? ` · ${tech.technical_specialty_display}`
-                          : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 2. Veículo (antes do cliente -- a placa é a prioridade operacional) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Veículo</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="vehicle_id">Placa do veículo</Label>
-            {!isEditMode && (
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                className="h-auto p-0 text-xs"
-                onClick={() => setVehicleSheetOpen(true)}
-              >
-                <Car className="size-3" />
-                Adicionar veículo
-              </Button>
-            )}
-          </div>
-          <VehicleCombobox
-            selectedLabel={vehicleLabel}
-            onSelect={selectVehicle}
-            onClear={clearVehicle}
-            customerId={customerId}
-            disabled={isEditMode}
-            invalid={Boolean(errors.vehicle_id)}
-          />
-          {isEditMode && (
-            <p className="text-xs text-muted-foreground">
-              O veículo não pode ser alterado após a abertura da OS.
-            </p>
-          )}
-          {errors.vehicle_id && (
-            <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>
-          )}
-          {!isEditMode && customerId != null && vehicleId == null && (
-            <p className="text-xs text-muted-foreground">
-              Este cliente ainda não tem veículo selecionado. Busque pela placa ou cadastre um
-              novo veículo.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 3. Cliente (preenchido automaticamente ao escolher o veículo) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Cliente</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="customer_id">Cliente</Label>
-            {!isEditMode && (
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                className="h-auto p-0 text-xs"
-                onClick={() => setCustomerSheetOpen(true)}
-              >
-                <UserPlus className="size-3" />
-                Adicionar cliente
-              </Button>
-            )}
-          </div>
-          <CustomerCombobox
-            selectedName={customerName}
-            onSelect={selectCustomer}
-            onClear={clearCustomer}
-            disabled={isEditMode}
-            invalid={Boolean(errors.customer_id)}
-          />
-          {isEditMode && (
-            <p className="text-xs text-muted-foreground">
-              O cliente não pode ser alterado após a abertura da OS.
-            </p>
-          )}
-          {errors.customer_id && (
-            <p className="text-sm text-destructive">{errors.customer_id.message}</p>
-          )}
-          {customerName && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {customerWhatsapp ? (
-                <a
-                  href={buildWhatsAppUrl(customerWhatsapp)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-success hover:underline"
-                >
-                  <MessageCircle className="size-4" />
-                  {formatPhone(customerWhatsapp)}
-                </a>
-              ) : (
-                <span>WhatsApp não informado</span>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 4. Relato do cliente */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Relato do cliente</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            id="customer_report"
-            rows={3}
-            aria-label="Relato do cliente"
-            aria-invalid={Boolean(errors.customer_report)}
-            {...register("customer_report")}
-          />
-          {errors.customer_report && (
-            <p className="mt-2 text-sm text-destructive">{errors.customer_report.message}</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 5. Diagnóstico */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Diagnóstico técnico</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea id="diagnosis" rows={3} aria-label="Diagnóstico" {...register("diagnosis")} />
-        </CardContent>
-      </Card>
-
-      {/* Observações internas (coluna esquerda) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Observações internas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            id="internal_notes"
-            rows={3}
-            aria-label="Observações internas"
-            {...register("internal_notes")}
-          />
-        </CardContent>
-      </Card>
-        </div>
-
-        {/* Coluna direita: itens (serviços/pacotes/peças) e valores. */}
-        <div className="space-y-6">
-      {/* 6. Serviços */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Serviços</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <OrderLineList
-            title="Serviços cadastrados ou avulsos"
-            helper="Adicione serviços do catálogo, cadastre um novo ou informe um serviço avulso."
-            namePrefix="service_items"
-            control={control}
-            register={register}
-            fields={serviceArray.fields}
-            watchedItems={watchedServices}
-            remove={serviceArray.remove}
-            errors={errors.service_items}
-            picker={<ServiceCombobox onSelect={addService} />}
-            inlineCreate={
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                className="h-auto p-0 text-xs"
-                onClick={() => setServiceDialogOpen(true)}
-              >
-                <Plus className="size-3" />
-                Novo serviço
-              </Button>
-            }
-            onAddCustom={addCustom(serviceArray.append)}
-            customLabel="Serviço avulso"
-            emptyLabel="Nenhum serviço adicionado ainda."
-          />
-        </CardContent>
-      </Card>
-
-      {/* 7. Pacotes de serviços */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Pacotes de serviços</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <OrderLineList
-            title="Pacotes cadastrados ou avulsos"
-            namePrefix="package_items"
-            control={control}
-            register={register}
-            fields={packageArray.fields}
-            watchedItems={watchedPackages}
-            remove={packageArray.remove}
-            errors={errors.package_items}
-            picker={<PackageCombobox onSelect={addPackage} />}
-            inlineCreate={
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                className="h-auto p-0 text-xs"
-                onClick={() => setPackageDialogOpen(true)}
-              >
-                <Plus className="size-3" />
-                Novo pacote
-              </Button>
-            }
-            onAddCustom={addCustom(packageArray.append)}
-            customLabel="Pacote avulso"
-            emptyLabel="Nenhum pacote adicionado ainda."
-          />
-        </CardContent>
-      </Card>
-
-      {/* 8. Peças utilizadas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Peças utilizadas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <OrderLineList
-            title="Peças cadastradas ou avulsas"
-            helper="Adicione peças do catálogo, cadastre uma nova ou informe uma peça avulsa."
-            namePrefix="part_items"
-            control={control}
-            register={register}
-            fields={partArray.fields}
-            watchedItems={watchedParts}
-            remove={partArray.remove}
-            errors={errors.part_items}
-            picker={<PartCombobox onSelect={addPart} />}
-            inlineCreate={
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                className="h-auto p-0 text-xs"
-                onClick={() => setPartDialogOpen(true)}
-              >
-                <Plus className="size-3" />
-                Nova peça
-              </Button>
-            }
-            onAddCustom={addCustom(partArray.append)}
-            customLabel="Peça avulsa"
-            emptyLabel="Nenhuma peça adicionada ainda."
-            serviceOptions={serviceLinkOptions}
-          />
-        </CardContent>
-      </Card>
-
-      {/* 9. Valores */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Valores</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total de serviços</span>
-              <span data-testid="order-services-total">{formatCurrencyBRL(servicesTotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total de pacotes</span>
-              <span data-testid="order-packages-total">{formatCurrencyBRL(packagesTotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total de peças</span>
-              <span data-testid="order-parts-total">{formatCurrencyBRL(partsTotal)}</span>
-            </div>
-            <div className="flex justify-between border-t pt-1 font-medium">
-              <span>Total bruto</span>
-              <span data-testid="order-gross-total">{formatCurrencyBRL(grossTotal)}</span>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="discount_type">Tipo de desconto</Label>
-              <Controller
-                control={control}
-                name="discount_type"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) =>
-                      handleDiscountTypeChange(value as OrderDiscountType)
-                    }
-                  >
-                    <SelectTrigger id="discount_type" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DISCOUNT_TYPE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            {discountType === "percent" && (
-              <div className="space-y-2">
-                <Label htmlFor="discount_value">Desconto (%)</Label>
-                <Controller
-                  control={control}
-                  name="discount_value"
-                  render={({ field }) => (
-                    <Input
-                      id="discount_value"
-                      inputMode="decimal"
-                      placeholder="0"
-                      value={field.value}
-                      onChange={(event) => field.onChange(percentInput(event.target.value))}
-                      aria-invalid={Boolean(errors.discount_value)}
-                    />
-                  )}
-                />
-                {errors.discount_value && (
-                  <p className="text-sm text-destructive">{errors.discount_value.message}</p>
-                )}
-              </div>
-            )}
-
-            {discountType === "fixed" && (
-              <div className="space-y-2">
-                <Label htmlFor="discount_value">Desconto (R$)</Label>
-                <Controller
-                  control={control}
-                  name="discount_value"
-                  render={({ field }) => (
-                    <CurrencyInput
-                      id="discount_value"
-                      value={field.value}
-                      onChange={field.onChange}
-                      aria-invalid={Boolean(errors.discount_value)}
-                    />
-                  )}
-                />
-                {errors.discount_value && (
-                  <p className="text-sm text-destructive">{errors.discount_value.message}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between border-t pt-3">
-            <span className="font-medium">Valor final</span>
-            <span className="text-lg font-semibold" data-testid="order-final-value">
-              {formatCurrencyBRL(finalValue)}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2">
+    <form onSubmit={submit(false)} className="space-y-6" noValidate>
+      {/* Barra de ações persistente da OS */}
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
+          <ArrowLeft className="size-4" />
+          Voltar
         </Button>
-        <Button type="submit" disabled={isSubmitting || mutation.isPending}>
-          {(isSubmitting || mutation.isPending) && <Loader2 className="animate-spin" />}
-          Salvar
+        <Button type="button" variant="outline" onClick={() => navigate("/kanban")}>
+          <KanbanSquare className="size-4" />
+          Kanban OS
         </Button>
+        <div className="ml-auto flex gap-2">
+          <Button type="button" variant="outline" onClick={submit(true)} disabled={saving}>
+            {saving && <Loader2 className="animate-spin" />}
+            Salvar e continuar
+          </Button>
+          <Button type="button" onClick={submit(false)} disabled={saving}>
+            {saving ? <Loader2 className="animate-spin" /> : <Save className="size-4" />}
+            Salvar
+          </Button>
+        </div>
       </div>
+
+      <ServiceOrderTabs tabs={tabs} active={activeTab} onChange={setActiveTab}>
+        {/* Aba 1 -- Veículo (primeiro), Cliente e dados principais da OS. */}
+        {activeTab === "main" && (
+          <div className="space-y-6">
+            {/* Veículo (antes do cliente -- a placa é a prioridade operacional) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Veículo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="vehicle_id">Placa do veículo</Label>
+                  {!isEditMode && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setVehicleSheetOpen(true)}
+                    >
+                      <Car className="size-3" />
+                      Adicionar veículo
+                    </Button>
+                  )}
+                </div>
+                <VehicleCombobox
+                  selectedLabel={vehicleLabel}
+                  onSelect={selectVehicle}
+                  onClear={clearVehicle}
+                  customerId={customerId}
+                  disabled={isEditMode}
+                  invalid={Boolean(errors.vehicle_id)}
+                />
+                {isEditMode && (
+                  <p className="text-xs text-muted-foreground">
+                    O veículo não pode ser alterado após a abertura da OS.
+                  </p>
+                )}
+                {errors.vehicle_id && (
+                  <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>
+                )}
+                {!isEditMode && customerId != null && vehicleId == null && (
+                  <p className="text-xs text-muted-foreground">
+                    Este cliente ainda não tem veículo selecionado. Busque pela placa ou cadastre um
+                    novo veículo.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cliente (preenchido automaticamente ao escolher o veículo) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Cliente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="customer_id">Cliente</Label>
+                  {!isEditMode && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setCustomerSheetOpen(true)}
+                    >
+                      <UserPlus className="size-3" />
+                      Adicionar cliente
+                    </Button>
+                  )}
+                </div>
+                <CustomerCombobox
+                  selectedName={customerName}
+                  onSelect={selectCustomer}
+                  onClear={clearCustomer}
+                  disabled={isEditMode}
+                  invalid={Boolean(errors.customer_id)}
+                />
+                {isEditMode && (
+                  <p className="text-xs text-muted-foreground">
+                    O cliente não pode ser alterado após a abertura da OS.
+                  </p>
+                )}
+                {errors.customer_id && (
+                  <p className="text-sm text-destructive">{errors.customer_id.message}</p>
+                )}
+                {customerName && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {customerWhatsapp ? (
+                      <a
+                        href={buildWhatsAppUrl(customerWhatsapp)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-success hover:underline"
+                      >
+                        <MessageCircle className="size-4" />
+                        {formatPhone(customerWhatsapp)}
+                      </a>
+                    ) : (
+                      <span>WhatsApp não informado</span>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Dados principais da OS (abaixo de veículo e cliente) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Dados principais</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="opened_at">Data de abertura</Label>
+                  <Input
+                    id="opened_at"
+                    type="date"
+                    aria-invalid={Boolean(errors.opened_at)}
+                    {...register("opened_at")}
+                  />
+                  {errors.opened_at && (
+                    <p className="text-sm text-destructive">{errors.opened_at.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expected_delivery">Previsão de entrega</Label>
+                  <Controller
+                    control={control}
+                    name="expected_delivery"
+                    render={({ field }) => (
+                      <Input
+                        id="expected_delivery"
+                        type="date"
+                        value={field.value ?? ""}
+                        onChange={(event) => {
+                          // A manual edit stops the automatic prefill from overriding it.
+                          setDeliveryTouched(true);
+                          field.onChange(event.target.value);
+                        }}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="current_mileage">Quilometragem atual</Label>
+                  <Controller
+                    control={control}
+                    name="current_mileage"
+                    render={({ field }) => (
+                      <Input
+                        id="current_mileage"
+                        inputMode="numeric"
+                        placeholder="Ex.: 85000"
+                        value={field.value ? formatQuantityBRL(Number(onlyDigits(field.value))) : ""}
+                        onChange={(event) => field.onChange(onlyDigits(event.target.value))}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status da OS</Label>
+                  <Controller
+                    control={control}
+                    name="status"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger id="status" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ORDER_STATUS_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="assigned_technician">Técnico responsável</Label>
+                  <Controller
+                    control={control}
+                    name="assigned_technician_id"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value == null ? "none" : String(field.value)}
+                        onValueChange={(value) =>
+                          field.onChange(value === "none" ? null : Number(value))
+                        }
+                      >
+                        <SelectTrigger id="assigned_technician" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem técnico</SelectItem>
+                          {technicians.map((tech) => (
+                            <SelectItem key={tech.id} value={String(tech.id)}>
+                              {tech.name}
+                              {tech.technical_specialty_display
+                                ? ` · ${tech.technical_specialty_display}`
+                                : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Aba 2 -- Relato, diagnóstico e observações internas. */}
+        {activeTab === "report" && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Relato do cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  id="customer_report"
+                  rows={4}
+                  aria-label="Relato do cliente"
+                  aria-invalid={Boolean(errors.customer_report)}
+                  {...register("customer_report")}
+                />
+                {errors.customer_report && (
+                  <p className="mt-2 text-sm text-destructive">{errors.customer_report.message}</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Diagnóstico técnico</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  id="diagnosis"
+                  rows={4}
+                  aria-label="Diagnóstico"
+                  {...register("diagnosis")}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Observações internas</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Uso interno -- não aparece no PDF nem na página pública do cliente.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  id="internal_notes"
+                  rows={4}
+                  aria-label="Observações internas"
+                  {...register("internal_notes")}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Aba 3 -- Serviços, pacotes e peças (cadastrados ou avulsos). */}
+        {activeTab === "items" && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Serviços</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OrderLineList
+                  title="Serviços cadastrados ou avulsos"
+                  helper="Adicione serviços do catálogo, cadastre um novo ou informe um serviço avulso."
+                  namePrefix="service_items"
+                  control={control}
+                  register={register}
+                  fields={serviceArray.fields}
+                  watchedItems={watchedServices}
+                  remove={serviceArray.remove}
+                  errors={errors.service_items}
+                  picker={<ServiceCombobox onSelect={addService} />}
+                  inlineCreate={
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setServiceDialogOpen(true)}
+                    >
+                      <Plus className="size-3" />
+                      Novo serviço
+                    </Button>
+                  }
+                  onAddCustom={addCustom(serviceArray.append)}
+                  customLabel="Serviço avulso"
+                  emptyLabel="Nenhum serviço adicionado ainda."
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Pacotes de serviços</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OrderLineList
+                  title="Pacotes cadastrados ou avulsos"
+                  namePrefix="package_items"
+                  control={control}
+                  register={register}
+                  fields={packageArray.fields}
+                  watchedItems={watchedPackages}
+                  remove={packageArray.remove}
+                  errors={errors.package_items}
+                  picker={<PackageCombobox onSelect={addPackage} />}
+                  inlineCreate={
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setPackageDialogOpen(true)}
+                    >
+                      <Plus className="size-3" />
+                      Novo pacote
+                    </Button>
+                  }
+                  onAddCustom={addCustom(packageArray.append)}
+                  customLabel="Pacote avulso"
+                  emptyLabel="Nenhum pacote adicionado ainda."
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Peças utilizadas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OrderLineList
+                  title="Peças cadastradas ou avulsas"
+                  helper="Adicione peças do catálogo, cadastre uma nova ou informe uma peça avulsa."
+                  namePrefix="part_items"
+                  control={control}
+                  register={register}
+                  fields={partArray.fields}
+                  watchedItems={watchedParts}
+                  remove={partArray.remove}
+                  errors={errors.part_items}
+                  picker={<PartCombobox onSelect={addPart} />}
+                  inlineCreate={
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setPartDialogOpen(true)}
+                    >
+                      <Plus className="size-3" />
+                      Nova peça
+                    </Button>
+                  }
+                  onAddCustom={addCustom(partArray.append)}
+                  customLabel="Peça avulsa"
+                  emptyLabel="Nenhuma peça adicionada ainda."
+                  serviceOptions={serviceLinkOptions}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Aba 4 -- Fotos/anexos (apenas em OS já salva). */}
+        {activeTab === "photos" && orderId !== null && (
+          <OrderAttachments orderId={orderId} />
+        )}
+
+        {/* Aba 5 -- Orçamento (apenas em OS já salva). */}
+        {activeTab === "budget" && orderId !== null && <QuotePanel orderId={orderId} />}
+
+        {/* Aba 6 -- Resumo consolidado + valores. */}
+        {activeTab === "summary" && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Resumo da OS</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Veículo</p>
+                  <p className="font-medium">{vehicleLabel || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Cliente</p>
+                  <p className="font-medium">{customerName || "—"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="font-medium">
+                    {ORDER_STATUS_OPTIONS.find((o) => o.value === statusValue)?.label ?? "—"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Itens</p>
+                  <p className="font-medium">
+                    {(watchedServices ?? []).length} serviços · {(watchedPackages ?? []).length}{" "}
+                    pacotes · {(watchedParts ?? []).length} peças
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Valores</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total de serviços</span>
+                    <span data-testid="order-services-total">
+                      {formatCurrencyBRL(servicesTotal)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total de pacotes</span>
+                    <span data-testid="order-packages-total">
+                      {formatCurrencyBRL(packagesTotal)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total de peças</span>
+                    <span data-testid="order-parts-total">{formatCurrencyBRL(partsTotal)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1 font-medium">
+                    <span>Total bruto</span>
+                    <span data-testid="order-gross-total">{formatCurrencyBRL(grossTotal)}</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="discount_type">Tipo de desconto</Label>
+                    <Controller
+                      control={control}
+                      name="discount_type"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) =>
+                            handleDiscountTypeChange(value as OrderDiscountType)
+                          }
+                        >
+                          <SelectTrigger id="discount_type" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DISCOUNT_TYPE_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+
+                  {discountType === "percent" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="discount_value">Desconto (%)</Label>
+                      <Controller
+                        control={control}
+                        name="discount_value"
+                        render={({ field }) => (
+                          <Input
+                            id="discount_value"
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={field.value}
+                            onChange={(event) => field.onChange(percentInput(event.target.value))}
+                            aria-invalid={Boolean(errors.discount_value)}
+                          />
+                        )}
+                      />
+                      {errors.discount_value && (
+                        <p className="text-sm text-destructive">{errors.discount_value.message}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {discountType === "fixed" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="discount_value">Desconto (R$)</Label>
+                      <Controller
+                        control={control}
+                        name="discount_value"
+                        render={({ field }) => (
+                          <CurrencyInput
+                            id="discount_value"
+                            value={field.value}
+                            onChange={field.onChange}
+                            aria-invalid={Boolean(errors.discount_value)}
+                          />
+                        )}
+                      />
+                      {errors.discount_value && (
+                        <p className="text-sm text-destructive">{errors.discount_value.message}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-3">
+                  <span className="font-medium">Valor final</span>
+                  <span className="text-lg font-semibold" data-testid="order-final-value">
+                    {formatCurrencyBRL(finalValue)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Aba 7 -- Histórico da OS (apenas em OS já salva). */}
+        {activeTab === "history" && orderId !== null && (
+          <OrderStatusTimeline orderId={orderId} />
+        )}
+      </ServiceOrderTabs>
 
       {/* Inline cadastros -- abrem sem perder os dados já preenchidos na OS */}
       <CustomerFormSheet

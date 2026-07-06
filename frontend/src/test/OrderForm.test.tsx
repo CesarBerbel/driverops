@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -151,12 +151,18 @@ describe("OrderForm", () => {
     vi.mocked(settingsApi.getOrderSettings).mockReset().mockResolvedValue(orderSettings(7));
   });
 
-  it("blocks submit and shows required-field errors when empty", async () => {
+  it("blocks submit and jumps to the first tab with errors", async () => {
     const user = userEvent.setup();
     renderForm();
     await user.click(screen.getByRole("button", { name: "Salvar" }));
+    // Jumps to the first tab with errors (Veículo e cliente).
     expect(await screen.findByText("Selecione um veículo.")).toBeInTheDocument();
     expect(screen.getByText("Selecione um cliente.")).toBeInTheDocument();
+    // The "Relato e diagnóstico" tab shows an error indicator...
+    const reportTab = screen.getByRole("tab", { name: /Relato e diagnóstico/ });
+    expect(within(reportTab).getByLabelText("Contém erros")).toBeInTheDocument();
+    // ...and its error is visible once that tab is opened.
+    await user.click(reportTab);
     expect(screen.getByText("O relato do cliente é obrigatório.")).toBeInTheDocument();
     expect(ordersApi.createWorkOrder).not.toHaveBeenCalled();
   });
@@ -185,11 +191,14 @@ describe("OrderForm", () => {
     await user.click(screen.getByPlaceholderText("Buscar veículo pela placa..."));
     await user.click(await screen.findByRole("button", { name: /ABC-1234/ }));
 
+    await user.click(screen.getByRole("tab", { name: /Relato e diagnóstico/ }));
     await user.type(screen.getByLabelText("Relato do cliente"), "Barulho no motor");
 
+    await user.click(screen.getByRole("tab", { name: /Serviços e peças/ }));
     await user.click(screen.getByPlaceholderText("Buscar serviço pelo nome..."));
     await user.click(await screen.findByRole("button", { name: /Troca de óleo/ }));
 
+    await user.click(screen.getByRole("tab", { name: /Resumo e valores/ }));
     expect(screen.getByTestId("order-services-total")).toHaveTextContent("R$ 100,00");
     expect(screen.getByTestId("order-gross-total")).toHaveTextContent("R$ 100,00");
     expect(screen.getByTestId("order-final-value")).toHaveTextContent("R$ 100,00");
@@ -255,8 +264,11 @@ describe("OrderForm", () => {
 
     await user.click(screen.getByPlaceholderText("Buscar veículo pela placa..."));
     await user.click(await screen.findByRole("button", { name: /ABC-1234/ }));
+
+    await user.click(screen.getByRole("tab", { name: /Relato e diagnóstico/ }));
     await user.type(screen.getByLabelText("Relato do cliente"), "x");
 
+    await user.click(screen.getByRole("tab", { name: /Serviços e peças/ }));
     await user.click(screen.getByRole("button", { name: "Serviço avulso" }));
     // The avulso row exposes an editable description input.
     expect(screen.getByPlaceholderText("Descrição do item avulso")).toBeInTheDocument();

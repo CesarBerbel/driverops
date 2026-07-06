@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
 
-import { useSwipeNavigation } from "../useSwipeNavigation";
+import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
 import { DashboardAdministrativoView } from "./DashboardAdministrativoView";
 import { DashboardOSView } from "./DashboardOSView";
 import { DashboardOperacionalView } from "./DashboardOperacionalView";
