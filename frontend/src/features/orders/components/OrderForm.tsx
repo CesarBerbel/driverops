@@ -374,7 +374,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           <KanbanSquare className="size-4" />
           Kanban OS
         </Button>
-        <OrderStatusStepper status={statusValue} />
+        <OrderStatusStepper status={statusValue} orderId={orderId} />
         <div className="ml-auto flex gap-2">
           <Button type="button" variant="outline" onClick={submit(true)} disabled={saving}>
             {saving && <Loader2 className="animate-spin" />}

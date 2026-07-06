@@ -105,11 +105,13 @@ No topo do formulário há uma **barra de ações persistente**: **Voltar** (à 
 (abre o [Kanban](kanban.md)), **Salvar** (salva e volta à lista) e **Salvar e continuar** (salva e
 permanece no editor — ao criar, abre o editor da OS recém-criada para liberar Fotos/Orçamento/Histórico).
 
-Entre o botão **Kanban OS** e o grupo **Salvar** fica uma **linha do tempo de status** compacta
-(`OrderStatusStepper`): as bolinhas representam o fluxo da OS (Aberta → … → Finalizada), com as
-etapas concluídas e a atual preenchidas e as futuras esmaecidas; a etapa atual aparece rotulada. Ela
-reflete **ao vivo** o status selecionado no formulário. Uma OS **cancelada** mostra um indicador
-próprio "OS cancelada" (estado terminal, fora do fluxo linear).
+Entre o botão **Kanban OS** e o grupo **Salvar** fica uma **linha do tempo de status**
+(`OrderStatusStepper`) que **ocupa toda a largura disponível** entre eles. As etapas do fluxo da OS
+(Aberta → … → Finalizada) são distribuídas igualmente, ligadas por uma linha contínua: as concluídas
+e a atual ficam preenchidas e as futuras esmaecidas. **Abaixo de cada marcador** aparecem o **nome do
+status** e a **data em que a OS entrou nele** (buscada do histórico; etapas ainda não alcançadas ou
+sem registro não mostram data). A etapa atual reflete **ao vivo** o status selecionado no formulário.
+Uma OS **cancelada** mostra um indicador próprio "OS cancelada" (estado terminal, fora do fluxo linear).
 
 ### Validação por aba
 
