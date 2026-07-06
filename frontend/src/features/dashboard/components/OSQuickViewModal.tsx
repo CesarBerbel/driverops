@@ -79,7 +79,7 @@ export function OSQuickViewModal({ order, open, onOpenChange }: OSQuickViewModal
 
   return (
     <Dialog open={open && order !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-5xl">
         {order && (
           <>
             <DialogHeader className="space-y-0 border-b p-5">
@@ -99,8 +99,8 @@ export function OSQuickViewModal({ order, open, onOpenChange }: OSQuickViewModal
               </div>
             </DialogHeader>
 
-            <div className="space-y-5 p-5">
-              <div className="rounded-md border bg-muted/30 p-3">
+            <div className="p-5">
+              <div className="mb-5 rounded-md border bg-muted/30 p-3">
                 <div className="grid grid-cols-2 gap-3">
                   <Field
                     label="Placa"
@@ -110,38 +110,48 @@ export function OSQuickViewModal({ order, open, onOpenChange }: OSQuickViewModal
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Cliente</p>
-                <p className="text-sm font-medium">{order.customer_name}</p>
-                <ContactLink
-                  whatsapp={order.customer_whatsapp}
-                  phone={order.customer_phone}
-                  className="text-sm"
-                />
+              {/* No modal alargado, os detalhes ficam à esquerda e os itens à
+                  direita; abaixo de sm empilham numa coluna só. */}
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-5">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cliente</p>
+                    <p className="text-sm font-medium">{order.customer_name}</p>
+                    <ContactLink
+                      whatsapp={order.customer_whatsapp}
+                      phone={order.customer_phone}
+                      className="text-sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field
+                      label="Data de abertura"
+                      value={formatBrDate(order.opened_at)}
+                    />
+                    <Field
+                      label="Previsão de entrega"
+                      value={formatBrDate(order.expected_delivery)}
+                    />
+                  </div>
+
+                  <Field label="Relato do cliente" value={order.customer_report} />
+                  {order.diagnosis && (
+                    <Field label="Diagnóstico técnico" value={order.diagnosis} />
+                  )}
+                  {order.internal_notes && (
+                    <Field label="Observações internas" value={order.internal_notes} />
+                  )}
+                </div>
+
+                <div className="space-y-5">
+                  <ItemList title="Serviços" items={order.service_items} />
+                  <ItemList title="Pacotes" items={order.package_items} />
+                  <ItemList title="Peças" items={order.part_items} />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Data de abertura" value={formatBrDate(order.opened_at)} />
-                <Field
-                  label="Previsão de entrega"
-                  value={formatBrDate(order.expected_delivery)}
-                />
-              </div>
-
-              <Field label="Relato do cliente" value={order.customer_report} />
-              {order.diagnosis && (
-                <Field label="Diagnóstico técnico" value={order.diagnosis} />
-              )}
-
-              <ItemList title="Serviços" items={order.service_items} />
-              <ItemList title="Pacotes" items={order.package_items} />
-              <ItemList title="Peças" items={order.part_items} />
-
-              {order.internal_notes && (
-                <Field label="Observações internas" value={order.internal_notes} />
-              )}
-
-              <div className="flex items-center justify-between border-t pt-3">
+              <div className="mt-5 flex items-center justify-between border-t pt-3">
                 <span className="text-sm text-muted-foreground">Valor total</span>
                 <span className="text-lg font-semibold">
                   {formatCurrencyBRL(Number(order.final_value))}
