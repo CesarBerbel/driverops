@@ -71,6 +71,7 @@ import type { OrderDiscountType, WorkOrder } from "../types";
 import { OrderAttachments } from "./OrderAttachments";
 import { OrderEventTimeline } from "./OrderEventTimeline";
 import { OrderLineList } from "./OrderLineList";
+import { OrderStatusStepper } from "./OrderStatusStepper";
 import { ServiceOrderTabs, type ServiceOrderTabDef } from "./ServiceOrderTabs";
 import { QuotePanel } from "@/features/quotes/components/QuotePanel";
 
@@ -373,6 +374,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           <KanbanSquare className="size-4" />
           Kanban OS
         </Button>
+        <OrderStatusStepper status={statusValue} orderId={orderId} />
         <div className="ml-auto flex gap-2">
           <Button type="button" variant="outline" onClick={submit(true)} disabled={saving}>
             {saving && <Loader2 className="animate-spin" />}
