@@ -144,6 +144,32 @@ nela -- cada uma vira uma movimentação de saída vinculada à OS. A baixa é i
 vale tanto pelo arrastar no Kanban quanto pela mudança de status no editor. Detalhes e regras em
 [Peças e Estoque → Baixa automática ao finalizar a OS](parts.md#baixa-automática-ao-finalizar-a-os).
 
+### Histórico de status (linha do tempo)
+
+Cada mudança de status é registrada automaticamente (modelo `OrderStatusHistory`): a criação da OS, o
+arrastar no Kanban e as edições de status no editor. Cada linha guarda o status anterior, o novo, o
+usuário responsável e o horário. O editor da OS mostra a **linha do tempo** ("Histórico de status",
+mais recente primeiro); a listagem vem de `GET /api/work-orders/{id}/status-history/`. É um registro
+imutável -- útil para auditar o andamento do atendimento sem depender da memória da equipe.
+
+## Técnico responsável
+
+Cada OS pode ter um **técnico responsável** (opcional), escolhido no bloco "Dados principais". O
+seletor lista apenas usuários **ativos** com o perfil **Técnico** (`GET /api/work-orders/technicians/`,
+mostra nome + especialidade). O vínculo pode ser trocado a qualquer momento; um técnico já atribuído
+que for desativado depois continua válido no histórico (mesma regra de "só um *novo* vínculo precisa
+estar ativo" usada em cliente/veículo). O [Kanban](kanban.md) permite **filtrar por técnico** e cada
+card mostra o técnico atribuído.
+
+## Anexos
+
+Cada OS pode receber **anexos** (fotos do veículo, laudos, notas) -- imagens ou PDF, até **10 MB** por
+arquivo. No editor, o bloco "Anexos" permite enviar, baixar (abre em nova aba) e remover arquivos;
+imagens aparecem como miniatura. Enviar/remover exige `orders.edit`; qualquer um que veja a OS
+(`orders.view`) consegue listar e baixar. Endpoints: `GET/POST /api/work-orders/{id}/attachments/` e
+`DELETE /api/work-orders/{id}/attachments/{anexo_id}/`. Os arquivos são gravados em `MEDIA_ROOT`
+(`media/orders/<id>/`) e servidos por `/media/` (ver [Variáveis de ambiente](environment-variables.md)).
+
 ## Itens da OS: cadastrados e avulsos
 
 Cada bloco de itens (serviços, pacotes, peças) aceita duas origens:
@@ -245,23 +271,28 @@ Todas as rotas exigem autenticação (cookie JWT):
 
 | Método | Rota | Ação |
 |---|---|---|
-| GET | `/api/work-orders/` | Lista (filtros: `search`, `active`, `status`, `customer`, `vehicle`) |
+| GET | `/api/work-orders/` | Lista (filtros: `search`, `active`, `status`, `customer`, `vehicle`, `technician`) |
 | POST | `/api/work-orders/` | Cria uma OS |
 | GET | `/api/work-orders/{id}/` | Detalha uma OS |
 | PATCH | `/api/work-orders/{id}/` | Atualiza uma OS |
 | DELETE | `/api/work-orders/{id}/` | Soft delete (`is_active = False`, 204) |
 | POST | `/api/work-orders/{id}/reactivate/` | Reativa uma OS desabilitada |
+| POST | `/api/work-orders/{id}/move/` | Muda o status respeitando o fluxo do Kanban |
+| GET | `/api/work-orders/{id}/status-history/` | Linha do tempo de status (mais recente primeiro) |
+| GET | `/api/work-orders/technicians/` | Técnicos ativos, para o seletor de responsável |
+| GET/POST | `/api/work-orders/{id}/attachments/` | Lista / envia anexos (imagem ou PDF, 10 MB) |
+| DELETE | `/api/work-orders/{id}/attachments/{anexo_id}/` | Remove um anexo |
 
 Parâmetros de listagem:
 
 - `active`: `active` (padrão) · `inactive` · `all` -- dimensão de soft delete.
 - `status`: um dos status da OS (`open`, `in_progress`, ...), independente de `active`.
+- `technician`: id do técnico responsável (usado pelo filtro do Kanban).
 - `search`: casa número da OS, placa, nome do cliente, WhatsApp/telefone e marca/modelo.
 
 ## Limitações conhecidas desta fase
 
-- **Baixa automática de estoque não é feita.** As peças cadastradas já ficam vinculadas à OS, e a
-  arquitetura permite adicionar essa baixa numa fase futura sem refatoração.
 - **Não há trava de edição para OS finalizada/cancelada** -- o status pode ser alterado livremente
   nesta fase. O registro nunca é apagado.
-- O histórico de mudanças de status não é versionado nesta fase (apenas o status atual é guardado).
+- A baixa automática de estoque registra o consumo no momento da finalização; correções após reabrir
+  a OS são feitas por um **ajuste manual** de estoque (ver [Peças e Estoque](parts.md)).

@@ -64,6 +64,8 @@ export interface WorkOrder {
   vehicle_description: string;
   status: OrderStatus;
   status_display: string;
+  assigned_technician: number | null;
+  assigned_technician_name: string | null;
   opened_at: string;
   expected_delivery: string | null;
   current_mileage: number | null;
@@ -94,6 +96,7 @@ export interface WorkOrderPayload {
   customer: number;
   vehicle: number;
   status: OrderStatus;
+  assigned_technician: number | null;
   opened_at: string;
   expected_delivery: string | null;
   current_mileage: number | null;
@@ -108,4 +111,35 @@ export interface WorkOrderPayload {
     part: number | null;
     linked_service_index: number | null;
   })[];
+}
+
+// Técnico atribuível a uma OS (perfil Técnico ativo).
+export interface Technician {
+  id: number;
+  name: string;
+  technical_specialty: string;
+  technical_specialty_display: string;
+}
+
+// Uma linha da timeline de status. `from_status` vazio = criação da OS.
+export interface OrderStatusHistoryEntry {
+  id: number;
+  from_status: string;
+  from_status_display: string;
+  to_status: string;
+  to_status_display: string;
+  changed_by_name: string | null;
+  note: string;
+  created_at: string;
+}
+
+export interface OrderAttachment {
+  id: number;
+  file: string;
+  original_name: string;
+  content_type: string;
+  size: number;
+  uploaded_by_name: string | null;
+  is_image: boolean;
+  created_at: string;
 }

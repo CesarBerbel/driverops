@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status as http_status
@@ -8,23 +9,43 @@ from rest_framework.response import Response
 from apps.accounts.permissions import HasModulePermission
 from apps.core.periods import period_start_date
 
-from .models import WorkOrder
-from .serializers import WorkOrderSerializer
+from .history import record_status_change
+from .models import OrderAttachment, WorkOrder
+from .serializers import (
+    OrderAttachmentSerializer,
+    OrderStatusHistorySerializer,
+    TechnicianSerializer,
+    WorkOrderSerializer,
+)
 from .status_groups import OPERATIONAL_STATUSES
 from .status_transitions import can_transition
 from .stock import deduct_stock_for_order
+
+User = get_user_model()
+
+# Limite de tamanho de anexo (10 MB) e tipos aceitos (imagens + PDF).
+MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+ALLOWED_ATTACHMENT_PREFIXES = ("image/",)
+ALLOWED_ATTACHMENT_TYPES = ("application/pdf",)
 
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
     serializer_class = WorkOrderSerializer
     permission_classes = [HasModulePermission]
     permission_module = "orders"
-    # Arrastar/mudar status é uma edição da OS.
-    permission_action_map = {"move": "edit"}
+    # Arrastar/mudar status e anexar/remover arquivos são edições da OS; ver o
+    # histórico, listar técnicos e listar anexos exigem só ver a OS.
+    permission_action_map = {
+        "move": "edit",
+        "status_history": "view",
+        "technicians": "view",
+        "attachments": "view",
+        "attachment": "edit",
+    }
 
     def get_queryset(self):
         queryset = WorkOrder.objects.select_related(
-            "customer", "vehicle"
+            "customer", "vehicle", "assigned_technician"
         ).prefetch_related(
             "service_items__service",
             "package_items__package",
@@ -38,6 +59,10 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         vehicle_id = self.request.query_params.get("vehicle")
         if vehicle_id:
             queryset = queryset.filter(vehicle_id=vehicle_id)
+
+        technician_id = self.request.query_params.get("technician")
+        if technician_id:
+            queryset = queryset.filter(assigned_technician_id=technician_id)
 
         # Detail routes must resolve an OS regardless of soft-delete/status,
         # same reasoning as the other modules' get_queryset.
@@ -95,12 +120,23 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def perform_create(self, serializer):
+        order = serializer.save()
+        # Primeira entrada da linha do tempo (from vazio = criação).
+        record_status_change(order, "", order.status, self.request.user)
+
     def perform_update(self, serializer):
         # Captura o status antes de salvar para detectar a transição para
         # "Finalizada" (status também pode mudar por PATCH no editor da OS, não
         # só pelo arrastar no Kanban -- ver `move`).
         old_status = serializer.instance.status
         order = serializer.save()
+        self._on_status_change(order, old_status)
+
+    def _on_status_change(self, order, old_status):
+        """Registra o histórico e dá baixa de estoque quando o status muda."""
+        if order.status != old_status:
+            record_status_change(order, old_status, order.status, self.request.user)
         self._maybe_deduct_stock(order, old_status)
 
     def _maybe_deduct_stock(self, order, old_status):
@@ -154,6 +190,86 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             old_status = order.status
             order.status = new_status
             order.save(update_fields=["status", "updated_at"])
-            self._maybe_deduct_stock(order, old_status)
+            self._on_status_change(order, old_status)
         serializer = WorkOrderSerializer(order, context=self.get_serializer_context())
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"], url_path="status-history")
+    def status_history(self, request, pk=None):
+        """Linha do tempo das mudanças de status da OS (mais recente primeiro)."""
+        order = self.get_object()
+        history = order.status_history.select_related("changed_by").all()
+        return Response(OrderStatusHistorySerializer(history, many=True).data)
+
+    @action(detail=False, methods=["get"])
+    def technicians(self, request):
+        """Técnicos ativos, para o seletor de técnico responsável da OS."""
+        techs = User.objects.filter(is_active=True, role__key="tecnico")
+        return Response(TechnicianSerializer(techs, many=True).data)
+
+    @action(detail=True, methods=["get", "post"])
+    def attachments(self, request, pk=None):
+        """Lista (GET) e envia (POST, multipart) anexos da OS."""
+        order = self.get_object()
+
+        if request.method == "GET":
+            items = order.attachments.select_related("uploaded_by").all()
+            return Response(OrderAttachmentSerializer(items, many=True).data)
+
+        # POST exige orders.edit (anexar é uma edição da OS).
+        if not request.user.has_perm_code("orders.edit"):
+            return Response(
+                {"detail": "Você não tem permissão para anexar arquivos."},
+                status=http_status.HTTP_403_FORBIDDEN,
+            )
+
+        upload = request.FILES.get("file")
+        if upload is None:
+            return Response(
+                {"file": ["Envie um arquivo."]},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        if upload.size > MAX_ATTACHMENT_BYTES:
+            return Response(
+                {"file": ["O arquivo excede o limite de 10 MB."]},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        content_type = upload.content_type or ""
+        allowed = (
+            content_type.startswith(ALLOWED_ATTACHMENT_PREFIXES)
+            or content_type in ALLOWED_ATTACHMENT_TYPES
+        )
+        if not allowed:
+            return Response(
+                {"file": ["Tipo de arquivo não permitido. Envie uma imagem ou PDF."]},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        attachment = OrderAttachment.objects.create(
+            order=order,
+            file=upload,
+            original_name=upload.name[:255],
+            content_type=content_type[:100],
+            size=upload.size,
+            uploaded_by=request.user,
+        )
+        return Response(
+            OrderAttachmentSerializer(attachment).data,
+            status=http_status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path="attachments/(?P<attachment_id>[^/.]+)",
+    )
+    def attachment(self, request, pk=None, attachment_id=None):
+        """Remove um anexo da OS (exige orders.edit -- ver o permission_action_map)."""
+        order = self.get_object()
+        try:
+            item = order.attachments.get(pk=attachment_id)
+        except OrderAttachment.DoesNotExist:
+            return Response(status=http_status.HTTP_404_NOT_FOUND)
+        item.file.delete(save=False)
+        item.delete()
+        return Response(status=http_status.HTTP_204_NO_CONTENT)

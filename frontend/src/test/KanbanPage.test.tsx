@@ -26,6 +26,8 @@ function workOrder(overrides: Partial<WorkOrder> = {}): WorkOrder {
     vehicle_description: "Honda Fit 1.5",
     status: "open",
     status_display: "Aberta",
+    assigned_technician: null,
+    assigned_technician_name: null,
     opened_at: "2026-07-04",
     expected_delivery: "2026-07-11",
     current_mileage: null,

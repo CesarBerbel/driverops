@@ -1,0 +1,124 @@
+"""Anexos da OS: upload (imagem/PDF), listagem, remoção e permissões."""
+
+import pytest
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client
+
+from apps.accounts.models import Role
+from apps.orders.models import OrderAttachment, WorkOrder
+
+pytestmark = pytest.mark.django_db
+
+User = get_user_model()
+
+
+@pytest.fixture(autouse=True)
+def media_root(tmp_path, settings):
+    # Isola os uploads dos testes num diretório temporário.
+    settings.MEDIA_ROOT = str(tmp_path)
+
+
+@pytest.fixture
+def order(db, customer, vehicle):
+    return WorkOrder.objects.create(
+        customer=customer, vehicle=vehicle, opened_at="2026-07-04", customer_report="x"
+    )
+
+
+def _png(name="foto.png"):
+    return SimpleUploadedFile(name, b"\x89PNG\r\n\x1a\nfake", content_type="image/png")
+
+
+def _client_for(email, password="StrongPass123"):
+    c = Client()
+    c.post(
+        "/api/auth/login/",
+        data={"email": email, "password": password},
+        content_type="application/json",
+    )
+    return c
+
+
+def test_upload_image_returns_201(auth_client, order):
+    response = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": _png()}
+    )
+    assert response.status_code == 201, response.json()
+    body = response.json()
+    assert body["original_name"] == "foto.png"
+    assert body["is_image"] is True
+    assert OrderAttachment.objects.filter(order=order).count() == 1
+
+
+def test_upload_pdf_is_allowed(auth_client, order):
+    pdf = SimpleUploadedFile(
+        "laudo.pdf", b"%PDF-1.4 fake", content_type="application/pdf"
+    )
+    response = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": pdf}
+    )
+    assert response.status_code == 201
+    assert response.json()["is_image"] is False
+
+
+def test_disallowed_type_is_rejected(auth_client, order):
+    txt = SimpleUploadedFile("nota.txt", b"hello", content_type="text/plain")
+    response = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": txt}
+    )
+    assert response.status_code == 400
+    assert "file" in response.json()
+
+
+def test_missing_file_is_rejected(auth_client, order):
+    response = auth_client.post(f"/api/work-orders/{order.id}/attachments/", data={})
+    assert response.status_code == 400
+
+
+def test_list_attachments(auth_client, order):
+    auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": _png("a.png")}
+    )
+    auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": _png("b.png")}
+    )
+    response = auth_client.get(f"/api/work-orders/{order.id}/attachments/")
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+
+def test_delete_attachment(auth_client, order):
+    created = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": _png()}
+    ).json()
+    response = auth_client.delete(
+        f"/api/work-orders/{order.id}/attachments/{created['id']}/"
+    )
+    assert response.status_code == 204
+    assert OrderAttachment.objects.filter(order=order).count() == 0
+
+
+def test_upload_requires_authentication(client, order):
+    response = client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": _png()}
+    )
+    assert response.status_code in (401, 403)
+
+
+def test_upload_requires_orders_edit(order):
+    # Perfil Estoque: tem orders.view (pode listar), mas NÃO orders.edit.
+    stock_user = User.objects.create_user(
+        email="stock@example.com", password="StrongPass123", full_name="Estoquista"
+    )
+    stock_user.role = Role.objects.filter(key="estoque").first()
+    stock_user.save(update_fields=["role"])
+    client = _client_for(stock_user.email)
+
+    # Consegue listar...
+    assert client.get(f"/api/work-orders/{order.id}/attachments/").status_code == 200
+    # ...mas não anexar.
+    response = client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": _png()}
+    )
+    assert response.status_code == 403

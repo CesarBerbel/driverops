@@ -8,7 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QuotePanel } from "@/features/quotes/components/QuotePanel";
 
 import { getWorkOrder } from "../api";
+import { OrderAttachments } from "../components/OrderAttachments";
 import { OrderForm } from "../components/OrderForm";
+import { OrderStatusTimeline } from "../components/OrderStatusTimeline";
 import { formatOrderNumber } from "../lib/orderMapping";
 
 export function OrderEditorPage() {
@@ -63,8 +65,14 @@ export function OrderEditorPage() {
             onSuccess={goToList}
             onCancel={goToList}
           />
-          {/* Orçamentos só existem para uma OS já salva. */}
-          {isEditMode && orderId !== null && <QuotePanel orderId={orderId} />}
+          {/* Anexos, histórico e orçamento só existem para uma OS já salva. */}
+          {isEditMode && orderId !== null && (
+            <>
+              <OrderAttachments orderId={orderId} />
+              <OrderStatusTimeline orderId={orderId} />
+              <QuotePanel orderId={orderId} />
+            </>
+          )}
         </>
       )}
     </div>

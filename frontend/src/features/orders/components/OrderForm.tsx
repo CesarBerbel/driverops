@@ -47,7 +47,7 @@ import {
 } from "@/lib/masks";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
-import { createWorkOrder, updateWorkOrder } from "../api";
+import { createWorkOrder, listTechnicians, updateWorkOrder } from "../api";
 import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS } from "../constants";
 import {
   addDaysISO,
@@ -111,6 +111,12 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   const serviceArray = useFieldArray({ control, name: "service_items" });
   const packageArray = useFieldArray({ control, name: "package_items" });
   const partArray = useFieldArray({ control, name: "part_items" });
+
+  const techniciansQuery = useQuery({
+    queryKey: ["technicians"],
+    queryFn: listTechnicians,
+  });
+  const technicians = techniciansQuery.data ?? [];
 
   const customerId = useWatch({ control, name: "customer_id" });
   const vehicleId = useWatch({ control, name: "vehicle_id" });
@@ -338,6 +344,36 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
                     {ORDER_STATUS_OPTIONS.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="assigned_technician">Técnico responsável</Label>
+            <Controller
+              control={control}
+              name="assigned_technician_id"
+              render={({ field }) => (
+                <Select
+                  value={field.value == null ? "none" : String(field.value)}
+                  onValueChange={(value) =>
+                    field.onChange(value === "none" ? null : Number(value))
+                  }
+                >
+                  <SelectTrigger id="assigned_technician" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem técnico</SelectItem>
+                    {technicians.map((tech) => (
+                      <SelectItem key={tech.id} value={String(tech.id)}>
+                        {tech.name}
+                        {tech.technical_specialty_display
+                          ? ` · ${tech.technical_specialty_display}`
+                          : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>

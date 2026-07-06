@@ -1,6 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from apps.customers.models import Customer
@@ -10,11 +11,17 @@ from apps.vehicles.models import Vehicle
 from apps.workshop.models import OrderSettings
 
 from .models import (
+    OrderAttachment,
+    OrderStatusHistory,
     WorkOrder,
     WorkOrderPackage,
     WorkOrderPart,
     WorkOrderService,
 )
+
+User = get_user_model()
+
+_STATUS_LABELS = dict(WorkOrder.Status.choices)
 
 CENTS = Decimal("0.01")
 
@@ -183,6 +190,12 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     )
     vehicle_description = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    # Técnico responsável: só usuários ativos podem ser atribuídos (a validação
+    # de "novo vínculo" abaixo permite manter um técnico já desativado).
+    assigned_technician = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
+    )
+    assigned_technician_name = serializers.SerializerMethodField()
 
     service_items = WorkOrderServiceSerializer(many=True, required=False)
     package_items = WorkOrderPackageSerializer(many=True, required=False)
@@ -217,6 +230,8 @@ class WorkOrderSerializer(serializers.ModelSerializer):
             "vehicle_description",
             "status",
             "status_display",
+            "assigned_technician",
+            "assigned_technician_name",
             "opened_at",
             "expected_delivery",
             "current_mileage",
@@ -250,6 +265,12 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     def get_vehicle_description(self, obj):
         parts = [obj.vehicle.brand, obj.vehicle.model]
         return " ".join(p for p in parts if p).strip()
+
+    def get_assigned_technician_name(self, obj):
+        if obj.assigned_technician_id is None:
+            return None
+        tech = obj.assigned_technician
+        return tech.full_name or tech.email
 
     def _services_total(self, obj):
         return money(
@@ -316,6 +337,18 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         )
         if is_new_assignment and not value.is_active:
             raise serializers.ValidationError("Selecione um veículo habilitado.")
+        return value
+
+    def validate_assigned_technician(self, value):
+        if value is None:
+            return value
+        # Mesma regra de "só um *novo* vínculo precisa estar ativo": manter um
+        # técnico já atribuído que foi desativado depois continua válido.
+        is_new_assignment = (
+            self.instance is None or self.instance.assigned_technician_id != value.id
+        )
+        if is_new_assignment and not value.is_active:
+            raise serializers.ValidationError("Selecione um técnico ativo.")
         return value
 
     def validate(self, attrs):
@@ -415,3 +448,77 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         instance.save()
         self._write_lines(instance, service_items, package_items, part_items)
         return instance
+
+
+class OrderStatusHistorySerializer(serializers.ModelSerializer):
+    from_status_display = serializers.SerializerMethodField()
+    to_status_display = serializers.SerializerMethodField()
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderStatusHistory
+        fields = [
+            "id",
+            "from_status",
+            "from_status_display",
+            "to_status",
+            "to_status_display",
+            "changed_by_name",
+            "note",
+            "created_at",
+        ]
+
+    def get_from_status_display(self, obj):
+        # Vazio = criação da OS.
+        return _STATUS_LABELS.get(obj.from_status, "") if obj.from_status else ""
+
+    def get_to_status_display(self, obj):
+        return _STATUS_LABELS.get(obj.to_status, obj.to_status)
+
+    def get_changed_by_name(self, obj):
+        if obj.changed_by_id is None:
+            return None
+        return obj.changed_by.full_name or obj.changed_by.email
+
+
+class OrderAttachmentSerializer(serializers.ModelSerializer):
+    uploaded_by_name = serializers.SerializerMethodField()
+    is_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrderAttachment
+        fields = [
+            "id",
+            "file",
+            "original_name",
+            "content_type",
+            "size",
+            "uploaded_by_name",
+            "is_image",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_uploaded_by_name(self, obj):
+        if obj.uploaded_by_id is None:
+            return None
+        return obj.uploaded_by.full_name or obj.uploaded_by.email
+
+    def get_is_image(self, obj):
+        return (obj.content_type or "").startswith("image/")
+
+
+class TechnicianSerializer(serializers.ModelSerializer):
+    """Resumo de um técnico para o seletor de técnico responsável da OS."""
+
+    name = serializers.SerializerMethodField()
+    technical_specialty_display = serializers.CharField(
+        source="get_technical_specialty_display", read_only=True
+    )
+
+    class Meta:
+        model = User
+        fields = ["id", "name", "technical_specialty", "technical_specialty_display"]
+
+    def get_name(self, obj):
+        return obj.full_name or obj.email

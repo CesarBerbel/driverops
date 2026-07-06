@@ -1,6 +1,23 @@
 import { apiClient } from "@/lib/api-client";
 
-import type { OrderActiveFilter, OrderStatus, WorkOrder, WorkOrderPayload } from "./types";
+import type {
+  OrderActiveFilter,
+  OrderAttachment,
+  OrderStatus,
+  OrderStatusHistoryEntry,
+  Technician,
+  WorkOrder,
+  WorkOrderPayload,
+} from "./types";
+
+// Origem do backend (baseURL sem o sufixo "/api"), para montar a URL absoluta
+// dos anexos, cujo campo `file` vem como caminho relativo "/media/...".
+const BACKEND_ORIGIN = (apiClient.defaults.baseURL ?? "").replace(/\/api\/?$/, "");
+
+export function attachmentUrl(file: string): string {
+  if (/^https?:\/\//.test(file)) return file;
+  return `${BACKEND_ORIGIN}${file}`;
+}
 
 export type OrderPeriod = "today" | "week" | "month" | "last30" | "all";
 
@@ -13,6 +30,7 @@ export interface ListWorkOrdersParams {
   overdue?: boolean;
   customer?: number;
   vehicle?: number;
+  technician?: number;
   board?: "operational";
   period?: OrderPeriod;
 }
@@ -31,6 +49,7 @@ export async function listWorkOrders(
       overdue: params.overdue ? "true" : undefined,
       customer: params.customer,
       vehicle: params.vehicle,
+      technician: params.technician,
       board: params.board,
       period: params.period,
     },
@@ -77,4 +96,45 @@ export async function deleteWorkOrder(id: number): Promise<void> {
 export async function reactivateWorkOrder(id: number): Promise<WorkOrder> {
   const { data } = await apiClient.post<WorkOrder>(`/work-orders/${id}/reactivate/`);
   return data;
+}
+
+export async function listTechnicians(): Promise<Technician[]> {
+  const { data } = await apiClient.get<Technician[]>("/work-orders/technicians/");
+  return data;
+}
+
+export async function listStatusHistory(
+  orderId: number,
+): Promise<OrderStatusHistoryEntry[]> {
+  const { data } = await apiClient.get<OrderStatusHistoryEntry[]>(
+    `/work-orders/${orderId}/status-history/`,
+  );
+  return data;
+}
+
+export async function listAttachments(orderId: number): Promise<OrderAttachment[]> {
+  const { data } = await apiClient.get<OrderAttachment[]>(
+    `/work-orders/${orderId}/attachments/`,
+  );
+  return data;
+}
+
+export async function uploadAttachment(
+  orderId: number,
+  file: File,
+): Promise<OrderAttachment> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<OrderAttachment>(
+    `/work-orders/${orderId}/attachments/`,
+    form,
+  );
+  return data;
+}
+
+export async function deleteAttachment(
+  orderId: number,
+  attachmentId: number,
+): Promise<void> {
+  await apiClient.delete(`/work-orders/${orderId}/attachments/${attachmentId}/`);
 }
