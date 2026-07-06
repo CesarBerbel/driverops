@@ -61,7 +61,9 @@ Objetivo: abertura rápida dos cadastros e módulos, com foco em ação e navega
 ## Aba OS
 
 Visão operacional das OS em andamento, com cards em **formato de carro** para reconhecimento rápido
-do veículo em atendimento. Organizada em **duas colunas**:
+do veículo em atendimento. Organizada em **duas seções lado a lado** no desktop — **Abertas** à
+esquerda e **Em andamento** à direita —, cada uma exibindo seus cards em **duas colunas**. No
+tablet/mobile as seções empilham (Abertas acima de Em andamento).
 
 - **Abertas** — OS no início do fluxo: `Aberta`, `Em diagnóstico`, `Aguardando aprovação`.
 - **Em andamento** — OS que avançaram: `Aprovada`, `Em execução`, `Aguardando peças`, `Em teste`,
