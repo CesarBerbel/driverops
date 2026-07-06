@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.categories.models import Category
 from apps.suppliers.models import Supplier
 
-from .models import Part
+from .models import Part, StockMovement
 
 NCM_LENGTH = 8
 
@@ -134,3 +134,50 @@ class PartSerializer(serializers.ModelSerializer):
         if value is not None and value < 0:
             raise serializers.ValidationError("O preço de venda não pode ser negativo.")
         return value
+
+
+class StockMovementSerializer(serializers.ModelSerializer):
+    """Extrato/registro de uma movimentação. Escrita: só `kind`, `quantity` e
+    `reason`; o saldo resultante, a OS e o autor são definidos pela view."""
+
+    kind_display = serializers.CharField(source="get_kind_display", read_only=True)
+    order_number = serializers.IntegerField(source="order.number", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StockMovement
+        fields = [
+            "id",
+            "part",
+            "kind",
+            "kind_display",
+            "quantity",
+            "resulting_quantity",
+            "reason",
+            "order",
+            "order_number",
+            "created_by",
+            "created_by_name",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "part",
+            "resulting_quantity",
+            "order",
+            "created_by",
+            "created_at",
+        ]
+
+    def get_created_by_name(self, obj):
+        if obj.created_by_id is None:
+            return None
+        return obj.created_by.full_name or obj.created_by.email
+
+    def validate_quantity(self, value):
+        if value < 0:
+            raise serializers.ValidationError("A quantidade não pode ser negativa.")
+        return value
+
+    def validate_reason(self, value):
+        return value.strip()

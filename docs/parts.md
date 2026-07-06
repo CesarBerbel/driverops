@@ -187,10 +187,49 @@ quantidade (`components/ui/badge.tsx`, variante `muted`, cores sutis reaproveita
 mínimo não está definido, nenhuma comparação é feita e a peça nunca é marcada como baixa --
 evitando ruído visual para peças sem um limite configurado.
 
-A arquitetura está preparada para evoluir: um futuro modelo de movimentações de estoque
-(`PartMovement`, com FK para `Part`) poderia registrar entradas/saídas/ajustes sem alterar o
-cadastro atual -- por ora, sem esse histórico formal, a quantidade é editada diretamente no
-cadastro da peça.
+## Movimentação de estoque
+
+Toda alteração de saldo passa a ser registrada como uma **movimentação** (`StockMovement`, FK para
+`Part`) -- um extrato imutável, nunca editado nem apagado. O saldo da peça (`Part.current_quantity`)
+é decrementado/incrementado a cada movimento, e cada linha guarda o `resulting_quantity` (saldo logo
+após o movimento) para auditoria. Há três tipos:
+
+| Tipo | Efeito no saldo | Permissão exigida |
+|------|-----------------|-------------------|
+| **Entrada** (`in`) | `saldo += quantidade` | `parts.stock_move` (crítica) |
+| **Saída** (`out`) | `saldo -= quantidade` | `parts.stock_move` (crítica) |
+| **Ajuste** (`adjust`) | `saldo := quantidade` (contagem física; a quantidade informada é o **novo saldo absoluto**, não um delta) | `parts.stock_adjust` (crítica) |
+
+Regras:
+- A **quantidade** é sempre positiva; o sinal/efeito vem do tipo. Entrada e saída exigem quantidade
+  maior que zero; um ajuste pode zerar o saldo.
+- Uma **saída manual não pode deixar o saldo negativo** (guarda-corpo: retorna `400` com
+  "Estoque insuficiente"). A única exceção é a baixa automática da OS (abaixo), que reflete consumo
+  físico e pode levar o saldo a negativo -- sinalizando que se usou mais do que o registrado.
+- As permissões são **críticas**: por padrão só o perfil **Estoque** (que tem `parts.stock_move`) e
+  o **superuser** movimentam; o ajuste (`parts.stock_adjust`) é exclusivo do superuser até ser
+  concedido explicitamente. Ver [Usuários e permissões](users-permissions.md).
+
+Na interface, cada peça na listagem tem uma ação **Movimentar estoque** (ícone de setas) que abre um
+diálogo com o saldo atual, um formulário (tipo, quantidade, motivo) e o **histórico** de
+movimentações. O formulário só aparece para quem tem permissão; quem só pode visualizar vê apenas o
+extrato. O tipo "Ajuste" só é oferecido a quem tem `parts.stock_adjust`.
+
+### Baixa automática ao finalizar a OS
+
+Quando uma Ordem de Serviço entra no status **Finalizada**, o sistema dá baixa automática das peças
+**cadastradas** lançadas na OS (linhas com `part` preenchido; peças avulsas não têm saldo). Cada
+baixa vira uma movimentação de **saída** vinculada à OS (`StockMovement.order`), agrupando por peça
+quando a mesma peça aparece em várias linhas. Detalhes:
+
+- É **idempotente**: controlada por `WorkOrder.stock_deducted`. Finalizar de novo (ou reabrir e
+  finalizar) nunca dá baixa em dobro.
+- Vale tanto arrastando no [Kanban](kanban.md) (`POST /api/work-orders/{id}/move/`) quanto mudando o
+  status pelo editor da OS (`PATCH`).
+- Correções (ex.: OS reaberta com peças diferentes) são feitas por um **ajuste manual** de estoque --
+  a baixa registra o consumo do momento da finalização.
+- Implementação em [`apps/orders/stock.py`](../backend/apps/orders/stock.py), acionada pelo
+  `WorkOrderViewSet` (`apps/orders/views.py`).
 
 ## Exclusão (soft delete)
 
@@ -217,6 +256,10 @@ a peça aparece na listagem padrão e se pode ser reativada.
   sempre permitido.
 - `DELETE /api/parts/{id}/` -- soft delete, `204 No Content`.
 - `POST /api/parts/{id}/reactivate/` -- reativa.
+- `GET /api/parts/{id}/movements/` -- extrato de movimentações (exige `parts.view`).
+- `POST /api/parts/{id}/movements/` -- lança uma movimentação `{ kind, quantity, reason }`.
+  Entrada/saída exigem `parts.stock_move`; ajuste exige `parts.stock_adjust`. O saldo resultante, a
+  OS e o autor são definidos pelo backend (somente-leitura na resposta).
 
 ## Autenticação
 

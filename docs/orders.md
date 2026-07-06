@@ -139,6 +139,11 @@ Toda OS nova inicia como **Aberta**. O status é alterado por ação explícita 
 Uma OS **cancelada** ou **desabilitada** nunca é apagada fisicamente (ver
 [Soft delete](#soft-delete-e-histórico)).
 
+Ao entrar em **Finalizada**, a OS dá **baixa automática de estoque** das peças cadastradas lançadas
+nela -- cada uma vira uma movimentação de saída vinculada à OS. A baixa é idempotente (nunca dupla) e
+vale tanto pelo arrastar no Kanban quanto pela mudança de status no editor. Detalhes e regras em
+[Peças e Estoque → Baixa automática ao finalizar a OS](parts.md#baixa-automática-ao-finalizar-a-os).
+
 ## Itens da OS: cadastrados e avulsos
 
 Cada bloco de itens (serviços, pacotes, peças) aceita duas origens:

@@ -233,10 +233,17 @@ class WorkOrderSerializer(serializers.ModelSerializer):
             "parts_total",
             "gross_total",
             "final_value",
+            "stock_deducted",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "number", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "number",
+            "stock_deducted",
+            "created_at",
+            "updated_at",
+        ]
 
     # --- computed values (backend is the source of truth) ---
 

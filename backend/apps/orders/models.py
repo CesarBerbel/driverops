@@ -53,6 +53,10 @@ class WorkOrder(models.Model):
     # Internal soft-delete flag. Never rendered as a field in the UI -- same
     # rule as Vehicle.is_active. "Excluir" na interface apenas desabilita.
     is_active = models.BooleanField(default=True)
+    # Marca se a baixa automática de estoque (peças cadastradas da OS) já foi
+    # feita ao finalizar. Garante idempotência: finalizar de novo (ou reabrir e
+    # finalizar) não dá baixa em dobro. Ver apps/orders/stock.py.
+    stock_deducted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

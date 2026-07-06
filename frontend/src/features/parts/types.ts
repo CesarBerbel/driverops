@@ -42,3 +42,27 @@ export type PartPayload = Omit<
   Part,
   "id" | "category_name" | "supplier_name" | "is_low_stock" | "created_at" | "updated_at"
 >;
+
+export type StockMovementKind = "in" | "out" | "adjust";
+
+export interface StockMovement {
+  id: number;
+  part: number;
+  kind: StockMovementKind;
+  kind_display: string;
+  // DRF DecimalField -> JSON string.
+  quantity: string;
+  resulting_quantity: string;
+  reason: string;
+  order: number | null;
+  order_number: number | null;
+  created_by: number | null;
+  created_by_name: string | null;
+  created_at: string;
+}
+
+export interface StockMovementPayload {
+  kind: StockMovementKind;
+  quantity: string;
+  reason?: string;
+}

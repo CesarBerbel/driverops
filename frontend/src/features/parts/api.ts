@@ -1,6 +1,12 @@
 import { apiClient } from "@/lib/api-client";
 
-import type { Part, PartPayload, PartStatusFilter } from "./types";
+import type {
+  Part,
+  PartPayload,
+  PartStatusFilter,
+  StockMovement,
+  StockMovementPayload,
+} from "./types";
 
 export interface ListPartsParams {
   search?: string;
@@ -40,5 +46,21 @@ export async function deletePart(id: number): Promise<void> {
 
 export async function reactivatePart(id: number): Promise<Part> {
   const { data } = await apiClient.post<Part>(`/parts/${id}/reactivate/`);
+  return data;
+}
+
+export async function listStockMovements(partId: number): Promise<StockMovement[]> {
+  const { data } = await apiClient.get<StockMovement[]>(`/parts/${partId}/movements/`);
+  return data;
+}
+
+export async function createStockMovement(
+  partId: number,
+  payload: StockMovementPayload,
+): Promise<StockMovement> {
+  const { data } = await apiClient.post<StockMovement>(
+    `/parts/${partId}/movements/`,
+    payload,
+  );
   return data;
 }
