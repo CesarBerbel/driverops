@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { listReceivables } from "../api";
+import { FinancialNav } from "../components/FinancialNav";
 import { PAYMENT_STATUS_CLASS, PAYMENT_STATUS_LABEL } from "../constants";
 import { RegisterPaymentDialog } from "../components/RegisterPaymentDialog";
 
@@ -64,11 +65,14 @@ export function FinancialPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Financeiro</h1>
-          <p className="text-muted-foreground">
-            Contas a receber: OS com saldo em aberto.
-          </p>
+        <div className="space-y-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Financeiro</h1>
+            <p className="text-muted-foreground">
+              Contas a receber: OS com saldo em aberto.
+            </p>
+          </div>
+          <FinancialNav />
         </div>
         <Card className="w-full sm:w-auto">
           <CardContent className="flex items-center gap-3 px-4 py-3">

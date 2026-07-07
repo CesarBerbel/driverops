@@ -14,6 +14,7 @@ import { ServiceCategoriesPage } from "@/features/categories/pages/ServiceCatego
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
 import { FinancialPage } from "@/features/financial/pages/FinancialPage";
+import { ReportsPage } from "@/features/financial/pages/ReportsPage";
 import { KanbanPage } from "@/features/kanban/pages/KanbanPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
@@ -73,6 +74,9 @@ export function AppRoutes() {
           {/* Financeiro / contas a receber (protegido por permissão). */}
           <Route element={<RequirePermission code="financial.view" />}>
             <Route path="/financial" element={<FinancialPage />} />
+          </Route>
+          <Route element={<RequirePermission code="financial.reports" />}>
+            <Route path="/financial/reports" element={<ReportsPage />} />
           </Route>
 
           {/* Usuários / permissões / auditoria (protegidos por permissão). */}

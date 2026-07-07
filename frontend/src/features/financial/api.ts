@@ -1,6 +1,13 @@
 import { apiClient } from "@/lib/api-client";
 
-import type { Payment, PaymentPayload, ReceivablesResponse } from "./types";
+import type {
+  FinancialReport,
+  Payment,
+  PaymentPayload,
+  ReceivablesResponse,
+} from "./types";
+
+export type ReportPeriod = "today" | "week" | "month" | "last30" | "all";
 
 export async function listPayments(orderId: number): Promise<Payment[]> {
   const { data } = await apiClient.get<Payment[]>("/payments/", {
@@ -30,5 +37,14 @@ export async function listReceivables(
     "/payments/receivables/",
     { params: { search: params.search || undefined, status: params.status } },
   );
+  return data;
+}
+
+export async function getFinancialReport(
+  period: ReportPeriod,
+): Promise<FinancialReport> {
+  const { data } = await apiClient.get<FinancialReport>("/payments/report/", {
+    params: { period },
+  });
   return data;
 }
