@@ -11,6 +11,7 @@ from apps.accounts.permissions import HasModulePermission
 from apps.core.periods import period_start_date
 from apps.orders.history import record_event
 from apps.orders.models import OrderEvent, WorkOrder
+from apps.orders.notifications import maybe_notify_payment
 from apps.orders.serializers import WorkOrderSerializer
 
 from .models import Expense, Payment
@@ -60,6 +61,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
             f"{payment.get_method_display()} · {_format_brl(payment.amount)}",
             actor=self.request.user,
         )
+        # Recibo por e-mail ao cliente (se configurado).
+        maybe_notify_payment(payment.order, payment, actor=self.request.user)
 
     def perform_destroy(self, instance):
         order = instance.order

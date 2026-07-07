@@ -204,15 +204,19 @@ permite **filtrar por tipo de evento**. A listagem vem de `GET /api/work-orders/
 
 ## Notificações ao cliente (e-mail)
 
-A OS pode **avisar o cliente por e-mail** sobre o andamento (primeira fase da frente de notificações —
-**somente e-mail**; WhatsApp fica para depois). Há dois caminhos:
+A OS pode **avisar o cliente por e-mail** sobre o andamento (frente de notificações — **somente
+e-mail**; WhatsApp fora de escopo). Os **gatilhos automáticos** são configuráveis em
+[Configurações da OS](configuracoes.md), sob o interruptor geral **"Enviar avisos automáticos"**
+(`notify_customer_by_email`, ligado por padrão):
 
-- **Automático:** ao a OS chegar em **Pronta para entrega** ou **Finalizada**, o sistema envia um
-  e-mail ao cliente com o status. Controlado pela opção **"Notificar o cliente por e-mail"** em
-  [Configurações da OS](configuracoes.md) (ligada por padrão).
-- **Manual:** o botão **"Notificar cliente"** na barra de ações do editor da OS envia, na hora, um
-  e-mail com o status atual (`POST /api/work-orders/{id}/notify-customer/`, exige `orders.edit`).
-  Funciona independentemente da opção automática.
+- **Mudança de status:** ao a OS atingir um dos **status escolhidos** (`notify_statuses`; por padrão
+  **Pronta para entrega** e **Finalizada**).
+- **Abertura da OS:** e-mail de confirmação ao criar a OS (`notify_on_creation`, desligado por padrão).
+- **Pagamento:** recibo por e-mail ao registrar um pagamento (`notify_on_payment`, desligado por padrão).
+
+Além dos automáticos, o botão **"Notificar cliente"** na barra de ações do editor da OS envia, na
+hora, um e-mail com o status atual (`POST /api/work-orders/{id}/notify-customer/`, exige `orders.edit`),
+**independentemente** das opções automáticas.
 
 O envio só ocorre se o **cliente tiver e-mail** cadastrado; caso contrário, nada é enviado (e o envio
 manual retorna um aviso). Cada envio é registrado como evento **"Cliente notificado por e-mail"** na

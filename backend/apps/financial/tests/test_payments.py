@@ -2,10 +2,12 @@
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import Client
 
 from apps.accounts.models import Permission, UserPermission
 from apps.orders.models import OrderEvent, WorkOrder
+from apps.workshop.models import OrderSettings
 
 pytestmark = pytest.mark.django_db
 
@@ -117,6 +119,28 @@ def test_payment_records_os_events(auth_client, work_order):
     assert OrderEvent.objects.filter(
         order=work_order, event_type=OrderEvent.Type.PAYMENT_REMOVED
     ).exists()
+
+
+def test_payment_receipt_email_when_enabled(auth_client, work_order):
+    conf = OrderSettings.get_solo()
+    conf.notify_on_payment = True
+    conf.save(update_fields=["notify_on_payment"])
+    work_order.customer.email = "cliente@example.com"
+    work_order.customer.save(update_fields=["email"])
+
+    assert _pay(auth_client, work_order, "100.00").status_code == 201
+    assert len(mail.outbox) == 1
+    assert "Pagamento recebido" in mail.outbox[0].subject
+    assert OrderEvent.objects.filter(
+        order=work_order, event_type=OrderEvent.Type.CUSTOMER_NOTIFIED
+    ).exists()
+
+
+def test_no_payment_receipt_by_default(auth_client, work_order):
+    work_order.customer.email = "cliente@example.com"
+    work_order.customer.save(update_fields=["email"])
+    _pay(auth_client, work_order, "100.00")
+    assert len(mail.outbox) == 0  # notify_on_payment é False por padrão
 
 
 def test_view_permission_can_list_but_not_register(work_order):

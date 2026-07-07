@@ -101,9 +101,20 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
             "print_instructions",
             "general_conditions",
             "notify_customer_by_email",
+            "notify_statuses",
+            "notify_on_creation",
+            "notify_on_payment",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
+
+    def validate_notify_statuses(self, value):
+        from apps.orders.models import WorkOrder
+
+        valid = set(WorkOrder.Status.values)
+        if not isinstance(value, list) or any(s not in valid for s in value):
+            raise serializers.ValidationError("Lista de status inválida.")
+        return value
 
     def validate_default_delivery_days(self, value):
         # PositiveIntegerField already blocks negatives at the DB level; guard

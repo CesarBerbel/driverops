@@ -26,6 +26,9 @@ function settings(overrides: Partial<OrderSettings> = {}): OrderSettings {
     print_instructions: "",
     general_conditions: "",
     notify_customer_by_email: true,
+    notify_statuses: ["ready", "finished"],
+    notify_on_creation: false,
+    notify_on_payment: false,
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };

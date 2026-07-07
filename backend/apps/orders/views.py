@@ -11,8 +11,11 @@ from apps.core.periods import period_start_date
 
 from .history import record_event, record_status_change
 from .models import OrderAttachment, OrderEvent, WorkOrder
-from .notifications import maybe_notify_status_change
-from .notifications import notify_customer as send_customer_notification
+from .notifications import (
+    maybe_notify_created,
+    maybe_notify_status_change,
+    notify_status,
+)
 from .serializers import (
     OrderAttachmentSerializer,
     OrderEventSerializer,
@@ -136,6 +139,8 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             "OS criada",
             actor=self.request.user,
         )
+        # E-mail de abertura ao cliente (se configurado).
+        maybe_notify_created(order, actor=self.request.user)
 
     def perform_update(self, serializer):
         # Captura o status antes de salvar para detectar a transição para
@@ -220,9 +225,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
     def notify_customer(self, request, pk=None):
         """Envia manualmente um e-mail ao cliente com o status atual da OS."""
         order = self.get_object()
-        to_email = send_customer_notification(
-            order, actor=request.user, channel="E-mail (manual)"
-        )
+        to_email = notify_status(order, actor=request.user, channel="E-mail (manual)")
         if to_email is None:
             return Response(
                 {"detail": "O cliente não tem e-mail cadastrado."},

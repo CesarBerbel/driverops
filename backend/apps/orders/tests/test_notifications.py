@@ -100,6 +100,60 @@ def test_manual_notify_without_email_returns_400(auth_client, customer, vehicle)
     assert len(mail.outbox) == 0
 
 
+def test_auto_email_uses_configured_statuses(auth_client, order_with_email):
+    conf = OrderSettings.get_solo()
+    conf.notify_statuses = ["in_progress"]  # não inclui "ready"
+    conf.save(update_fields=["notify_statuses"])
+
+    order_with_email.status = "approved"
+    order_with_email.save(update_fields=["status"])
+    _move(auth_client, order_with_email, "in_progress")
+    assert len(mail.outbox) == 1
+    assert "Em execução" in mail.outbox[0].subject
+
+
+def test_email_on_creation_when_enabled(auth_client, customer, vehicle):
+    conf = OrderSettings.get_solo()
+    conf.notify_on_creation = True
+    conf.save(update_fields=["notify_on_creation"])
+    customer.email = "cliente@example.com"
+    customer.save(update_fields=["email"])
+
+    response = auth_client.post(
+        "/api/work-orders/",
+        data={
+            "customer": customer.id,
+            "vehicle": vehicle.id,
+            "opened_at": "2026-07-04",
+            "customer_report": "x",
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    assert len(mail.outbox) == 1
+    assert "aberta" in mail.outbox[0].subject
+    assert OrderEvent.objects.filter(
+        order_id=response.json()["id"],
+        event_type=OrderEvent.Type.CUSTOMER_NOTIFIED,
+    ).exists()
+
+
+def test_no_creation_email_by_default(auth_client, customer, vehicle):
+    customer.email = "cliente@example.com"
+    customer.save(update_fields=["email"])
+    auth_client.post(
+        "/api/work-orders/",
+        data={
+            "customer": customer.id,
+            "vehicle": vehicle.id,
+            "opened_at": "2026-07-04",
+            "customer_report": "x",
+        },
+        content_type="application/json",
+    )
+    assert len(mail.outbox) == 0  # notify_on_creation é False por padrão
+
+
 def test_manual_notify_requires_orders_edit(order_with_email):
     # Perfil Estoque: tem orders.view mas não orders.edit.
     stock = User.objects.create_user(
