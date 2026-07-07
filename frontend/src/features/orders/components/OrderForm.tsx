@@ -58,6 +58,8 @@ import {
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { PAYMENT_STATUS_LABEL } from "@/features/financial/constants";
+import { OrderPaymentsPanel } from "@/features/financial/components/OrderPaymentsPanel";
+import { usePermissionCheck } from "@/features/auth/usePermission";
 
 import { createWorkOrder, listTechnicians, updateWorkOrder } from "../api";
 import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS } from "../constants";
@@ -116,6 +118,8 @@ interface OrderFormProps {
 export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const can = usePermissionCheck();
+  const canViewFinancial = can("financial.view");
   const isEditMode = order !== null;
   const orderId = order?.id ?? null;
 
@@ -262,6 +266,16 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
       disabled: !isEditMode,
       disabledHint: "Salve a OS para gerar o orçamento.",
     },
+    ...(canViewFinancial
+      ? [
+          {
+            key: "payments",
+            label: "Pagamentos",
+            disabled: !isEditMode,
+            disabledHint: "Salve a OS para registrar pagamentos.",
+          },
+        ]
+      : []),
     { key: "summary", label: "Resumo e valores", hasError: tabHasError("summary") },
     {
       key: "history",
@@ -780,6 +794,18 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
 
         {/* Aba 5 -- Orçamento (apenas em OS já salva). */}
         {activeTab === "budget" && orderId !== null && <QuotePanel orderId={orderId} />}
+
+        {/* Aba Pagamentos -- registrar pagamento da OS (apenas em OS já salva). */}
+        {activeTab === "payments" && order && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pagamentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrderPaymentsPanel order={order} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Aba 6 -- Resumo consolidado + valores. */}
         {activeTab === "summary" && (

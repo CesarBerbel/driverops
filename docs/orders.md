@@ -92,12 +92,16 @@ As sete abas, nesta ordem:
 3. **Serviços e peças** — serviços, pacotes e peças (cadastrados ou avulsos), com cadastro inline.
 4. **Fotos** — anexos/fotos da OS (ver [Anexos](#anexos)). Só em OS já salva.
 5. **Orçamento** — o [orçamento da OS](quotes.md). Só em OS já salva.
-6. **Resumo e valores** — resumo consolidado (veículo, cliente, status, contagem de itens) e o bloco
-   de **Valores** (totais + desconto + valor final, calculados no backend).
-7. **Histórico** — a [linha do tempo de status](#histórico-de-status-linha-do-tempo). Só em OS já salva.
+6. **Pagamentos** — registrar/estornar o pagamento **desta OS** (valor final, pago, saldo e status),
+   reutilizando o mesmo painel do [Financeiro](financial.md). Só aparece para quem tem `financial.view`
+   e só em OS já salva.
+7. **Resumo e valores** — resumo consolidado (veículo, cliente, status, contagem de itens, situação de
+   pagamento) e o bloco de **Valores** (totais + desconto + valor final, calculados no backend).
+8. **Histórico** — a [linha do tempo de status](#histórico-da-os-linha-do-tempo-de-eventos). Só em OS já salva.
 
-As abas **Fotos**, **Orçamento** e **Histórico** ficam **desabilitadas ao criar** uma OS nova (com
-dica "Salve a OS para ..."), pois dependem de uma OS já existente.
+As abas **Fotos**, **Orçamento**, **Pagamentos** e **Histórico** ficam **desabilitadas ao criar** uma
+OS nova (com dica "Salve a OS para ..."), pois dependem de uma OS já existente. A aba **Pagamentos**
+ainda depende da permissão `financial.view`.
 
 ### Barra de ações
 
