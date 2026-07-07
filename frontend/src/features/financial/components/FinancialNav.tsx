@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/financial", label: "Contas a receber", permission: "financial.view" },
+  { to: "/financial/expenses", label: "Despesas", permission: "financial.view" },
   { to: "/financial/reports", label: "Relatórios", permission: "financial.reports" },
 ];
 

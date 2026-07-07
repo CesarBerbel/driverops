@@ -1,6 +1,17 @@
 import type { PaymentStatus } from "@/features/orders/types";
 
-import type { PaymentMethod } from "./types";
+import type { ExpenseCategory, PaymentMethod } from "./types";
+
+export const EXPENSE_CATEGORY_OPTIONS: { value: ExpenseCategory; label: string }[] = [
+  { value: "suppliers", label: "Fornecedores/Peças" },
+  { value: "salaries", label: "Salários/Mão de obra" },
+  { value: "rent", label: "Aluguel" },
+  { value: "utilities", label: "Água/Luz/Internet" },
+  { value: "taxes", label: "Impostos/Taxas" },
+  { value: "marketing", label: "Marketing" },
+  { value: "maintenance", label: "Manutenção/Equipamentos" },
+  { value: "other", label: "Outras" },
+];
 
 export const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: "pix", label: "Pix" },

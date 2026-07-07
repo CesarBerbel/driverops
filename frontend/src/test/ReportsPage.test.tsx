@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as financialApi from "@/features/financial/api";
 import { ReportsPage } from "@/features/financial/pages/ReportsPage";
-import type { FinancialReport } from "@/features/financial/types";
+import type { DreReport, FinancialReport } from "@/features/financial/types";
 
 vi.mock("@/features/financial/api");
 
@@ -23,9 +23,18 @@ function report(overrides: Partial<FinancialReport> = {}): FinancialReport {
       { method: "pix", method_display: "Pix", total: "120.00", count: 2 },
       { method: "cash", method_display: "Dinheiro", total: "60.00", count: 1 },
     ],
-    by_day: [
-      { date: "2026-07-05", total: "120.00" },
-      { date: "2026-07-06", total: "60.00" },
+    by_day: [{ date: "2026-07-06", total: "180.00" }],
+    ...overrides,
+  };
+}
+
+function dre(overrides: Partial<DreReport> = {}): DreReport {
+  return {
+    total_revenue: "180.00",
+    total_expenses: "100.00",
+    result: "80.00",
+    expenses_by_category: [
+      { category: "rent", category_display: "Aluguel", total: "100.00", count: 1 },
     ],
     ...overrides,
   };
@@ -43,35 +52,42 @@ function renderPage() {
 }
 
 describe("ReportsPage", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("shows the KPI tiles and the payment-method breakdown", async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(financialApi.getFinancialReport).mockResolvedValue(report());
-    renderPage();
-    // Total recebido + ticket médio nos tiles.
-    expect(await screen.findByText("R$ 180,00")).toBeInTheDocument();
-    expect(screen.getByText("Ticket médio")).toBeInTheDocument();
-    expect(screen.getByText("R$ 90,00")).toBeInTheDocument();
-    // Quebra por forma de pagamento.
-    expect(screen.getByText("Pix")).toBeInTheDocument();
-    expect(screen.getByText("Dinheiro")).toBeInTheDocument();
-    expect(screen.getByText("R$ 120,00")).toBeInTheDocument();
+    vi.mocked(financialApi.getDre).mockResolvedValue(dre());
   });
 
-  it("shows an empty state when nothing was received", async () => {
+  it("shows the DRE tiles and both breakdowns", async () => {
+    renderPage();
+    // Resultado (receitas − despesas) e ticket médio.
+    expect(await screen.findByText("R$ 80,00")).toBeInTheDocument();
+    expect(screen.getByText("lucro no período")).toBeInTheDocument();
+    expect(screen.getByText("Ticket médio")).toBeInTheDocument();
+    // Quebras: por forma de pagamento e por categoria de despesa.
+    expect(screen.getByText("Pix")).toBeInTheDocument();
+    expect(screen.getByText("Aluguel")).toBeInTheDocument();
+  });
+
+  it("marks a negative result as prejuízo", async () => {
+    vi.mocked(financialApi.getDre).mockResolvedValue(
+      dre({ total_revenue: "0.00", total_expenses: "100.00", result: "-100.00" }),
+    );
     vi.mocked(financialApi.getFinancialReport).mockResolvedValue(
-      report({
-        total_received: "0.00",
-        payment_count: 0,
-        orders_count: 0,
-        average_ticket: "0.00",
-        by_method: [],
-        by_day: [],
-      }),
+      report({ total_received: "0.00", by_method: [], by_day: [] }),
     );
     renderPage();
-    expect(
-      await screen.findByText("Nenhum recebimento no período."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("prejuízo no período")).toBeInTheDocument();
+  });
+
+  it("shows an empty state when nothing happened", async () => {
+    vi.mocked(financialApi.getFinancialReport).mockResolvedValue(
+      report({ total_received: "0.00", by_method: [], by_day: [] }),
+    );
+    vi.mocked(financialApi.getDre).mockResolvedValue(
+      dre({ total_revenue: "0.00", total_expenses: "0.00", result: "0.00", expenses_by_category: [] }),
+    );
+    renderPage();
+    expect(await screen.findByText("Nenhum lançamento no período.")).toBeInTheDocument();
   });
 });

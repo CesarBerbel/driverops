@@ -13,8 +13,8 @@ from apps.orders.history import record_event
 from apps.orders.models import OrderEvent, WorkOrder
 from apps.orders.serializers import WorkOrderSerializer
 
-from .models import Payment
-from .serializers import PaymentSerializer
+from .models import Expense, Payment
+from .serializers import ExpenseSerializer, PaymentSerializer
 
 CENTS = Decimal("0.01")
 
@@ -188,5 +188,85 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 "average_ticket": _money(average_ticket),
                 "by_method": by_method,
                 "by_day": by_day,
+            }
+        )
+
+
+class ExpenseViewSet(viewsets.ModelViewSet):
+    """Despesas da oficina (saídas) + resultado do período (DRE).
+
+    Ver exige `financial.view`; criar/editar/excluir exige
+    `financial.register_expense`; o resumo DRE exige `financial.reports`.
+    """
+
+    serializer_class = ExpenseSerializer
+    permission_classes = [HasModulePermission]
+    permission_module = "financial"
+    permission_action_map = {
+        "create": "register_expense",
+        "update": "register_expense",
+        "partial_update": "register_expense",
+        "destroy": "register_expense",
+        "dre": "reports",
+    }
+
+    def get_queryset(self):
+        queryset = Expense.objects.select_related("created_by")
+        if self.action != "list":
+            return queryset
+
+        start = period_start_date(self.request.query_params.get("period"))
+        if start is not None:
+            queryset = queryset.filter(
+                incurred_at__gte=start, incurred_at__lte=timezone.localdate()
+            )
+        category = self.request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category=category)
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(description__icontains=search) | Q(note__icontains=search)
+            )
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def dre(self, request):
+        """Resultado do período (DRE): receitas − despesas + despesas por categoria."""
+        start = period_start_date(request.query_params.get("period"))
+        today = timezone.localdate()
+
+        payments = Payment.objects.all()
+        expenses = Expense.objects.all()
+        if start is not None:
+            payments = payments.filter(paid_at__gte=start, paid_at__lte=today)
+            expenses = expenses.filter(incurred_at__gte=start, incurred_at__lte=today)
+
+        total_revenue = payments.aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        total_expenses = expenses.aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        result = total_revenue - total_expenses
+
+        labels = dict(Expense.Category.choices)
+        by_category = [
+            {
+                "category": row["category"],
+                "category_display": labels.get(row["category"], row["category"]),
+                "total": _money(row["total"]),
+                "count": row["count"],
+            }
+            for row in expenses.values("category")
+            .annotate(total=Sum("amount"), count=Count("id"))
+            .order_by("-total")
+        ]
+
+        return Response(
+            {
+                "total_revenue": _money(total_revenue),
+                "total_expenses": _money(total_expenses),
+                "result": _money(result),
+                "expenses_by_category": by_category,
             }
         )

@@ -1,6 +1,9 @@
 import { apiClient } from "@/lib/api-client";
 
 import type {
+  DreReport,
+  Expense,
+  ExpensePayload,
   FinancialReport,
   Payment,
   PaymentPayload,
@@ -44,6 +47,47 @@ export async function getFinancialReport(
   period: ReportPeriod,
 ): Promise<FinancialReport> {
   const { data } = await apiClient.get<FinancialReport>("/payments/report/", {
+    params: { period },
+  });
+  return data;
+}
+
+export interface ListExpensesParams {
+  period?: ReportPeriod;
+  category?: string;
+  search?: string;
+}
+
+export async function listExpenses(params: ListExpensesParams = {}): Promise<Expense[]> {
+  const { data } = await apiClient.get<Expense[]>("/expenses/", {
+    params: {
+      period: params.period,
+      category: params.category,
+      search: params.search || undefined,
+    },
+  });
+  return data;
+}
+
+export async function createExpense(payload: ExpensePayload): Promise<Expense> {
+  const { data } = await apiClient.post<Expense>("/expenses/", payload);
+  return data;
+}
+
+export async function updateExpense(
+  id: number,
+  payload: ExpensePayload,
+): Promise<Expense> {
+  const { data } = await apiClient.patch<Expense>(`/expenses/${id}/`, payload);
+  return data;
+}
+
+export async function deleteExpense(id: number): Promise<void> {
+  await apiClient.delete(`/expenses/${id}/`);
+}
+
+export async function getDre(period: ReportPeriod): Promise<DreReport> {
+  const { data } = await apiClient.get<DreReport>("/expenses/dre/", {
     params: { period },
   });
   return data;

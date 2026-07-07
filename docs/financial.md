@@ -1,13 +1,14 @@
-# Financeiro — Pagamentos, Contas a Receber e Relatórios
+# Financeiro — Pagamentos, Contas a Receber, Despesas e Relatórios
 
 A **frente financeira**: registrar **pagamentos** por Ordem de Serviço, acompanhar o **status
 financeiro** de cada OS (em aberto / parcial / pago), ver as **contas a receber** (OS com saldo em
-aberto) e os **relatórios de recebimentos** por período.
+aberto), lançar as **despesas** da oficina (saídas) e os **relatórios** por período — incluindo o
+**resultado (DRE)**: receitas − despesas.
 
-- **App backend:** `apps.financial` (modelo `Payment`)
-- **API:** `/api/payments/`, `/api/payments/receivables/` e `/api/payments/report/`
-- **Rotas frontend:** `/financial` (contas a receber, `financial.view`) e `/financial/reports`
-  (relatórios, `financial.reports`)
+- **App backend:** `apps.financial` (modelos `Payment` e `Expense`)
+- **API:** `/api/payments/*` e `/api/expenses/*`
+- **Rotas frontend:** `/financial` (contas a receber), `/financial/expenses` (despesas) —
+  ambas `financial.view` — e `/financial/reports` (relatórios, `financial.reports`)
 - **Módulo de permissões:** `financial` (ver [Usuários e Permissões](users-permissions.md))
 
 ## Como rodar
@@ -73,20 +74,33 @@ Aberto por OS, mostra o resumo (valor final / pago / saldo), o **formulário de 
 Registrar/estornar exige `financial.register_payment`; quem tem apenas `financial.view` vê o resumo,
 a lista e as contas a receber, mas **não** registra nem estorna.
 
+## Despesas (`/financial/expenses`)
+
+A aba **Despesas** registra as **saídas de caixa** da oficina (independentes das OS): aluguel,
+fornecedores/peças, salários/mão de obra, água/luz/internet, impostos/taxas, marketing,
+manutenção/equipamentos e outras. Cada despesa tem **descrição, categoria, valor, forma de pagamento,
+data** e observação. A tela lista com **filtro por categoria e período** e busca por descrição, mostra
+o **total no período** e permite **criar, editar e excluir** despesas.
+
+Registrar/editar/excluir exige `financial.register_expense`; quem tem apenas `financial.view` só
+consulta. CRUD em `/api/expenses/`.
+
 ## Relatórios (`/financial/reports`)
 
-A aba **Relatórios** (controle segmentado ao lado de "Contas a receber") mostra os **recebimentos por
-período** (por data de pagamento), exigindo `financial.reports`. Um **filtro de período** (Hoje, Esta
-semana, Este mês, Últimos 30 dias, Tudo) alimenta:
+A aba **Relatórios** (controle segmentado) mostra o **resultado do período** e os **recebimentos**,
+exigindo `financial.reports`. Um **filtro de período** (Hoje, Esta semana, Este mês, Últimos 30 dias,
+Tudo) alimenta:
 
-- **Indicadores** (stat tiles): **Total recebido**, **Pagamentos** (nº), **OS pagas** (distintas) e
-  **Ticket médio** (`total recebido ÷ OS pagas`).
+- **Resultado (DRE)** em stat tiles: **Receitas** (recebimentos), **Despesas** (saídas), **Resultado**
+  (`receitas − despesas`, verde = lucro / vermelho = prejuízo) e **Ticket médio**.
 - **Recebimentos por dia**: série diária do período (dias sem recebimento = 0) em barras.
-- **Por forma de pagamento**: quebra do total por forma (Pix, Dinheiro, ...), ordenada, em barras.
+- **Por forma de pagamento**: quebra do total recebido por forma, ordenada, em barras.
+- **Despesas por categoria**: quebra do total de despesas por categoria, em barras.
 
-Os gráficos usam **hue único** (uma só medida — valor recebido) com **rótulos diretos** de valor e o
-nome da categoria em texto, então a identidade nunca depende só de cor. A listagem vem de
-`GET /api/payments/report/?period=...`.
+Os gráficos usam **hue único por medida** (recebimentos em destaque, despesas em vermelho) com
+**rótulos diretos** de valor e o nome da categoria em texto — a identidade nunca depende só de cor. As
+fontes são `GET /api/payments/report/?period=...` (recebimentos) e `GET /api/expenses/dre/?period=...`
+(resultado + despesas por categoria).
 
 ## Registro na linha do tempo da OS
 
@@ -100,7 +114,8 @@ Cada pagamento registrado ou estornado também vira um **evento** na
 |---|---|
 | `financial.view` | Ver contas a receber, pagamentos e o status financeiro; acessar `/financial`. |
 | `financial.register_payment` | Registrar e estornar pagamentos. |
-| `financial.reports` | Ver os **relatórios financeiros** (`/financial/reports`). |
+| `financial.register_expense` | Criar, editar e excluir despesas. |
+| `financial.reports` | Ver os **relatórios financeiros** e o **resultado (DRE)**. |
 | `financial.view_margin` | **Crítica** — ver custos/margens (reservada; só superuser por padrão). |
 
 Por padrão, o perfil **Financeiro** e o **Administrador** têm `financial.view` e
@@ -117,10 +132,12 @@ Todas as rotas exigem autenticação (cookie JWT):
 | DELETE | `/api/payments/{id}/` | Estorna um pagamento (exige `financial.register_payment`) |
 | GET | `/api/payments/receivables/?search=&status=` | Contas a receber: OS com saldo devedor, com `total_receivable` |
 | GET | `/api/payments/report/?period=` | Relatório de recebimentos (totais, ticket médio, por forma, por dia) — exige `financial.reports` |
+| GET/POST | `/api/expenses/?period=&category=&search=` | Lista / cria despesas (POST exige `financial.register_expense`) |
+| PATCH/DELETE | `/api/expenses/{id}/` | Edita / exclui uma despesa (exige `financial.register_expense`) |
+| GET | `/api/expenses/dre/?period=` | Resultado do período: receitas, despesas, resultado e despesas por categoria — exige `financial.reports` |
 
 ## Limitações desta fase
 
-- **Somente recebimentos das OS.** Fluxo de caixa com **despesas/saídas** (aluguel, fornecedores,
-  salários) e o saldo do período são a próxima fase da frente financeira.
-- O pagamento é um lançamento simples (sem parcelamento/juros/baixa bancária nesta fase).
-- Os relatórios cobrem os **recebimentos** por período; DRE/lucro dependem do módulo de despesas.
+- Pagamentos e despesas são **lançamentos simples** (sem parcelamento, juros ou conciliação bancária).
+- O **resultado (DRE)** é por regime de caixa (recebimentos − despesas no período), não por
+  competência; não há centros de custo nem projeções.
