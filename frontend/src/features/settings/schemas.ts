@@ -47,6 +47,7 @@ export const orderSettingsSchema = z.object({
   pdf_footer_text: z.string().optional(),
   print_instructions: z.string().optional(),
   general_conditions: z.string().optional(),
+  notify_customer_by_email: z.boolean(),
 });
 
 export type OrderSettingsFormValues = z.infer<typeof orderSettingsSchema>;

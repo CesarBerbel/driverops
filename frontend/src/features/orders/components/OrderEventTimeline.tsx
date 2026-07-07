@@ -5,6 +5,7 @@ import {
   FilePlus2,
   ImageOff,
   ImagePlus,
+  Mail,
   Send,
   SlidersHorizontal,
   Wallet,
@@ -36,6 +37,7 @@ const EVENT_ICON: Record<OrderEventType, typeof Clock> = {
   quote_rejected: XCircle,
   payment_registered: Wallet,
   payment_removed: Wallet,
+  customer_notified: Mail,
 };
 
 const FILTER_OPTIONS: { value: string; label: string }[] = [
@@ -50,6 +52,7 @@ const FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: "quote_rejected", label: "Orçamento recusado" },
   { value: "payment_registered", label: "Pagamento registrado" },
   { value: "payment_removed", label: "Pagamento estornado" },
+  { value: "customer_notified", label: "Cliente notificado" },
 ];
 
 function formatDateTime(iso: string): string {

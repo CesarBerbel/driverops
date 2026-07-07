@@ -149,6 +149,8 @@ class OrderSettings(SingletonModel):
     pdf_footer_text = models.TextField(blank=True, default=DEFAULT_PDF_FOOTER_TEXT)
     print_instructions = models.TextField(blank=True)
     general_conditions = models.TextField(blank=True)
+    # Notifica o cliente por e-mail quando a OS chega a marcos (pronta/finalizada).
+    notify_customer_by_email = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

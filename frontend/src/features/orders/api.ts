@@ -157,6 +157,15 @@ export async function deleteAttachment(
   await apiClient.delete(`/work-orders/${orderId}/attachments/${attachmentId}/`);
 }
 
+export async function notifyCustomer(
+  orderId: number,
+): Promise<{ sent: boolean; email: string }> {
+  const { data } = await apiClient.post<{ sent: boolean; email: string }>(
+    `/work-orders/${orderId}/notify-customer/`,
+  );
+  return data;
+}
+
 export async function listOrderEvents(
   orderId: number,
   type?: OrderEventType,

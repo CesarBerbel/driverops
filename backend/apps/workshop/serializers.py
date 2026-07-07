@@ -100,6 +100,7 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
             "pdf_footer_text",
             "print_instructions",
             "general_conditions",
+            "notify_customer_by_email",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]

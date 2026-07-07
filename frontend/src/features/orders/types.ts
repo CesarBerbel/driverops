@@ -176,7 +176,8 @@ export type OrderEventType =
   | "quote_partially_approved"
   | "quote_rejected"
   | "payment_registered"
-  | "payment_removed";
+  | "payment_removed"
+  | "customer_notified";
 
 export interface OrderEvent {
   id: number;
