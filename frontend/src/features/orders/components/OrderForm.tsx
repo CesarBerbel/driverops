@@ -57,6 +57,8 @@ import {
 } from "@/lib/masks";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
+import { PAYMENT_STATUS_LABEL } from "@/features/financial/constants";
+
 import { createWorkOrder, listTechnicians, updateWorkOrder } from "../api";
 import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS } from "../constants";
 import {
@@ -808,6 +810,15 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
                     pacotes · {(watchedParts ?? []).length} peças
                   </p>
                 </div>
+                {isEditMode && order && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Pagamento</p>
+                    <p className="font-medium">
+                      {PAYMENT_STATUS_LABEL[order.payment_status]} · saldo{" "}
+                      {formatCurrencyBRL(Number(order.balance_due))}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

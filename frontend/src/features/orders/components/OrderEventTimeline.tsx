@@ -7,6 +7,7 @@ import {
   ImagePlus,
   Send,
   SlidersHorizontal,
+  Wallet,
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
@@ -33,6 +34,8 @@ const EVENT_ICON: Record<OrderEventType, typeof Clock> = {
   quote_approved: CheckCircle2,
   quote_partially_approved: CheckCircle2,
   quote_rejected: XCircle,
+  payment_registered: Wallet,
+  payment_removed: Wallet,
 };
 
 const FILTER_OPTIONS: { value: string; label: string }[] = [
@@ -45,6 +48,8 @@ const FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: "quote_approved", label: "Orçamento aprovado" },
   { value: "quote_partially_approved", label: "Aprovação parcial" },
   { value: "quote_rejected", label: "Orçamento recusado" },
+  { value: "payment_registered", label: "Pagamento registrado" },
+  { value: "payment_removed", label: "Pagamento estornado" },
 ];
 
 function formatDateTime(iso: string): string {

@@ -52,6 +52,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             "service_items__service",
             "package_items__package",
             "part_items__part",
+            "payments",
         )
 
         customer_id = self.request.query_params.get("customer")
