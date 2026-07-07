@@ -207,6 +207,9 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     parts_total = serializers.SerializerMethodField()
     gross_total = serializers.SerializerMethodField()
     final_value = serializers.SerializerMethodField()
+    amount_paid = serializers.SerializerMethodField()
+    balance_due = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -249,6 +252,9 @@ class WorkOrderSerializer(serializers.ModelSerializer):
             "parts_total",
             "gross_total",
             "final_value",
+            "amount_paid",
+            "balance_due",
+            "payment_status",
             "stock_deducted",
             "created_at",
             "updated_at",
@@ -305,7 +311,7 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     def get_gross_total(self, obj):
         return str(self._gross_total(obj))
 
-    def get_final_value(self, obj):
+    def _final_value(self, obj):
         gross = self._gross_total(obj)
         discount = Decimal("0")
         if obj.discount_type == WorkOrder.DiscountType.PERCENT:
@@ -315,7 +321,31 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         final = gross - discount
         if final < 0:
             final = Decimal("0")
-        return str(money(final))
+        return money(final)
+
+    def get_final_value(self, obj):
+        return str(self._final_value(obj))
+
+    # --- pagamentos / recebíveis (calculados no backend) ---
+
+    def _amount_paid(self, obj):
+        return money(sum((p.amount for p in obj.payments.all()), Decimal("0")))
+
+    def get_amount_paid(self, obj):
+        return str(self._amount_paid(obj))
+
+    def get_balance_due(self, obj):
+        balance = self._final_value(obj) - self._amount_paid(obj)
+        return str(money(balance if balance > 0 else Decimal("0")))
+
+    def get_payment_status(self, obj):
+        final = self._final_value(obj)
+        paid = self._amount_paid(obj)
+        if paid <= 0:
+            return "open"
+        if paid < final:
+            return "partial"
+        return "paid"
 
     # --- validation ---
 

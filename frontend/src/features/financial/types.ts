@@ -1,0 +1,37 @@
+import type { WorkOrder } from "@/features/orders/types";
+
+export type PaymentMethod =
+  | "cash"
+  | "pix"
+  | "debit"
+  | "credit"
+  | "transfer"
+  | "boleto"
+  | "other";
+
+export interface Payment {
+  id: number;
+  order: number;
+  // DRF DecimalField -> JSON string.
+  amount: string;
+  method: PaymentMethod;
+  method_display: string;
+  paid_at: string;
+  note: string;
+  created_by_name: string | null;
+  created_at: string;
+}
+
+export interface PaymentPayload {
+  order: number;
+  amount: string;
+  method: PaymentMethod;
+  paid_at: string;
+  note?: string;
+}
+
+export interface ReceivablesResponse {
+  count: number;
+  total_receivable: string;
+  results: WorkOrder[];
+}

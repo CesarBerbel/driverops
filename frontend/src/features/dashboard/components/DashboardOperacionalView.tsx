@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  Wallet,
   Wrench,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -17,11 +18,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminPing } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/useAuth";
+import { usePermissionCheck } from "@/features/auth/usePermission";
 import { extractErrorMessage } from "@/lib/api-client";
 
 import { OrdersHeroCard } from "./OrdersHeroCard";
 
-const MODULE_CARDS = [
+const MODULE_CARDS: {
+  to: string;
+  icon: typeof Users;
+  title: string;
+  description: string;
+  permission?: string;
+}[] = [
   {
     to: "/customers",
     icon: Users,
@@ -53,15 +61,26 @@ const MODULE_CARDS = [
     description: "Cadastre serviços, peças padrão e pacotes de serviços.",
   },
   {
+    to: "/financial",
+    icon: Wallet,
+    title: "Financeiro",
+    description: "Contas a receber e pagamentos das ordens de serviço.",
+    permission: "financial.view",
+  },
+  {
     to: "/settings",
     icon: Settings,
     title: "Configurações",
     description: "Acesse as áreas administrativas do sistema.",
   },
-] as const;
+];
 
 export function DashboardOperacionalView() {
   const { user } = useAuth();
+  const can = usePermissionCheck();
+  const moduleCards = MODULE_CARDS.filter(
+    (card) => !card.permission || can(card.permission),
+  );
 
   const pingMutation = useMutation({
     mutationFn: adminPing,
@@ -75,7 +94,7 @@ export function DashboardOperacionalView() {
       <OrdersHeroCard />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {MODULE_CARDS.map(({ to, icon: Icon, title, description }) => (
+        {moduleCards.map(({ to, icon: Icon, title, description }) => (
           <Link key={to} to={to}>
             <Card className="h-full transition-colors hover:bg-accent/50">
               <CardHeader>

@@ -82,9 +82,14 @@ export interface WorkOrder {
   parts_total: string;
   gross_total: string;
   final_value: string;
+  amount_paid: string;
+  balance_due: string;
+  payment_status: PaymentStatus;
   created_at: string;
   updated_at: string;
 }
+
+export type PaymentStatus = "open" | "partial" | "paid";
 
 export interface WorkOrderLinePayload {
   description: string;
@@ -169,7 +174,9 @@ export type OrderEventType =
   | "quote_sent"
   | "quote_approved"
   | "quote_partially_approved"
-  | "quote_rejected";
+  | "quote_rejected"
+  | "payment_registered"
+  | "payment_removed";
 
 export interface OrderEvent {
   id: number;
