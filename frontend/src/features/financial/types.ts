@@ -35,3 +35,24 @@ export interface ReceivablesResponse {
   total_receivable: string;
   results: WorkOrder[];
 }
+
+export interface ReportByMethod {
+  method: PaymentMethod;
+  method_display: string;
+  total: string;
+  count: number;
+}
+
+export interface ReportByDay {
+  date: string;
+  total: string;
+}
+
+export interface FinancialReport {
+  total_received: string;
+  payment_count: number;
+  orders_count: number;
+  average_ticket: string;
+  by_method: ReportByMethod[];
+  by_day: ReportByDay[];
+}

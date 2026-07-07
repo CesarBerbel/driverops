@@ -1,12 +1,13 @@
-# Financeiro — Pagamentos e Contas a Receber
+# Financeiro — Pagamentos, Contas a Receber e Relatórios
 
-Primeira entrega da **frente financeira**: registrar **pagamentos** por Ordem de Serviço, acompanhar
-o **status financeiro** de cada OS (em aberto / parcial / pago) e ver as **contas a receber** (OS com
-saldo em aberto) numa tela dedicada.
+A **frente financeira**: registrar **pagamentos** por Ordem de Serviço, acompanhar o **status
+financeiro** de cada OS (em aberto / parcial / pago), ver as **contas a receber** (OS com saldo em
+aberto) e os **relatórios de recebimentos** por período.
 
 - **App backend:** `apps.financial` (modelo `Payment`)
-- **API:** `/api/payments/` e `/api/payments/receivables/`
-- **Rota frontend:** `/financial` (protegida por `financial.view`)
+- **API:** `/api/payments/`, `/api/payments/receivables/` e `/api/payments/report/`
+- **Rotas frontend:** `/financial` (contas a receber, `financial.view`) e `/financial/reports`
+  (relatórios, `financial.reports`)
 - **Módulo de permissões:** `financial` (ver [Usuários e Permissões](users-permissions.md))
 
 ## Como rodar
@@ -72,6 +73,21 @@ Aberto por OS, mostra o resumo (valor final / pago / saldo), o **formulário de 
 Registrar/estornar exige `financial.register_payment`; quem tem apenas `financial.view` vê o resumo,
 a lista e as contas a receber, mas **não** registra nem estorna.
 
+## Relatórios (`/financial/reports`)
+
+A aba **Relatórios** (controle segmentado ao lado de "Contas a receber") mostra os **recebimentos por
+período** (por data de pagamento), exigindo `financial.reports`. Um **filtro de período** (Hoje, Esta
+semana, Este mês, Últimos 30 dias, Tudo) alimenta:
+
+- **Indicadores** (stat tiles): **Total recebido**, **Pagamentos** (nº), **OS pagas** (distintas) e
+  **Ticket médio** (`total recebido ÷ OS pagas`).
+- **Recebimentos por dia**: série diária do período (dias sem recebimento = 0) em barras.
+- **Por forma de pagamento**: quebra do total por forma (Pix, Dinheiro, ...), ordenada, em barras.
+
+Os gráficos usam **hue único** (uma só medida — valor recebido) com **rótulos diretos** de valor e o
+nome da categoria em texto, então a identidade nunca depende só de cor. A listagem vem de
+`GET /api/payments/report/?period=...`.
+
 ## Registro na linha do tempo da OS
 
 Cada pagamento registrado ou estornado também vira um **evento** na
@@ -84,7 +100,7 @@ Cada pagamento registrado ou estornado também vira um **evento** na
 |---|---|
 | `financial.view` | Ver contas a receber, pagamentos e o status financeiro; acessar `/financial`. |
 | `financial.register_payment` | Registrar e estornar pagamentos. |
-| `financial.reports` | Reservada para os relatórios financeiros (fase seguinte). |
+| `financial.reports` | Ver os **relatórios financeiros** (`/financial/reports`). |
 | `financial.view_margin` | **Crítica** — ver custos/margens (reservada; só superuser por padrão). |
 
 Por padrão, o perfil **Financeiro** e o **Administrador** têm `financial.view` e
@@ -100,10 +116,11 @@ Todas as rotas exigem autenticação (cookie JWT):
 | POST | `/api/payments/` | Registra um pagamento `{ order, amount, method, paid_at, note }` (exige `financial.register_payment`) |
 | DELETE | `/api/payments/{id}/` | Estorna um pagamento (exige `financial.register_payment`) |
 | GET | `/api/payments/receivables/?search=&status=` | Contas a receber: OS com saldo devedor, com `total_receivable` |
+| GET | `/api/payments/report/?period=` | Relatório de recebimentos (totais, ticket médio, por forma, por dia) — exige `financial.reports` |
 
 ## Limitações desta fase
 
-- **Contas a receber apenas** (recebimentos das OS). Fluxo de caixa com despesas/saídas e os
-  **relatórios financeiros** (faturamento por período/forma de pagamento) são as próximas fases da
-  frente financeira.
+- **Somente recebimentos das OS.** Fluxo de caixa com **despesas/saídas** (aluguel, fornecedores,
+  salários) e o saldo do período são a próxima fase da frente financeira.
 - O pagamento é um lançamento simples (sem parcelamento/juros/baixa bancária nesta fase).
+- Os relatórios cobrem os **recebimentos** por período; DRE/lucro dependem do módulo de despesas.

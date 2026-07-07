@@ -1,17 +1,26 @@
+from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Q
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.accounts.permissions import HasModulePermission
+from apps.core.periods import period_start_date
 from apps.orders.history import record_event
 from apps.orders.models import OrderEvent, WorkOrder
 from apps.orders.serializers import WorkOrderSerializer
 
 from .models import Payment
 from .serializers import PaymentSerializer
+
+CENTS = Decimal("0.01")
+
+
+def _money(value) -> str:
+    return str((value or Decimal("0")).quantize(CENTS))
 
 
 def _format_brl(amount: Decimal) -> str:
@@ -33,6 +42,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         "create": "register_payment",
         "destroy": "register_payment",
         "receivables": "view",
+        "report": "reports",
     }
 
     def get_queryset(self):
@@ -108,5 +118,75 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 "count": len(rows),
                 "total_receivable": str(total_receivable),
                 "results": rows,
+            }
+        )
+
+    @action(detail=False, methods=["get"])
+    def report(self, request):
+        """Relatório de recebimentos no período (por data de pagamento).
+
+        Exige `financial.reports`. Totais, ticket médio, quebra por forma de
+        pagamento e série diária -- base dos gráficos do frontend.
+        """
+        start = period_start_date(request.query_params.get("period"))
+        today = timezone.localdate()
+
+        payments = Payment.objects.all()
+        if start is not None:
+            payments = payments.filter(paid_at__gte=start, paid_at__lte=today)
+
+        agg = payments.aggregate(
+            total=Sum("amount"),
+            count=Count("id"),
+            orders=Count("order", distinct=True),
+        )
+        total = agg["total"] or Decimal("0")
+        count = agg["count"] or 0
+        orders = agg["orders"] or 0
+        average_ticket = (total / orders) if orders else Decimal("0")
+
+        labels = dict(Payment.Method.choices)
+        by_method = [
+            {
+                "method": row["method"],
+                "method_display": labels.get(row["method"], row["method"]),
+                "total": _money(row["total"]),
+                "count": row["count"],
+            }
+            for row in payments.values("method")
+            .annotate(total=Sum("amount"), count=Count("id"))
+            .order_by("-total")
+        ]
+
+        totals_by_date = {
+            row["paid_at"]: row["total"] or Decimal("0")
+            for row in payments.values("paid_at").annotate(total=Sum("amount"))
+        }
+        by_day = []
+        if start is not None:
+            # Preenche todo o intervalo [start, hoje] (dias sem pagamento = 0).
+            day = start
+            while day <= today:
+                by_day.append(
+                    {"date": day.isoformat(), "total": _money(totals_by_date.get(day))}
+                )
+                day += timedelta(days=1)
+        else:
+            for date_key in sorted(totals_by_date):
+                by_day.append(
+                    {
+                        "date": date_key.isoformat(),
+                        "total": _money(totals_by_date[date_key]),
+                    }
+                )
+
+        return Response(
+            {
+                "total_received": _money(total),
+                "payment_count": count,
+                "orders_count": orders,
+                "average_ticket": _money(average_ticket),
+                "by_method": by_method,
+                "by_day": by_day,
             }
         )
