@@ -24,7 +24,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Ordens de Serviço](orders.md) | OS com veículo/cliente, itens cadastrados e avulsos, cálculo de valores, status, soft delete |
 | [Orçamento da OS](quotes.md) | Orçamento a partir da OS, snapshot/versões, PDF, aprovação física/tablet/link por e-mail, página pública e auditoria |
 | [Kanban OS](kanban.md) | Tela própria full width, colunas por status, drag and drop, transições, filtros, modal rápido e configuração de colunas |
-| [Financeiro](financial.md) | Pagamentos por OS, status financeiro (em aberto/parcial/pago), contas a receber, relatórios de recebimentos e permissões |
+| [Financeiro](financial.md) | Pagamentos por OS, status financeiro, contas a receber, despesas, relatórios e resultado (DRE), permissões |
 | [Configurações da Oficina/OS](configuracoes.md) | Dados da oficina e configurações da OS (prazo padrão, termos para PDFs), singletons, permissões |
 | [Dashboard (abas)](dashboard.md) | Abas Operacional/OS/Administrativo, swipe no mobile, cards de OS em formato de carro, modal e indicadores |
 | [Segurança (escopo v1)](security.md) | Decisões de segurança tomadas nesta primeira versão |

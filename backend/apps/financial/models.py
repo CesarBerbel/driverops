@@ -42,3 +42,51 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Pagamento de {self.amount} (OS #{self.order_id})"
+
+
+class Expense(models.Model):
+    """Uma despesa da oficina (saída de caixa) -- aluguel, fornecedores,
+    salários, etc. Independente das OS; entra no resultado do período (DRE)."""
+
+    class Category(models.TextChoices):
+        SUPPLIERS = "suppliers", "Fornecedores/Peças"
+        SALARIES = "salaries", "Salários/Mão de obra"
+        RENT = "rent", "Aluguel"
+        UTILITIES = "utilities", "Água/Luz/Internet"
+        TAXES = "taxes", "Impostos/Taxas"
+        MARKETING = "marketing", "Marketing"
+        MAINTENANCE = "maintenance", "Manutenção/Equipamentos"
+        OTHER = "other", "Outras"
+
+    class Method(models.TextChoices):
+        CASH = "cash", "Dinheiro"
+        PIX = "pix", "Pix"
+        DEBIT = "debit", "Cartão de débito"
+        CREDIT = "credit", "Cartão de crédito"
+        TRANSFER = "transfer", "Transferência"
+        BOLETO = "boleto", "Boleto"
+        OTHER = "other", "Outro"
+
+    description = models.CharField(max_length=200)
+    category = models.CharField(
+        max_length=20, choices=Category.choices, default=Category.OTHER
+    )
+    # Decimal (nunca float) -- dinheiro precisa de matemática exata.
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    method = models.CharField(max_length=20, choices=Method.choices, default=Method.PIX)
+    incurred_at = models.DateField()
+    note = models.CharField(max_length=200, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-incurred_at", "-id"]
+
+    def __str__(self):
+        return f"{self.description} ({self.amount})"

@@ -12,8 +12,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrencyBRL } from "@/lib/masks";
 
-import { getFinancialReport, type ReportPeriod } from "../api";
+import { getDre, getFinancialReport, type ReportPeriod } from "../api";
 import { FinancialNav } from "../components/FinancialNav";
+import { cn } from "@/lib/utils";
 
 const PERIOD_OPTIONS: { value: ReportPeriod; label: string }[] = [
   { value: "today", label: "Hoje" },
@@ -46,12 +47,20 @@ export function ReportsPage() {
     queryKey: ["financial-report", period],
     queryFn: () => getFinancialReport(period),
   });
+  const { data: dre } = useQuery({
+    queryKey: ["financial-dre", period],
+    queryFn: () => getDre(period),
+  });
 
   const byDay = data?.by_day ?? [];
   const byMethod = data?.by_method ?? [];
+  const byCategory = dre?.expenses_by_category ?? [];
   const maxDay = Math.max(0, ...byDay.map((d) => Number(d.total)));
   const maxMethod = Math.max(0, ...byMethod.map((m) => Number(m.total)));
-  const hasData = Number(data?.total_received ?? 0) > 0;
+  const maxCategory = Math.max(0, ...byCategory.map((c) => Number(c.total)));
+  const result = Number(dre?.result ?? 0);
+  const hasData =
+    Number(data?.total_received ?? 0) > 0 || Number(dre?.total_expenses ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -88,13 +97,32 @@ export function ReportsPage() {
         </div>
       ) : (
         <>
+          {/* DRE / resultado do período: receitas − despesas. */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile
-              label="Total recebido"
-              value={formatCurrencyBRL(Number(data?.total_received ?? 0))}
+              label="Receitas"
+              value={formatCurrencyBRL(Number(dre?.total_revenue ?? 0))}
             />
-            <StatTile label="Pagamentos" value={String(data?.payment_count ?? 0)} />
-            <StatTile label="OS pagas" value={String(data?.orders_count ?? 0)} />
+            <StatTile
+              label="Despesas"
+              value={formatCurrencyBRL(Number(dre?.total_expenses ?? 0))}
+            />
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">Resultado</p>
+                <p
+                  className={cn(
+                    "text-2xl font-semibold tracking-tight",
+                    result >= 0 ? "text-success" : "text-destructive",
+                  )}
+                >
+                  {formatCurrencyBRL(result)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {result >= 0 ? "lucro no período" : "prejuízo no período"}
+                </p>
+              </CardContent>
+            </Card>
             <StatTile
               label="Ticket médio"
               value={formatCurrencyBRL(Number(data?.average_ticket ?? 0))}
@@ -104,7 +132,7 @@ export function ReportsPage() {
           {!hasData ? (
             <Card>
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                Nenhum recebimento no período.
+                Nenhum lançamento no período.
               </CardContent>
             </Card>
           ) : (
@@ -174,6 +202,40 @@ export function ReportsPage() {
                   })}
                 </CardContent>
               </Card>
+
+              {/* Despesas por categoria -- barras hue único + rótulos. */}
+              {byCategory.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Despesas por categoria</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {byCategory.map((cat) => {
+                      const width =
+                        maxCategory > 0 ? (Number(cat.total) / maxCategory) * 100 : 0;
+                      return (
+                        <div key={cat.category} className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span>
+                              {cat.category_display}{" "}
+                              <span className="text-muted-foreground">· {cat.count}</span>
+                            </span>
+                            <span className="font-medium">
+                              {formatCurrencyBRL(Number(cat.total))}
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full bg-muted">
+                            <div
+                              className="h-2 rounded-full bg-destructive"
+                              style={{ width: `${width}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </>

@@ -13,6 +13,7 @@ import { PartCategoriesPage } from "@/features/categories/pages/PartCategoriesPa
 import { ServiceCategoriesPage } from "@/features/categories/pages/ServiceCategoriesPage";
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import { DashboardPage } from "@/features/dashboard/pages/DashboardPage";
+import { ExpensesPage } from "@/features/financial/pages/ExpensesPage";
 import { FinancialPage } from "@/features/financial/pages/FinancialPage";
 import { ReportsPage } from "@/features/financial/pages/ReportsPage";
 import { KanbanPage } from "@/features/kanban/pages/KanbanPage";
@@ -74,6 +75,7 @@ export function AppRoutes() {
           {/* Financeiro / contas a receber (protegido por permissão). */}
           <Route element={<RequirePermission code="financial.view" />}>
             <Route path="/financial" element={<FinancialPage />} />
+            <Route path="/financial/expenses" element={<ExpensesPage />} />
           </Route>
           <Route element={<RequirePermission code="financial.reports" />}>
             <Route path="/financial/reports" element={<ReportsPage />} />
