@@ -17,6 +17,10 @@ import * as partsApi from "@/features/parts/api";
 import * as settingsApi from "@/features/settings/api";
 import type { OrderSettings } from "@/features/settings/types";
 
+vi.mock("@/features/auth/useAuth", () => ({
+  useAuth: () => ({ user: { id: 1, is_superuser: true, permissions: [] } }),
+}));
+
 vi.mock("@/features/orders/api");
 vi.mock("@/features/customers/api");
 vi.mock("@/features/vehicles/api");

@@ -74,6 +74,10 @@ Aberto por OS, mostra o resumo (valor final / pago / saldo), o **formulário de 
 Registrar/estornar exige `financial.register_payment`; quem tem apenas `financial.view` vê o resumo,
 a lista e as contas a receber, mas **não** registra nem estorna.
 
+O mesmo painel de pagamentos também aparece como a aba **Pagamentos** dentro do editor da OS
+(`OrderPaymentsPanel`, reutilizado pelo diálogo e pela aba), permitindo registrar o pagamento sem sair
+da OS. A aba só é exibida para quem tem `financial.view`.
+
 ## Despesas (`/financial/expenses`)
 
 A aba **Despesas** registra as **saídas de caixa** da oficina (independentes das OS): aluguel,
