@@ -36,6 +36,7 @@ export interface OrderSettings {
   pdf_footer_text: string;
   print_instructions: string;
   general_conditions: string;
+  notify_customer_by_email: boolean;
   updated_at: string;
 }
 

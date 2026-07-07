@@ -192,6 +192,8 @@ append-only, somente leitura), registrada automaticamente. Os eventos capturados
 - **Foto/anexo adicionado** e **removido**.
 - **Orçamento**: criado, enviado, aprovado, **aprovado parcialmente** e recusado — incluindo as
   decisões pelo **cliente** na página pública (canal "Link por e-mail").
+- **Pagamento registrado/estornado** (ver [Financeiro](financial.md)).
+- **Cliente notificado por e-mail** (ver [Notificações ao cliente](#notificações-ao-cliente-e-mail)).
 
 Cada evento exibe **data/hora, usuário responsável (ou o cliente), tipo, descrição e canal**. A aba
 permite **filtrar por tipo de evento**. A listagem vem de `GET /api/work-orders/{id}/events/`
@@ -199,6 +201,24 @@ permite **filtrar por tipo de evento**. A listagem vem de `GET /api/work-orders/
 
 > O modelo `OrderStatusHistory` (de/para de status) continua existindo, alimentando
 > `GET /api/work-orders/{id}/status-history/`; a timeline da interface usa o `OrderEvent`, mais amplo.
+
+## Notificações ao cliente (e-mail)
+
+A OS pode **avisar o cliente por e-mail** sobre o andamento (primeira fase da frente de notificações —
+**somente e-mail**; WhatsApp fica para depois). Há dois caminhos:
+
+- **Automático:** ao a OS chegar em **Pronta para entrega** ou **Finalizada**, o sistema envia um
+  e-mail ao cliente com o status. Controlado pela opção **"Notificar o cliente por e-mail"** em
+  [Configurações da OS](configuracoes.md) (ligada por padrão).
+- **Manual:** o botão **"Notificar cliente"** na barra de ações do editor da OS envia, na hora, um
+  e-mail com o status atual (`POST /api/work-orders/{id}/notify-customer/`, exige `orders.edit`).
+  Funciona independentemente da opção automática.
+
+O envio só ocorre se o **cliente tiver e-mail** cadastrado; caso contrário, nada é enviado (e o envio
+manual retorna um aviso). Cada envio é registrado como evento **"Cliente notificado por e-mail"** na
+[linha do tempo](#histórico-da-os-linha-do-tempo-de-eventos), com o e-mail de destino, o status e o
+canal ("E-mail (automático)" ou "E-mail (manual)"). Em desenvolvimento os e-mails caem no
+**[Mailpit](getting-started.md)** (`http://localhost:8025`).
 
 ## Técnico responsável
 

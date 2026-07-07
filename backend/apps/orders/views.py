@@ -11,6 +11,8 @@ from apps.core.periods import period_start_date
 
 from .history import record_event, record_status_change
 from .models import OrderAttachment, OrderEvent, WorkOrder
+from .notifications import maybe_notify_status_change
+from .notifications import notify_customer as send_customer_notification
 from .serializers import (
     OrderAttachmentSerializer,
     OrderEventSerializer,
@@ -43,6 +45,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         "technicians": "view",
         "attachments": "view",
         "attachment": "edit",
+        "notify_customer": "edit",
     }
 
     def get_queryset(self):
@@ -143,7 +146,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         self._on_status_change(order, old_status)
 
     def _on_status_change(self, order, old_status):
-        """Registra o histórico e dá baixa de estoque quando o status muda."""
+        """Histórico, baixa de estoque e notificação ao cliente quando o status muda."""
         if order.status != old_status:
             labels = dict(WorkOrder.Status.choices)
             record_status_change(order, old_status, order.status, self.request.user)
@@ -154,6 +157,8 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 f"{labels.get(order.status, order.status)}",
                 actor=self.request.user,
             )
+            # E-mail automático ao cliente nos marcos (pronta/finalizada).
+            maybe_notify_status_change(order, actor=self.request.user)
         self._maybe_deduct_stock(order, old_status)
 
     def _maybe_deduct_stock(self, order, old_status):
@@ -210,6 +215,20 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             self._on_status_change(order, old_status)
         serializer = WorkOrderSerializer(order, context=self.get_serializer_context())
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="notify-customer")
+    def notify_customer(self, request, pk=None):
+        """Envia manualmente um e-mail ao cliente com o status atual da OS."""
+        order = self.get_object()
+        to_email = send_customer_notification(
+            order, actor=request.user, channel="E-mail (manual)"
+        )
+        if to_email is None:
+            return Response(
+                {"detail": "O cliente não tem e-mail cadastrado."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({"sent": True, "email": to_email})
 
     @action(detail=True, methods=["get"], url_path="status-history")
     def status_history(self, request, pk=None):

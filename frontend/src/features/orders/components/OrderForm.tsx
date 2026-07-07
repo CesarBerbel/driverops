@@ -72,6 +72,7 @@ import {
 } from "../lib/orderMapping";
 import { orderSchema, type OrderFormValues } from "../schemas";
 import type { OrderDiscountType, WorkOrder } from "../types";
+import { NotifyCustomerButton } from "./NotifyCustomerButton";
 import { OrderAttachments } from "./OrderAttachments";
 import { OrderEventTimeline } from "./OrderEventTimeline";
 import { OrderLineList } from "./OrderLineList";
@@ -390,6 +391,9 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           <KanbanSquare className="size-4" />
           Kanban OS
         </Button>
+        {isEditMode && orderId !== null && can("orders.edit") && (
+          <NotifyCustomerButton orderId={orderId} />
+        )}
         <OrderStatusStepper status={statusValue} orderId={orderId} />
         <div className="ml-auto flex gap-2">
           <Button type="button" variant="outline" onClick={submit(true)} disabled={saving}>

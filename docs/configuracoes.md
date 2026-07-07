@@ -106,6 +106,13 @@ Regras padrão e textos reutilizados na criação, edição e geração futura d
 - Não aceita valor **negativo**; aceita **`0`** (entrega no mesmo dia). O campo exibe a unidade
   "dias".
 
+### Notificações ao cliente
+
+- **Notificar o cliente por e-mail** (`notify_customer_by_email`, ligado por padrão): quando ligada,
+  a OS envia um **e-mail automático** ao cliente ao ficar **Pronta para entrega** ou **Finalizada**
+  (só quando o cliente tem e-mail cadastrado). O **envio manual** pelo botão "Notificar cliente" na
+  OS funciona independentemente desta opção. Ver [Notificações ao cliente](orders.md#notificações-ao-cliente-e-mail).
+
 ### Termos e textos padrão (usados no PDF do orçamento)
 
 - Os termos de **orçamento**, **garantia** e **autorização de serviço**, além do **rodapé**, já são

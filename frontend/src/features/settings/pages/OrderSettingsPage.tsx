@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/useAuth";
 import { extractErrorMessage } from "@/lib/api-client";
@@ -77,6 +78,7 @@ function toFormValues(settings: OrderSettings): OrderSettingsFormValues {
     pdf_footer_text: settings.pdf_footer_text,
     print_instructions: settings.print_instructions,
     general_conditions: settings.general_conditions,
+    notify_customer_by_email: settings.notify_customer_by_email,
   };
 }
 
@@ -216,6 +218,40 @@ function OrderSettingsForm({
                 prazo). Alterar aqui não afeta OS já criadas. Use 0 para entrega no mesmo dia.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Notificações ao cliente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="notify_customer_by_email">
+                  Notificar o cliente por e-mail
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Envia um e-mail automático ao cliente quando a OS fica{" "}
+                  <strong>Pronta para entrega</strong> ou é <strong>Finalizada</strong> (só
+                  quando o cliente tem e-mail cadastrado). O envio manual pela OS funciona
+                  independentemente desta opção.
+                </p>
+              </div>
+              <Controller
+                control={control}
+                name="notify_customer_by_email"
+                render={({ field }) => (
+                  <Switch
+                    id="notify_customer_by_email"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={!canEdit}
+                    aria-label="Notificar o cliente por e-mail"
+                  />
+                )}
+              />
+            </div>
           </CardContent>
         </Card>
 

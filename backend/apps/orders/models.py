@@ -280,6 +280,7 @@ class OrderEvent(models.Model):
         QUOTE_REJECTED = "quote_rejected", "Orçamento recusado"
         PAYMENT_REGISTERED = "payment_registered", "Pagamento registrado"
         PAYMENT_REMOVED = "payment_removed", "Pagamento estornado"
+        CUSTOMER_NOTIFIED = "customer_notified", "Cliente notificado por e-mail"
 
     order = models.ForeignKey(
         WorkOrder, on_delete=models.CASCADE, related_name="events"
