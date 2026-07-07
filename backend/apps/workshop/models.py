@@ -128,6 +128,11 @@ class KanbanSettings(SingletonModel):
         return "Configurações do Kanban"
 
 
+def default_notify_statuses():
+    # Marcos que, por padrão, disparam e-mail ao cliente.
+    return ["ready", "finished"]
+
+
 class OrderSettings(SingletonModel):
     """Configurações globais da Ordem de Serviço (registro único, pk=1).
 
@@ -149,8 +154,14 @@ class OrderSettings(SingletonModel):
     pdf_footer_text = models.TextField(blank=True, default=DEFAULT_PDF_FOOTER_TEXT)
     print_instructions = models.TextField(blank=True)
     general_conditions = models.TextField(blank=True)
-    # Notifica o cliente por e-mail quando a OS chega a marcos (pronta/finalizada).
+    # Notificações ao cliente por e-mail. `notify_customer_by_email` é o
+    # interruptor geral dos envios automáticos; os demais escolhem os gatilhos.
     notify_customer_by_email = models.BooleanField(default=True)
+    # Status da OS que disparam e-mail ao cliente ao serem atingidos.
+    notify_statuses = models.JSONField(default=default_notify_statuses)
+    # Enviar e-mail ao abrir a OS e ao registrar um pagamento (recibo).
+    notify_on_creation = models.BooleanField(default=False)
+    notify_on_payment = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

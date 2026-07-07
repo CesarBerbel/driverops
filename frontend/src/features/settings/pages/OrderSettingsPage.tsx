@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, Loader2, Lock } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ORDER_STATUS_OPTIONS } from "@/features/orders/constants";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/features/auth/useAuth";
 import { extractErrorMessage } from "@/lib/api-client";
@@ -79,6 +81,9 @@ function toFormValues(settings: OrderSettings): OrderSettingsFormValues {
     print_instructions: settings.print_instructions,
     general_conditions: settings.general_conditions,
     notify_customer_by_email: settings.notify_customer_by_email,
+    notify_statuses: settings.notify_statuses,
+    notify_on_creation: settings.notify_on_creation,
+    notify_on_payment: settings.notify_on_payment,
   };
 }
 
@@ -164,6 +169,8 @@ function OrderSettingsForm({
     defaultValues,
   });
 
+  const notifyEnabled = useWatch({ control, name: "notify_customer_by_email" });
+
   const mutation = useMutation({
     mutationFn: updateOrderSettings,
     onSuccess: () => {
@@ -223,19 +230,15 @@ function OrderSettingsForm({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Notificações ao cliente</CardTitle>
+            <CardTitle className="text-base">Notificações ao cliente (e-mail)</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-5">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <Label htmlFor="notify_customer_by_email">
-                  Notificar o cliente por e-mail
-                </Label>
+                <Label htmlFor="notify_customer_by_email">Enviar avisos automáticos</Label>
                 <p className="text-xs text-muted-foreground">
-                  Envia um e-mail automático ao cliente quando a OS fica{" "}
-                  <strong>Pronta para entrega</strong> ou é <strong>Finalizada</strong> (só
-                  quando o cliente tem e-mail cadastrado). O envio manual pela OS funciona
-                  independentemente desta opção.
+                  Interruptor geral dos e-mails automáticos ao cliente (só quando o cliente tem
+                  e-mail cadastrado). O envio manual pela OS funciona independentemente.
                 </p>
               </div>
               <Controller
@@ -247,8 +250,85 @@ function OrderSettingsForm({
                     checked={field.value}
                     onCheckedChange={field.onChange}
                     disabled={!canEdit}
-                    aria-label="Notificar o cliente por e-mail"
+                    aria-label="Enviar avisos automáticos"
                   />
+                )}
+              />
+            </div>
+
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="notify_on_creation" className="font-normal">
+                  Ao <strong>abrir</strong> a OS
+                </Label>
+                <Controller
+                  control={control}
+                  name="notify_on_creation"
+                  render={({ field }) => (
+                    <Switch
+                      id="notify_on_creation"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!canEdit || !notifyEnabled}
+                      aria-label="Notificar ao abrir a OS"
+                    />
+                  )}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <Label htmlFor="notify_on_payment" className="font-normal">
+                  Ao registrar um <strong>pagamento</strong> (recibo)
+                </Label>
+                <Controller
+                  control={control}
+                  name="notify_on_payment"
+                  render={({ field }) => (
+                    <Switch
+                      id="notify_on_payment"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!canEdit || !notifyEnabled}
+                      aria-label="Notificar ao registrar um pagamento"
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <Label>Quando a OS mudar para o status</Label>
+              <p className="text-xs text-muted-foreground">
+                Selecione os status que disparam um e-mail ao cliente.
+              </p>
+              <Controller
+                control={control}
+                name="notify_statuses"
+                render={({ field }) => (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ORDER_STATUS_OPTIONS.map((option) => {
+                      const checked = field.value.includes(option.value);
+                      return (
+                        <label
+                          key={option.value}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            disabled={!canEdit || !notifyEnabled}
+                            onCheckedChange={(next) =>
+                              field.onChange(
+                                next
+                                  ? [...field.value, option.value]
+                                  : field.value.filter((s) => s !== option.value),
+                              )
+                            }
+                            aria-label={option.label}
+                          />
+                          {option.label}
+                        </label>
+                      );
+                    })}
+                  </div>
                 )}
               />
             </div>

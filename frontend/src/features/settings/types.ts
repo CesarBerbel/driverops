@@ -37,6 +37,9 @@ export interface OrderSettings {
   print_instructions: string;
   general_conditions: string;
   notify_customer_by_email: boolean;
+  notify_statuses: string[];
+  notify_on_creation: boolean;
+  notify_on_payment: boolean;
   updated_at: string;
 }
 

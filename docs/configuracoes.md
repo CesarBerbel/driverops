@@ -106,12 +106,17 @@ Regras padrão e textos reutilizados na criação, edição e geração futura d
 - Não aceita valor **negativo**; aceita **`0`** (entrega no mesmo dia). O campo exibe a unidade
   "dias".
 
-### Notificações ao cliente
+### Notificações ao cliente (e-mail)
 
-- **Notificar o cliente por e-mail** (`notify_customer_by_email`, ligado por padrão): quando ligada,
-  a OS envia um **e-mail automático** ao cliente ao ficar **Pronta para entrega** ou **Finalizada**
-  (só quando o cliente tem e-mail cadastrado). O **envio manual** pelo botão "Notificar cliente" na
-  OS funciona independentemente desta opção. Ver [Notificações ao cliente](orders.md#notificações-ao-cliente-e-mail).
+- **Enviar avisos automáticos** (`notify_customer_by_email`, ligado por padrão): interruptor geral
+  dos e-mails automáticos ao cliente (só quando o cliente tem e-mail cadastrado). Com ele ligado, os
+  gatilhos abaixo valem:
+  - **Quando a OS mudar para o status** (`notify_statuses`): lista de status que disparam o e-mail
+    (por padrão **Pronta para entrega** e **Finalizada**) — escolhidos por checkboxes.
+  - **Ao abrir a OS** (`notify_on_creation`, desligado por padrão): e-mail de confirmação de abertura.
+  - **Ao registrar um pagamento** (`notify_on_payment`, desligado por padrão): recibo por e-mail.
+- O **envio manual** pelo botão "Notificar cliente" na OS funciona **independentemente** destas
+  opções. Ver [Notificações ao cliente](orders.md#notificações-ao-cliente-e-mail).
 
 ### Termos e textos padrão (usados no PDF do orçamento)
 
