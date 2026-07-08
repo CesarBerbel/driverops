@@ -7,3 +7,5 @@ python-dotenv>=1.0,<1.1
 gunicorn>=23.0,<24.0
 # Geração de PDF do orçamento (puro Python, sem dependências de sistema).
 xhtml2pdf>=0.2.16,<0.3
+# Assistente de IA para textos da OS (provedor padrão: Anthropic/Claude).
+anthropic>=0.40,<1.0

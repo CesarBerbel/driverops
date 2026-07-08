@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "apps.quotes",
     "apps.financial",
     "apps.notifications",
+    "apps.ai_assistant",
 ]
 
 MIDDLEWARE = [

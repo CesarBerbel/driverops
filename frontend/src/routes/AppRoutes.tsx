@@ -17,6 +17,7 @@ import { ExpensesPage } from "@/features/financial/pages/ExpensesPage";
 import { FinancialPage } from "@/features/financial/pages/FinancialPage";
 import { ReportsPage } from "@/features/financial/pages/ReportsPage";
 import { KanbanPage } from "@/features/kanban/pages/KanbanPage";
+import { AiSettingsPage } from "@/features/ai/pages/AiSettingsPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { NotificationTemplatesPage } from "@/features/notifications/pages/NotificationTemplatesPage";
 import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
@@ -65,6 +66,9 @@ export function AppRoutes() {
               path="/settings/notification-templates"
               element={<NotificationTemplatesPage />}
             />
+          </Route>
+          <Route element={<RequirePermission code="ai.view" />}>
+            <Route path="/settings/ai" element={<AiSettingsPage />} />
           </Route>
           <Route path="/settings/categories" element={<ClientCategoriesPage />} />
           <Route path="/settings/categories/parts" element={<PartCategoriesPage />} />

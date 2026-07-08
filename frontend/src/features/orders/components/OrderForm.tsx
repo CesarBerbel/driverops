@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { AiFieldActions } from "@/features/ai/components/AiFieldActions";
 import { CustomerFormSheet } from "@/features/customers/CustomerFormSheet";
 import type { Customer } from "@/features/customers/types";
 import type { Part } from "@/features/parts/types";
@@ -189,6 +190,13 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   const discountValue = useWatch({ control, name: "discount_value" });
   const openedAt = useWatch({ control, name: "opened_at" });
   const statusValue = useWatch({ control, name: "status" });
+  const reportValue = useWatch({ control, name: "customer_report" });
+  const diagnosisValue = useWatch({ control, name: "diagnosis" });
+  const notesValue = useWatch({ control, name: "internal_notes" });
+
+  function applyAiText(field: "customer_report" | "diagnosis" | "internal_notes") {
+    return (text: string) => setValue(field, text, { shouldDirty: true });
+  }
 
   // Prefill the expected delivery from the global default deadline (data de
   // abertura + prazo padrão) on new OS, until the user edits it by hand. Editing
@@ -649,8 +657,14 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
         {activeTab === "report" && (
           <div className="space-y-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base">Relato do cliente</CardTitle>
+                <AiFieldActions
+                  fieldKey="customer_report"
+                  value={reportValue ?? ""}
+                  onApply={applyAiText("customer_report")}
+                  workOrderId={orderId ?? undefined}
+                />
               </CardHeader>
               <CardContent>
                 <Textarea
@@ -667,8 +681,14 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base">Diagnóstico técnico</CardTitle>
+                <AiFieldActions
+                  fieldKey="diagnosis"
+                  value={diagnosisValue ?? ""}
+                  onApply={applyAiText("diagnosis")}
+                  workOrderId={orderId ?? undefined}
+                />
               </CardHeader>
               <CardContent>
                 <Textarea
@@ -681,11 +701,19 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Observações internas</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Uso interno -- não aparece no PDF nem na página pública do cliente.
-                </p>
+              <CardHeader className="flex-row items-start justify-between space-y-0">
+                <div className="space-y-1">
+                  <CardTitle className="text-base">Observações internas</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Uso interno -- não aparece no PDF nem na página pública do cliente.
+                  </p>
+                </div>
+                <AiFieldActions
+                  fieldKey="internal_notes"
+                  value={notesValue ?? ""}
+                  onApply={applyAiText("internal_notes")}
+                  workOrderId={orderId ?? undefined}
+                />
               </CardHeader>
               <CardContent>
                 <Textarea

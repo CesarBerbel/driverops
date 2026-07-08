@@ -148,6 +148,17 @@ MODULES = [
         ],
     ),
     (
+        "ai",
+        "Assistente de IA",
+        [
+            ("view", "Visualizar configurações de IA", False),
+            ("edit", "Editar/restaurar configurações de IA", True),
+            ("use", "Usar IA nos textos da OS", False),
+            ("logs", "Ver logs de uso da IA", True),
+            ("test", "Testar prompt de IA", True),
+        ],
+    ),
+    (
         "users",
         "Usuários",
         [("view", "Visualizar", False), ("manage", "Gerenciar usuários", True)],
@@ -227,6 +238,7 @@ ROLE_DEFS = {
             "quotes.create",
             "quotes.send",
             "kanban.view",
+            "ai.use",
         ],
     },
     "tecnico": {
@@ -241,6 +253,7 @@ ROLE_DEFS = {
             "quotes.view",
             "customers.view",
             "vehicles.view",
+            "ai.use",
         ],
     },
     "estoque": {

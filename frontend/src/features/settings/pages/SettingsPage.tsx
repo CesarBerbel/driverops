@@ -6,6 +6,7 @@ import {
   KanbanSquare,
   Package,
   ScrollText,
+  Sparkles,
   Tag,
   Users,
   Wrench,
@@ -46,6 +47,14 @@ const SETTINGS_CARDS = [
     description:
       "Modelos profissionais e configuráveis das comunicações da oficina com o cliente (e-mail, WhatsApp, SMS e interno).",
     permission: "notifications.view",
+  },
+  {
+    to: "/settings/ai",
+    icon: Sparkles,
+    title: "Assistente de IA para Textos da OS",
+    description:
+      "Configure o provedor, o comportamento global e as instruções por campo da IA que ajuda a redigir e revisar textos da OS.",
+    permission: "ai.view",
   },
   {
     to: "/users",
