@@ -58,6 +58,8 @@ const TERMINAL = [
   "canceled",
 ];
 const DECIDED = ["partially_approved", "approved", "rejected"];
+// Em aberto (rascunho/enviado/em análise): enquanto existir um, não se cria outro.
+const OPEN = ["draft", "sent", "viewed"];
 
 export function QuotePanel({ orderId }: QuotePanelProps) {
   const queryClient = useQueryClient();
@@ -181,6 +183,8 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
     onError,
   });
 
+  const hasOpenQuote = (quotes ?? []).some((quote) => OPEN.includes(quote.status));
+
   async function handlePdf(quote: Quote) {
     try {
       await openQuotePdf(quote.id);
@@ -209,12 +213,24 @@ export function QuotePanel({ orderId }: QuotePanelProps) {
           <Button
             size="sm"
             onClick={() => createMutation.mutate()}
-            disabled={createMutation.isPending}
+            disabled={createMutation.isPending || hasOpenQuote}
+            title={
+              hasOpenQuote
+                ? "Já existe um orçamento em aberto. Aprove, recuse ou cancele antes de criar outro."
+                : undefined
+            }
           >
             <Plus className="size-4" />
             Criar orçamento
           </Button>
         </div>
+
+        {hasOpenQuote && (
+          <p className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            Já existe um orçamento em aberto para esta OS. Aprove, recuse ou cancele o
+            orçamento atual para poder criar um novo.
+          </p>
+        )}
 
         {isLoading ? (
           <Skeleton className="h-24 w-full" />

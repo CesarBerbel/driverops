@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Max
 
 from apps.orders.status_groups import OPEN_STATUSES
@@ -31,21 +32,29 @@ def create_quote_from_order(order, user=None, valid_until=None):
 
     Peças que são **peça padrão** de um serviço presente na OS são vinculadas a
     esse serviço (``linked_service``) para que sejam aprovadas/recusadas juntas.
+    A OS é travada durante a criação para serializar versões concorrentes da
+    mesma ordem.
     """
-    last_version = (
-        Quote.objects.filter(work_order=order).aggregate(m=Max("version"))["m"] or 0
-    )
-    quote = Quote.objects.create(
-        work_order=order,
-        version=last_version + 1,
-        customer_report=order.customer_report,
-        diagnosis=order.diagnosis,
-        discount_type=order.discount_type,
-        discount_value=order.discount_value,
-        valid_until=valid_until,
-        created_by=user,
-    )
+    with transaction.atomic():
+        order = type(order).objects.select_for_update().get(pk=order.pk)
+        last_version = (
+            Quote.objects.filter(work_order=order).aggregate(m=Max("version"))["m"] or 0
+        )
+        quote = Quote.objects.create(
+            work_order=order,
+            version=last_version + 1,
+            customer_report=order.customer_report,
+            diagnosis=order.diagnosis,
+            discount_type=order.discount_type,
+            discount_value=order.discount_value,
+            valid_until=valid_until,
+            created_by=user,
+        )
 
+        return _create_quote_items_from_order(quote, order)
+
+
+def _create_quote_items_from_order(quote, order):
     # Serviços primeiro (para obter os ids e vincular as peças depois). A ordem é
     # preservada, então o i-ésimo serviço da OS vira o i-ésimo item de serviço.
     order_services = list(order.service_items.all())

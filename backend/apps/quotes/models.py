@@ -1,8 +1,9 @@
 import secrets
 
 from django.conf import settings
-from django.db import models
-from django.db.models import Max
+from django.db import models, transaction
+
+from apps.core.locks import assign_next_number
 
 
 def generate_token():
@@ -49,6 +50,10 @@ class Quote(models.Model):
     DECIDED_STATUSES = ["partially_approved", "approved", "rejected"]
     # Estados em que o cliente ainda pode decidir pelo link público.
     DECIDABLE_STATUSES = ["sent", "viewed"]
+    # Estados "em aberto": rascunho, enviado ou em análise/aguardando aprovação.
+    # Enquanto existir um orçamento nesses estados para a OS, não se pode criar
+    # outro -- o atual precisa ser decidido (aprovado/recusado) ou cancelado.
+    OPEN_STATUSES = ["draft", "sent", "viewed"]
 
     work_order = models.ForeignKey(
         "orders.WorkOrder", on_delete=models.CASCADE, related_name="quotes"
@@ -131,8 +136,10 @@ class Quote(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.number:
-            last = Quote.objects.aggregate(m=Max("number"))["m"] or 0
-            self.number = last + 1
+            with transaction.atomic():
+                assign_next_number(self, lock_name="quotes.quote.number")
+                super().save(*args, **kwargs)
+            return
         super().save(*args, **kwargs)
 
     @property

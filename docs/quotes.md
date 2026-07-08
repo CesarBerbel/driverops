@@ -129,6 +129,19 @@ do orçamento.
 - Orçamentos nunca são apagados fisicamente pela interface (cancelar = `canceled`; excluir =
   soft delete, mantendo o registro).
 
+### Um orçamento em aberto por OS
+
+Não é possível ter **mais de um orçamento em aberto** para a mesma OS. Consideram-se **em aberto**
+os status `draft` (rascunho), `sent` (enviado) e `viewed` (em análise/aguardando aprovação).
+
+- Enquanto existir um orçamento em aberto, o botão **"Criar orçamento"** fica desabilitado (com aviso)
+  e o backend recusa a criação com **HTTP 409**.
+- Um novo orçamento só é liberado quando o atual for **decidido** (`approved`, `partially_approved`,
+  `rejected`), **cancelado** (`canceled`) ou **expirado** (`expired`). Aí o novo vira uma **nova
+  versão**, sem alterar retroativamente o anterior — valores aprovados, itens aceitos/recusados e a
+  trilha de auditoria da versão anterior ficam preservados.
+- Um orçamento em aberto que sofre **soft delete** deixa de bloquear (não conta mais).
+
 ## Aprovação por impressão e assinatura física
 
 Gere o PDF (contém um campo de assinatura), imprima, colha a assinatura do cliente e clique em
@@ -225,7 +238,7 @@ recusa. A trilha aparece no painel de Orçamentos e no Django admin.
 | Método | Rota | Descrição | Acesso |
 |---|---|---|---|
 | `GET` | `/api/quotes/?work_order={id}` | Lista os orçamentos da OS | Autenticado |
-| `POST` | `/api/quotes/` (`{work_order}`) | Cria orçamento (snapshot + nova versão) | Autenticado |
+| `POST` | `/api/quotes/` (`{work_order}`) | Cria orçamento (snapshot + nova versão); **409** se já houver um em aberto | Autenticado |
 | `POST` | `/api/quotes/{id}/send/` | Envia link por e-mail | Autenticado |
 | `POST` | `/api/quotes/{id}/approve-physical/` | Aprova (assinatura física) | Autenticado |
 | `POST` | `/api/quotes/{id}/approve-tablet/` | Aprova (assinatura no tablet) | Autenticado |

@@ -72,7 +72,8 @@ describe("PermissionsMatrixPage", () => {
     renderPage();
     expect(await screen.findByText("Clientes")).toBeInTheDocument();
     // Herdada (inherited + effective) aparece marcada com a tag "Herdada".
-    expect(screen.getByRole("checkbox", { name: /Visualizar/ })).toBeChecked();
+    const viewPermission = screen.getByRole("checkbox", { name: /Visualizar/ });
+    await waitFor(() => expect(viewPermission).toBeChecked());
     expect(screen.getByText("Herdada")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /Excluir/ })).not.toBeChecked();
   });
@@ -82,7 +83,9 @@ describe("PermissionsMatrixPage", () => {
     renderPage();
 
     // Remove a herdada (customers.view -> revoked) e concede a extra (customers.delete -> granted).
-    await user.click(await screen.findByRole("checkbox", { name: /Visualizar/ }));
+    const viewPermission = await screen.findByRole("checkbox", { name: /Visualizar/ });
+    await waitFor(() => expect(viewPermission).toBeChecked());
+    await user.click(viewPermission);
     await user.click(screen.getByRole("checkbox", { name: /Excluir/ }));
     await user.click(screen.getByRole("button", { name: /Salvar alterações/ }));
 

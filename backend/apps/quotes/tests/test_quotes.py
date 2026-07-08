@@ -56,6 +56,8 @@ def test_snapshot_is_frozen_when_os_changes(auth_client, work_order):
 
 def test_second_quote_is_a_new_version(auth_client, work_order):
     first = _create(auth_client, work_order).json()
+    # Um novo orçamento só é liberado após o atual ser decidido/cancelado.
+    auth_client.post(f"/api/quotes/{first['id']}/cancel/")
     second = _create(auth_client, work_order).json()
     assert first["version"] == 1
     assert second["version"] == 2

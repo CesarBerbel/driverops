@@ -41,10 +41,11 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
     serializer_class = WorkOrderSerializer
     permission_classes = [HasModulePermission]
     permission_module = "orders"
-    # Arrastar/mudar status e anexar/remover arquivos são edições da OS; ver o
-    # histórico, listar técnicos e listar anexos exigem só ver a OS.
+    # Arrastar/mudar status exige visualizar a OS; a permissão operacional
+    # específica (kanban.move) e as permissões críticas (orders.cancel/finish)
+    # são validadas dentro da action.
     permission_action_map = {
-        "move": "edit",
+        "move": "view",
         "status_history": "view",
         "events": "view",
         "technicians": "view",
@@ -146,9 +147,8 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         maybe_notify_created(order, actor=self.request.user)
 
     def perform_update(self, serializer):
-        # Captura o status antes de salvar para detectar a transição para
-        # "Finalizada" (status também pode mudar por PATCH no editor da OS, não
-        # só pelo arrastar no Kanban -- ver `move`).
+        # Status changes are rejected by the serializer and must go through
+        # `move`; this still keeps side effects correct if that rule evolves.
         old_status = serializer.instance.status
         order = serializer.save()
         self._on_status_change(order, old_status)
@@ -176,6 +176,40 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             and old_status != WorkOrder.Status.FINISHED
         ):
             deduct_stock_for_order(order, self.request.user)
+
+    def _user_has_permission(self, codename):
+        user = self.request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and (user.is_superuser or user.has_perm_code(codename))
+        )
+
+    def _validate_move_permissions(self, current_status, new_status):
+        if not self._user_has_permission("kanban.move"):
+            return Response(
+                {"detail": "Você não tem permissão para mover cards no Kanban."},
+                status=http_status.HTTP_403_FORBIDDEN,
+            )
+        if current_status == new_status or not can_transition(
+            current_status, new_status
+        ):
+            return None
+        if new_status == WorkOrder.Status.CANCELED and not self._user_has_permission(
+            "orders.cancel"
+        ):
+            return Response(
+                {"detail": "Você não tem permissão crítica para cancelar OS."},
+                status=http_status.HTTP_403_FORBIDDEN,
+            )
+        if new_status == WorkOrder.Status.FINISHED and not self._user_has_permission(
+            "orders.finish"
+        ):
+            return Response(
+                {"detail": "Você não tem permissão crítica para finalizar OS."},
+                status=http_status.HTTP_403_FORBIDDEN,
+            )
+        return None
 
     def destroy(self, request, *args, **kwargs):
         order = self.get_object()
@@ -206,6 +240,9 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 {"status": ["Status inválido."]},
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
+        permission_error = self._validate_move_permissions(order.status, new_status)
+        if permission_error is not None:
+            return permission_error
         if not can_transition(order.status, new_status):
             return Response(
                 {

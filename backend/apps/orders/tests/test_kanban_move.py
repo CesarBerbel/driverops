@@ -1,8 +1,18 @@
 import pytest
 
+from apps.accounts.models import Permission, UserPermission
 from apps.orders.models import WorkOrder
 
 pytestmark = pytest.mark.django_db
+
+
+def _grant(user, codename):
+    permission = Permission.objects.get(codename=codename)
+    UserPermission.objects.update_or_create(
+        user=user,
+        permission=permission,
+        defaults={"grant_type": UserPermission.GrantType.GRANT},
+    )
 
 
 def _order(customer, vehicle, status="open"):
@@ -58,6 +68,40 @@ def test_unknown_status_is_rejected(auth_client, customer, vehicle):
     assert order.status == "open"
 
 
+def test_cancel_requires_critical_permission(auth_client, customer, vehicle):
+    order = _order(customer, vehicle, status="open")
+    response = _move(auth_client, order, "canceled")
+    assert response.status_code == 403
+    order.refresh_from_db()
+    assert order.status == "open"
+
+
+def test_cancel_with_critical_permission(auth_client, user, customer, vehicle):
+    _grant(user, "orders.cancel")
+    order = _order(customer, vehicle, status="open")
+    response = _move(auth_client, order, "canceled")
+    assert response.status_code == 200
+    order.refresh_from_db()
+    assert order.status == "canceled"
+
+
+def test_finish_requires_critical_permission(auth_client, customer, vehicle):
+    order = _order(customer, vehicle, status="ready")
+    response = _move(auth_client, order, "finished")
+    assert response.status_code == 403
+    order.refresh_from_db()
+    assert order.status == "ready"
+
+
+def test_finish_with_critical_permission(auth_client, user, customer, vehicle):
+    _grant(user, "orders.finish")
+    order = _order(customer, vehicle, status="ready")
+    response = _move(auth_client, order, "finished")
+    assert response.status_code == 200
+    order.refresh_from_db()
+    assert order.status == "finished"
+
+
 def test_terminal_status_cannot_move_via_kanban(auth_client, customer, vehicle):
     # Finalizada is terminal in the Kanban -- no drag-and-drop out of it.
     order = _order(customer, vehicle, status="finished")
@@ -75,7 +119,8 @@ def test_moving_to_same_status_is_a_noop(auth_client, customer, vehicle):
     assert order.status == "in_progress"
 
 
-def test_full_happy_path_flow(auth_client, customer, vehicle):
+def test_full_happy_path_flow(auth_client, user, customer, vehicle):
+    _grant(user, "orders.finish")
     order = _order(customer, vehicle, status="open")
     for target in [
         "diagnosing",
