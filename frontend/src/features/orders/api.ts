@@ -157,6 +157,16 @@ export async function deleteAttachment(
   await apiClient.delete(`/work-orders/${orderId}/attachments/${attachmentId}/`);
 }
 
+// Baixa o PDF da OS via XHR (passa pelo interceptor de refresh) e abre em nova aba.
+export async function openOrderPdf(orderId: number): Promise<void> {
+  const response = await apiClient.get(`/work-orders/${orderId}/pdf/`, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(response.data as Blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 export async function notifyCustomer(
   orderId: number,
 ): Promise<{ sent: boolean; email: string }> {

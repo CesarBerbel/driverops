@@ -50,11 +50,6 @@ function ItemGroup({ title, items }: { title: string; items: QuoteItem[] }) {
                 >
                   {item.description}
                 </span>
-                {item.is_custom && (
-                  <span className="ml-1 text-[10px] uppercase text-muted-foreground">
-                    avulso
-                  </span>
-                )}
                 {item.status !== "pending" && (
                   <span
                     className={`ml-2 text-[10px] font-medium uppercase ${

@@ -176,7 +176,7 @@
         <tbody>
           {% for item in group.items %}
           <tr class="{% if item.status == 'rejected' %}rejected{% endif %}">
-            <td>{{ item.description }}{% if item.is_custom %} <span class="tag">avulso</span>{% endif %}
+            <td>{{ item.description }}
               {% if item.notes %}<br /><span class="muted small">{{ item.notes }}</span>{% endif %}
             </td>
             {% if decided %}

@@ -116,23 +116,16 @@ export function OrderLineList({
                     {isCustom ? (
                       <Input
                         aria-label="Descrição do item"
-                        placeholder="Descrição do item avulso"
+                        placeholder="Descrição do item"
                         aria-invalid={Boolean(fieldErrors?.name)}
                         {...register(`${namePrefix}.${index}.name`)}
                       />
                     ) : (
                       <p className="text-sm font-medium">{field.name}</p>
                     )}
-                    <div className="flex items-center gap-2">
-                      {isCustom && (
-                        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-                          Avulso
-                        </span>
-                      )}
-                      {fieldErrors?.name && (
-                        <p className="text-xs text-destructive">{fieldErrors.name.message}</p>
-                      )}
-                    </div>
+                    {fieldErrors?.name && (
+                      <p className="text-xs text-destructive">{fieldErrors.name.message}</p>
+                    )}
                   </div>
 
                   <div className="flex items-end gap-2">

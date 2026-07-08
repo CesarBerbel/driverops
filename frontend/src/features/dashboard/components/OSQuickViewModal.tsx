@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OrderPdfButton } from "@/features/orders/components/OrderPdfButton";
 import { formatPlateForDisplay } from "@/features/vehicles/plate";
 import type {
   WorkOrder,
@@ -54,14 +55,7 @@ function ItemList({
         <ul className="space-y-1">
           {items.map((item, index) => (
             <li key={index} className="flex justify-between gap-2 text-sm">
-              <span className="truncate">
-                {item.display_name}
-                {item.is_custom && (
-                  <span className="ml-1 text-[10px] uppercase text-muted-foreground">
-                    avulso
-                  </span>
-                )}
-              </span>
+              <span className="truncate">{item.display_name}</span>
               <span className="shrink-0 text-muted-foreground">
                 {formatQuantityBRL(Number(item.quantity))}× ·{" "}
                 {formatCurrencyBRL(Number(item.line_total))}
@@ -160,6 +154,7 @@ export function OSQuickViewModal({ order, open, onOpenChange }: OSQuickViewModal
             </div>
 
             <DialogFooter className="flex-row justify-end gap-2 border-t p-4">
+              <OrderPdfButton orderId={order.id} className="mr-auto" />
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Fechar
               </Button>

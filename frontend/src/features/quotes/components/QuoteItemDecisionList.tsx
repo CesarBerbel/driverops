@@ -210,11 +210,6 @@ function ItemRow({
           )}
         >
           {item.description}
-          {item.is_custom && (
-            <span className="ml-1 text-[10px] uppercase text-muted-foreground no-underline">
-              avulso
-            </span>
-          )}
         </p>
         <p className="text-xs text-muted-foreground">
           {item.quantity}× · {formatCurrencyBRL(Number(item.subtotal))}
