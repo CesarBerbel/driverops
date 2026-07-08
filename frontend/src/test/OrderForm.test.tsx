@@ -281,8 +281,8 @@ describe("OrderForm", () => {
 
     await user.click(screen.getByRole("tab", { name: /Serviços e peças/ }));
     await user.click(screen.getByRole("button", { name: "Serviço avulso" }));
-    // The avulso row exposes an editable description input.
-    expect(screen.getByPlaceholderText("Descrição do item avulso")).toBeInTheDocument();
+    // The custom row exposes an editable description input.
+    expect(screen.getByPlaceholderText("Descrição do item")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Salvar" }));
     expect(await screen.findByText("Informe uma descrição.")).toBeInTheDocument();
