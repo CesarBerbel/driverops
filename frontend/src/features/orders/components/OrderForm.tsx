@@ -10,7 +10,7 @@ import {
   Save,
   UserPlus,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -121,11 +121,10 @@ function orderVehicleLabelOf(order: WorkOrder): string {
 
 interface OrderFormProps {
   order: WorkOrder | null;
-  onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
+export function OrderForm({ order, onCancel }: OrderFormProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const can = usePermissionCheck();
@@ -134,8 +133,6 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   const orderId = order?.id ?? null;
 
   const [activeTab, setActiveTab] = useState("main");
-  // "Salvar" volta para a lista; "Salvar e continuar" permanece no editor.
-  const stayAfterSaveRef = useRef(false);
 
   const [customerName, setCustomerName] = useState(order?.customer_name ?? "");
   const [customerWhatsapp, setCustomerWhatsapp] = useState(order?.customer_whatsapp ?? "");
@@ -239,13 +236,10 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
     onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: ["work-orders"] });
       toast.success(isEditMode ? "Ordem de serviço atualizada." : "Ordem de serviço criada.");
-      if (stayAfterSaveRef.current) {
-        // "Salvar e continuar": ao criar, abre o editor da OS recém-criada (para
-        // acessar Fotos/Orçamento/Histórico); ao editar, permanece na tela.
-        if (!isEditMode) navigate(`/orders/${saved.id}`);
-        return;
-      }
-      onSuccess();
+      // Salvar permanece na OS: ao criar, abre o editor da OS recém-criada (para
+      // acessar Fotos/Orçamento/Histórico); ao editar, permanece na tela. Voltar
+      // à lista é feito pelo botão "Voltar".
+      if (!isEditMode) navigate(`/orders/${saved.id}`);
     },
     onError: (error) => {
       toast.error(extractErrorMessage(error, "Não foi possível salvar a ordem de serviço."));
@@ -262,14 +256,10 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
     if (firstTab) setActiveTab(firstTab);
   }
 
-  const submit = (stay: boolean) =>
-    handleSubmit(
-      (values) => {
-        stayAfterSaveRef.current = stay;
-        mutation.mutate(values);
-      },
-      (formErrors) => focusFirstErrorTab(formErrors),
-    );
+  const submit = handleSubmit(
+    (values) => mutation.mutate(values),
+    (formErrors) => focusFirstErrorTab(formErrors),
+  );
 
   const saving = isSubmitting || mutation.isPending;
 
@@ -405,7 +395,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
   }
 
   return (
-    <form onSubmit={submit(false)} className="space-y-6" noValidate>
+    <form onSubmit={submit} className="space-y-6" noValidate>
       {/* Barra de ações persistente da OS */}
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
@@ -422,11 +412,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
         )}
         <OrderStatusStepper status={statusValue} orderId={orderId} />
         <div className="ml-auto flex gap-2">
-          <Button type="button" variant="outline" onClick={submit(true)} disabled={saving}>
-            {saving && <Loader2 className="animate-spin" />}
-            Salvar e continuar
-          </Button>
-          <Button type="button" onClick={submit(false)} disabled={saving}>
+          <Button type="submit" disabled={saving}>
             {saving ? <Loader2 className="animate-spin" /> : <Save className="size-4" />}
             Salvar
           </Button>

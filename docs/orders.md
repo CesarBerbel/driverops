@@ -105,9 +105,10 @@ ainda depende da permissão `financial.view`.
 
 ### Barra de ações
 
-No topo do formulário há uma **barra de ações persistente**: **Voltar** (à lista), **Kanban OS**
-(abre o [Kanban](kanban.md)), **Salvar** (salva e volta à lista) e **Salvar e continuar** (salva e
-permanece no editor — ao criar, abre o editor da OS recém-criada para liberar Fotos/Orçamento/Histórico).
+No topo do formulário há uma **barra de ações persistente**: **Voltar** (volta à lista), **Kanban OS**
+(abre o [Kanban](kanban.md)) e **Salvar**. Salvar **permanece na OS** (não volta à lista): ao editar,
+mantém a tela aberta; ao criar, abre o editor da OS recém-criada, liberando Fotos/Orçamento/Histórico.
+Para voltar à listagem, use o botão **Voltar**.
 
 Entre o botão **Kanban OS** e o grupo **Salvar** fica uma **linha do tempo de status**
 (`OrderStatusStepper`) que **ocupa toda a largura disponível** entre eles. As etapas do fluxo da OS

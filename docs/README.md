@@ -26,6 +26,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Kanban OS](kanban.md) | Tela própria full width, colunas por status, drag and drop, transições, filtros, modal rápido e configuração de colunas |
 | [Financeiro](financial.md) | Pagamentos por OS, status financeiro, contas a receber, despesas, relatórios e resultado (DRE), permissões |
 | [Configurações da Oficina/OS](configuracoes.md) | Dados da oficina e configurações da OS (prazo padrão, termos para PDFs), singletons, permissões |
+| [Assistente de IA para Textos da OS](ai-assistant.md) | Provedor/modelo, prompt global, instruções e contexto por campo, uso na OS, teste, logs, permissões e segurança |
 | [Dashboard (abas)](dashboard.md) | Abas Operacional/OS/Administrativo, swipe no mobile, cards de OS em formato de carro, modal e indicadores |
 | [Segurança (escopo v1)](security.md) | Decisões de segurança tomadas nesta primeira versão |
 | [Troubleshooting](troubleshooting.md) | Problemas comuns e como resolvê-los |

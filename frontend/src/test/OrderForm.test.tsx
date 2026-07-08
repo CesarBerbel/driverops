@@ -138,25 +138,21 @@ function workOrder(overrides: Partial<WorkOrder> = {}): WorkOrder {
   };
 }
 
-function formTree(
-  order: WorkOrder | null,
-  onSuccess: () => void,
-  queryClient: QueryClient,
-) {
+function formTree(order: WorkOrder | null, queryClient: QueryClient) {
   return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <OrderForm order={order} onSuccess={onSuccess} onCancel={vi.fn()} />
+        <OrderForm order={order} onCancel={vi.fn()} />
       </MemoryRouter>
       <Toaster />
     </QueryClientProvider>
   );
 }
 
-function renderForm(order: WorkOrder | null = null, onSuccess = vi.fn()) {
+function renderForm(order: WorkOrder | null = null) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const view = render(formTree(order, onSuccess, queryClient));
-  return { onSuccess, queryClient, ...view };
+  const view = render(formTree(order, queryClient));
+  return { queryClient, ...view };
 }
 
 describe("OrderForm", () => {
@@ -204,7 +200,7 @@ describe("OrderForm", () => {
     vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
     vi.mocked(servicesApi.listServices).mockResolvedValue([service()]);
     vi.mocked(ordersApi.createWorkOrder).mockResolvedValue({ id: 5 } as WorkOrder);
-    const { onSuccess } = renderForm();
+    renderForm();
     const user = userEvent.setup();
 
     await user.click(screen.getByPlaceholderText("Buscar veículo pela placa..."));
@@ -235,7 +231,8 @@ describe("OrderForm", () => {
         }),
       ),
     );
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    // Ao salvar, permanece na OS (mostra o toast de sucesso, sem voltar à lista).
+    expect(await screen.findByText("Ordem de serviço criada.")).toBeInTheDocument();
   });
 
   it("prefills the expected delivery from the default deadline on a new OS", async () => {
@@ -277,7 +274,7 @@ describe("OrderForm", () => {
   });
 
   it("refreshes the status select when the loaded OS changes", async () => {
-    const { queryClient, rerender, onSuccess } = renderForm(workOrder());
+    const { queryClient, rerender } = renderForm(workOrder());
 
     expect(screen.getByLabelText("Status da OS")).toHaveTextContent("Aberta");
 
@@ -288,7 +285,6 @@ describe("OrderForm", () => {
           status_display: "Em diagnóstico",
           updated_at: "2026-07-04T00:01:00Z",
         }),
-        onSuccess,
         queryClient,
       ),
     );

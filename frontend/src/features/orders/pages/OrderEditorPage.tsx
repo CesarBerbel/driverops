@@ -47,12 +47,7 @@ export function OrderEditorPage() {
           <Skeleton className="h-32 w-full" />
         </div>
       ) : (
-        <OrderForm
-          key={orderId ?? "create"}
-          order={order ?? null}
-          onSuccess={goToList}
-          onCancel={goToList}
-        />
+        <OrderForm key={orderId ?? "create"} order={order ?? null} onCancel={goToList} />
       )}
     </div>
   );
