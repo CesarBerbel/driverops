@@ -38,8 +38,7 @@ def create_quote_from_order(order, user=None, valid_until=None):
     with transaction.atomic():
         order = type(order).objects.select_for_update().get(pk=order.pk)
         last_version = (
-            Quote.objects.filter(work_order=order).aggregate(m=Max("version"))["m"]
-            or 0
+            Quote.objects.filter(work_order=order).aggregate(m=Max("version"))["m"] or 0
         )
         quote = Quote.objects.create(
             work_order=order,

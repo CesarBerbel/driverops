@@ -6,7 +6,6 @@ from apps.orders.models import WorkOrder
 pytestmark = pytest.mark.django_db
 
 
-
 def _grant(user, codename):
     permission = Permission.objects.get(codename=codename)
     UserPermission.objects.update_or_create(
