@@ -1,8 +1,9 @@
 import secrets
 
 from django.conf import settings
-from django.db import models
-from django.db.models import Max
+from django.db import models, transaction
+
+from apps.core.locks import assign_next_number
 
 
 def generate_token():
@@ -135,8 +136,10 @@ class Quote(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.number:
-            last = Quote.objects.aggregate(m=Max("number"))["m"] or 0
-            self.number = last + 1
+            with transaction.atomic():
+                assign_next_number(self, lock_name="quotes.quote.number")
+                super().save(*args, **kwargs)
+            return
         super().save(*args, **kwargs)
 
     @property

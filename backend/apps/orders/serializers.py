@@ -219,6 +219,10 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         if self.instance is not None:
             self.fields["customer"].read_only = True
             self.fields["vehicle"].read_only = True
+            # Status changes must go through the controlled ``move`` action so
+            # workflow validation, audit trail and critical permissions cannot
+            # be bypassed via PATCH/PUT on the regular OS endpoint.
+            self.fields["status"].read_only = True
 
     class Meta:
         model = WorkOrder
@@ -383,6 +387,17 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        if self.instance is not None and "status" in getattr(self, "initial_data", {}):
+            requested_status = self.initial_data.get("status")
+            if requested_status != self.instance.status:
+                raise serializers.ValidationError(
+                    {
+                        "status": (
+                            "Altere o status da OS pela ação de movimentação do Kanban."
+                        )
+                    }
+                )
+
         customer = attrs.get("customer", getattr(self.instance, "customer", None))
         vehicle = attrs.get("vehicle", getattr(self.instance, "vehicle", None))
         if customer is not None and vehicle is not None:
@@ -419,6 +434,28 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         return attrs
 
     # --- nested writes (replace-all, same strategy as ServicePackage) ---
+
+    def _has_approved_or_partially_approved_quote(self, order):
+        return order.quotes.filter(
+            is_active=True, status__in=["approved", "partially_approved"]
+        ).exists()
+
+    def _reject_line_item_changes_after_customer_approval(
+        self, order, service_items, package_items, part_items
+    ):
+        has_line_payload = any(
+            items is not None for items in (service_items, package_items, part_items)
+        )
+        if has_line_payload and self._has_approved_or_partially_approved_quote(order):
+            raise serializers.ValidationError(
+                {
+                    "items": (
+                        "Os itens da OS não podem ser alterados porque já existe "
+                        "orçamento aprovado ou parcialmente aprovado. Crie uma nova "
+                        "versão de orçamento para revisar os itens."
+                    )
+                }
+            )
 
     def _write_lines(self, order, service_items, package_items, part_items):
         created_services = None
@@ -474,6 +511,9 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         service_items = validated_data.pop("service_items", None)
         package_items = validated_data.pop("package_items", None)
         part_items = validated_data.pop("part_items", None)
+        self._reject_line_item_changes_after_customer_approval(
+            instance, service_items, package_items, part_items
+        )
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()

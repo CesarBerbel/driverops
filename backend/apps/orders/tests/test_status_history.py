@@ -1,4 +1,4 @@
-"""Linha do tempo de status da OS: registro automático em criação/move/patch."""
+"""Linha do tempo de status da OS: registro automatico em criacao/move."""
 
 import pytest
 
@@ -59,16 +59,20 @@ def test_move_records_a_history_entry(auth_client, customer, vehicle):
     assert entry.changed_by is not None
 
 
-def test_patch_status_records_history(auth_client, customer, vehicle):
+def test_patch_status_is_rejected_and_does_not_record_history(
+    auth_client, customer, vehicle
+):
     order = _order(customer, vehicle, status="ready")
-    auth_client.patch(
+    response = auth_client.patch(
         f"/api/work-orders/{order.id}/",
         data={"status": "finished"},
         content_type="application/json",
     )
-    entry = OrderStatusHistory.objects.filter(order=order).first()
-    assert entry.from_status == "ready"
-    assert entry.to_status == "finished"
+    assert response.status_code == 400
+    assert "status" in response.json()
+    assert OrderStatusHistory.objects.filter(order=order).count() == 0
+    order.refresh_from_db()
+    assert order.status == "ready"
 
 
 def test_noop_move_does_not_record(auth_client, customer, vehicle):

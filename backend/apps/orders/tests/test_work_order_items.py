@@ -237,3 +237,92 @@ def test_linked_service_survives_disable_on_read(
     body = auth_client.get(f"/api/work-orders/{order['id']}/").json()
     assert body["service_items"][0]["display_name"] == "Troca de óleo"
     assert body["services_total"] == "100.00"
+
+
+@pytest.mark.parametrize("quote_status", ["approved", "partially_approved"])
+def test_approved_or_partially_approved_quote_locks_order_line_items(
+    auth_client, customer, vehicle, service, quote_status
+):
+    from apps.quotes.models import Quote
+
+    order = auth_client.post(
+        "/api/work-orders/",
+        data=_base(
+            customer,
+            vehicle,
+            service_items=[
+                {
+                    "service": service.id,
+                    "description": service.name,
+                    "quantity": "1",
+                    "unit_price": "100.00",
+                }
+            ],
+        ),
+        content_type="application/json",
+    ).json()
+    Quote.objects.create(work_order_id=order["id"], status=quote_status)
+
+    response = auth_client.patch(
+        f"/api/work-orders/{order['id']}/",
+        data={
+            "service_items": [
+                {
+                    "service": None,
+                    "description": "Novo item",
+                    "quantity": "2",
+                    "unit_price": "25.00",
+                }
+            ]
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "items" in response.json()
+    body = auth_client.get(f"/api/work-orders/{order['id']}/").json()
+    assert len(body["service_items"]) == 1
+    assert body["service_items"][0]["display_name"] == "Troca de óleo"
+    assert body["services_total"] == "100.00"
+
+
+def test_rejected_quote_does_not_lock_order_line_items(
+    auth_client, customer, vehicle, service
+):
+    from apps.quotes.models import Quote
+
+    order = auth_client.post(
+        "/api/work-orders/",
+        data=_base(
+            customer,
+            vehicle,
+            service_items=[
+                {
+                    "service": service.id,
+                    "description": service.name,
+                    "quantity": "1",
+                    "unit_price": "100.00",
+                }
+            ],
+        ),
+        content_type="application/json",
+    ).json()
+    Quote.objects.create(work_order_id=order["id"], status="rejected")
+
+    response = auth_client.patch(
+        f"/api/work-orders/{order['id']}/",
+        data={
+            "service_items": [
+                {
+                    "service": None,
+                    "description": "Novo item",
+                    "quantity": "2",
+                    "unit_price": "25.00",
+                }
+            ]
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["service_items"][0]["display_name"] == "Novo item"

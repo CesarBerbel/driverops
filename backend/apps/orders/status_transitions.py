@@ -1,13 +1,12 @@
 """Regras mínimas de transição de status da OS (fluxo operacional do Kanban).
 
 Usadas pela ação ``move`` do WorkOrderViewSet quando uma OS é arrastada entre
-colunas no Kanban. A edição completa da OS (formulário) não passa por aqui: lá o
-status pode ser ajustado livremente. O objetivo é um fluxo guiado no Kanban, com
-o backend como fonte da verdade -- o frontend nunca é a única barreira.
+colunas no Kanban. A edição completa da OS (formulário) não altera status: toda
+mudança de etapa passa por esta regra, com o backend como fonte da verdade.
 
 "Finalizada" e "Cancelada" são estados terminais no Kanban: não se sai deles por
-arrastar (exigiria permissão especial / edição completa da OS). A arquitetura já
-está preparada para regras mais avançadas (por perfil/permissão) sem refatoração.
+arrastar sem action específica/permissão crítica. A arquitetura já está preparada
+para regras mais avançadas (por perfil/permissão) sem refatoração.
 """
 
 ALLOWED_TRANSITIONS = {

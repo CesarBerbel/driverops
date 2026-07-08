@@ -6,11 +6,21 @@ saldo. A baixa é idempotente (controlada por WorkOrder.stock_deducted).
 
 import pytest
 
+from apps.accounts.models import Permission, UserPermission
 from apps.orders.models import WorkOrder, WorkOrderPart
 from apps.orders.stock import deduct_stock_for_order
 from apps.parts.models import StockMovement
 
 pytestmark = pytest.mark.django_db
+
+
+def _grant(user, codename):
+    permission = Permission.objects.get(codename=codename)
+    UserPermission.objects.update_or_create(
+        user=user,
+        permission=permission,
+        defaults={"grant_type": UserPermission.GrantType.GRANT},
+    )
 
 
 def _order(customer, vehicle, status="ready"):
@@ -31,7 +41,8 @@ def _move(client, order, status):
     )
 
 
-def test_finishing_deducts_registered_parts(auth_client, customer, vehicle, part):
+def test_finishing_deducts_registered_parts(auth_client, user, customer, vehicle, part):
+    _grant(user, "orders.finish")
     order = _order(customer, vehicle, status="ready")
     WorkOrderPart.objects.create(order=order, part=part, quantity="2", unit_price="10")
     start = part.current_quantity
@@ -49,7 +60,8 @@ def test_finishing_deducts_registered_parts(auth_client, customer, vehicle, part
     assert order.stock_deducted is True
 
 
-def test_avulsa_parts_are_not_deducted(auth_client, customer, vehicle):
+def test_avulsa_parts_are_not_deducted(auth_client, user, customer, vehicle):
+    _grant(user, "orders.finish")
     order = _order(customer, vehicle, status="ready")
     # Peça avulsa (part=None): sem saldo, nada a baixar.
     WorkOrderPart.objects.create(
@@ -63,8 +75,9 @@ def test_avulsa_parts_are_not_deducted(auth_client, customer, vehicle):
 
 
 def test_same_part_in_multiple_lines_is_aggregated(
-    auth_client, customer, vehicle, part
+    auth_client, user, customer, vehicle, part
 ):
+    _grant(user, "orders.finish")
     order = _order(customer, vehicle, status="ready")
     WorkOrderPart.objects.create(order=order, part=part, quantity="2")
     WorkOrderPart.objects.create(order=order, part=part, quantity="3")
@@ -108,7 +121,9 @@ def test_non_finish_transition_does_not_deduct(auth_client, customer, vehicle, p
     assert order.stock_deducted is False
 
 
-def test_finishing_via_patch_also_deducts(auth_client, customer, vehicle, part):
+def test_finishing_via_patch_is_rejected_and_does_not_deduct(
+    auth_client, customer, vehicle, part
+):
     order = _order(customer, vehicle, status="ready")
     WorkOrderPart.objects.create(order=order, part=part, quantity="2")
     start = part.current_quantity
@@ -118,8 +133,12 @@ def test_finishing_via_patch_also_deducts(auth_client, customer, vehicle, part):
         data={"status": "finished"},
         content_type="application/json",
     )
-    assert response.status_code == 200
+    assert response.status_code == 400
+    assert "status" in response.json()
 
     part.refresh_from_db()
-    assert part.current_quantity == start - 2
-    assert StockMovement.objects.filter(order=order).count() == 1
+    assert part.current_quantity == start
+    assert StockMovement.objects.filter(order=order).count() == 0
+    order.refresh_from_db()
+    assert order.status == "ready"
+    assert order.stock_deducted is False

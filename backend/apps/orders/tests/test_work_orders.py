@@ -139,7 +139,7 @@ def test_customer_and_vehicle_are_immutable_after_creation(
     assert body["diagnosis"] == "x"
 
 
-def test_status_can_be_updated(auth_client, customer, vehicle):
+def test_status_cannot_be_changed_by_regular_update(auth_client, customer, vehicle):
     order = auth_client.post(
         "/api/work-orders/",
         data=_payload(customer, vehicle),
@@ -150,9 +150,9 @@ def test_status_can_be_updated(auth_client, customer, vehicle):
         data={"status": "in_progress"},
         content_type="application/json",
     )
-    assert response.status_code == 200
-    assert response.json()["status"] == "in_progress"
-    assert response.json()["status_display"] == "Em execução"
+    assert response.status_code == 400
+    assert "status" in response.json()
+    assert WorkOrder.objects.get(id=order["id"]).status == "open"
 
 
 def test_soft_delete_and_reactivate(auth_client, customer, vehicle):
@@ -183,11 +183,7 @@ def test_status_filter(auth_client, customer, vehicle):
         data=_payload(customer, vehicle),
         content_type="application/json",
     ).json()
-    auth_client.patch(
-        f"/api/work-orders/{open_os['id']}/",
-        data={"status": "finished"},
-        content_type="application/json",
-    )
+    WorkOrder.objects.filter(id=open_os["id"]).update(status="finished")
     auth_client.post(
         "/api/work-orders/",
         data=_payload(customer, vehicle),
@@ -287,11 +283,7 @@ def test_board_operational_excludes_finished_and_canceled(
             content_type="application/json",
         ).json()
         if status != "open":
-            auth_client.patch(
-                f"/api/work-orders/{order['id']}/",
-                data={"status": status},
-                content_type="application/json",
-            )
+            WorkOrder.objects.filter(id=order["id"]).update(status=status)
 
     for st in ("open", "in_progress", "finished", "canceled"):
         make(st)
