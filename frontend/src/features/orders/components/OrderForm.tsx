@@ -813,9 +813,9 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
           </Card>
         )}
 
-        {/* Aba 6 -- Resumo consolidado + valores. */}
+        {/* Aba 6 -- Resumo consolidado + valores, lado a lado em duas colunas. */}
         {activeTab === "summary" && (
-          <div className="space-y-6">
+          <div className="grid items-start gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Resumo da OS</CardTitle>
@@ -846,8 +846,7 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Pagamento</p>
                     <p className="font-medium">
-                      {PAYMENT_STATUS_LABEL[order.payment_status]} · saldo{" "}
-                      {formatCurrencyBRL(Number(order.balance_due))}
+                      {PAYMENT_STATUS_LABEL[order.payment_status]}
                     </p>
                   </div>
                 )}
@@ -955,11 +954,32 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between border-t pt-3">
-                  <span className="font-medium">Valor final</span>
-                  <span className="text-lg font-semibold" data-testid="order-final-value">
-                    {formatCurrencyBRL(finalValue)}
-                  </span>
+                <div className="space-y-2 border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Valor final</span>
+                    <span className="text-lg font-semibold" data-testid="order-final-value">
+                      {formatCurrencyBRL(finalValue)}
+                    </span>
+                  </div>
+                  {isEditMode && order && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Valor pago</span>
+                        <span
+                          className="font-medium text-emerald-700 dark:text-emerald-400"
+                          data-testid="order-amount-paid"
+                        >
+                          {formatCurrencyBRL(Number(order.amount_paid))}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Saldo devedor</span>
+                        <span className="font-medium" data-testid="order-balance-due">
+                          {formatCurrencyBRL(Number(order.balance_due))}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
