@@ -89,3 +89,14 @@ export async function getNotificationTemplateHistory(
   );
   return data;
 }
+
+export async function bulkSetTemplateStatus(
+  ids: number[],
+  isActive: boolean,
+): Promise<{ updated: number; is_active: boolean }> {
+  const { data } = await apiClient.post<{ updated: number; is_active: boolean }>(
+    "/notification-templates/bulk-status/",
+    { ids, is_active: isActive },
+  );
+  return data;
+}

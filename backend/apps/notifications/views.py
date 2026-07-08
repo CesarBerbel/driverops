@@ -37,6 +37,7 @@ class NotificationTemplateViewSet(
         "metadata": "view",
         "restore": "edit",
         "test_send": "test",
+        "bulk_status": "edit",
     }
 
     def get_queryset(self):
@@ -287,6 +288,39 @@ class NotificationTemplateViewSet(
                 }
             )
         return Response(rows[:30])
+
+    # --- ativação/inativação em massa ---
+
+    @action(detail=False, methods=["post"], url_path="bulk-status")
+    def bulk_status(self, request):
+        """Ativa ou inativa em massa os templates informados."""
+        ids = request.data.get("ids")
+        is_active = request.data.get("is_active")
+        if not isinstance(ids, list) or not ids:
+            raise ValidationError({"ids": "Selecione ao menos um template."})
+        if not isinstance(is_active, bool):
+            raise ValidationError({"is_active": "Informe o novo status (true/false)."})
+
+        templates = list(NotificationTemplate.objects.filter(id__in=ids))
+        updated = []
+        for template in templates:
+            if template.is_active != is_active:
+                template.is_active = is_active
+                template.updated_by = request.user
+                template.save(update_fields=["is_active", "updated_by", "updated_at"])
+                updated.append(template.id)
+
+        if updated:
+            record_audit(
+                request,
+                "notification.template.bulk_status",
+                new_value={
+                    "ids": [t.id for t in templates],
+                    "is_active": is_active,
+                    "updated": updated,
+                },
+            )
+        return Response({"updated": len(updated), "is_active": is_active})
 
     # --- metadados (catálogo de variáveis, eventos, canais) ---
 

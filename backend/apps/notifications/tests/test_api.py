@@ -157,6 +157,52 @@ def test_test_send_requires_recipient(super_client):
     assert resp.status_code == 400
 
 
+def test_bulk_deactivate_and_activate(super_client):
+    ids = list(
+        NotificationTemplate.objects.filter(channel="email").values_list("id", flat=True)[:3]
+    )
+    resp = super_client.post(
+        f"{BASE}bulk-status/",
+        data={"ids": ids, "is_active": False},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["updated"] == 3
+    assert (
+        NotificationTemplate.objects.filter(id__in=ids, is_active=False).count() == 3
+    )
+    # Reativa
+    resp = super_client.post(
+        f"{BASE}bulk-status/",
+        data={"ids": ids, "is_active": True},
+        content_type="application/json",
+    )
+    assert resp.json()["updated"] == 3
+    assert (
+        NotificationTemplate.objects.filter(id__in=ids, is_active=True).count() == 3
+    )
+    assert AuditLog.objects.filter(action="notification.template.bulk_status").exists()
+
+
+def test_bulk_status_requires_permission(admin_client):
+    ids = list(NotificationTemplate.objects.values_list("id", flat=True)[:2])
+    resp = admin_client.post(
+        f"{BASE}bulk-status/",
+        data={"ids": ids, "is_active": False},
+        content_type="application/json",
+    )
+    assert resp.status_code == 403
+
+
+def test_bulk_status_validates_input(super_client):
+    resp = super_client.post(
+        f"{BASE}bulk-status/",
+        data={"ids": [], "is_active": False},
+        content_type="application/json",
+    )
+    assert resp.status_code == 400
+
+
 def test_history_lists_changes(super_client):
     tid = _template_id()
     super_client.patch(

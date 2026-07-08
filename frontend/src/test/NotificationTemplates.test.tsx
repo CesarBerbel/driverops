@@ -118,6 +118,7 @@ beforeEach(() => {
     emailTemplate(payload as Partial<NotificationTemplate>),
   );
   vi.mocked(api.restoreNotificationTemplate).mockResolvedValue(emailTemplate());
+  vi.mocked(api.bulkSetTemplateStatus).mockResolvedValue({ updated: 2, is_active: false });
   vi.mocked(api.testSendNotificationTemplate).mockResolvedValue({
     status: "sent",
     recipient: "teste@example.com",
@@ -200,6 +201,48 @@ describe("NotificationTemplatesManager", () => {
     await waitFor(() =>
       expect(api.testSendNotificationTemplate).toHaveBeenCalledWith(1, "teste@example.com"),
     );
+  });
+
+  it("selects all and deactivates in bulk", async () => {
+    renderManager();
+    await screen.findByText("Abertura de ordem de serviço");
+
+    await userEvent.click(
+      screen.getByRole("checkbox", { name: "Selecionar todos os templates" }),
+    );
+    expect(screen.getByText(/2 template\(s\) selecionado\(s\)/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /Inativar/ }));
+    await waitFor(() =>
+      expect(api.bulkSetTemplateStatus).toHaveBeenCalledWith([1, 2], false),
+    );
+  });
+
+  it("selects a single row and activates it", async () => {
+    vi.mocked(api.bulkSetTemplateStatus).mockResolvedValue({ updated: 1, is_active: true });
+    renderManager();
+    await screen.findByText("Abertura de ordem de serviço");
+
+    await userEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Selecionar Abertura de ordem de serviço E-mail",
+      }),
+    );
+    expect(screen.getByText(/1 template\(s\) selecionado\(s\)/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /Ativar/ }));
+    await waitFor(() =>
+      expect(api.bulkSetTemplateStatus).toHaveBeenCalledWith([1], true),
+    );
+  });
+
+  it("hides bulk selection without the edit permission", async () => {
+    perms.codes = new Set(["notifications.view"]);
+    renderManager();
+    await screen.findByText("Abertura de ordem de serviço");
+    expect(
+      screen.queryByRole("checkbox", { name: "Selecionar todos os templates" }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides edit affordances without the edit permission", async () => {
