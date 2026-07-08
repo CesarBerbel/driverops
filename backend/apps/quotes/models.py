@@ -49,6 +49,10 @@ class Quote(models.Model):
     DECIDED_STATUSES = ["partially_approved", "approved", "rejected"]
     # Estados em que o cliente ainda pode decidir pelo link público.
     DECIDABLE_STATUSES = ["sent", "viewed"]
+    # Estados "em aberto": rascunho, enviado ou em análise/aguardando aprovação.
+    # Enquanto existir um orçamento nesses estados para a OS, não se pode criar
+    # outro -- o atual precisa ser decidido (aprovado/recusado) ou cancelado.
+    OPEN_STATUSES = ["draft", "sent", "viewed"]
 
     work_order = models.ForeignKey(
         "orders.WorkOrder", on_delete=models.CASCADE, related_name="quotes"

@@ -96,6 +96,25 @@ class QuoteViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         work_order_id = request.data.get("work_order")
         order = get_object_or_404(WorkOrder, pk=work_order_id)
+        # Não permite mais de um orçamento em aberto por OS. Um novo só é liberado
+        # quando o atual for decidido (aprovado/parcial/recusado), cancelado ou
+        # expirado -- aí vira uma nova versão, sem alterar o anterior.
+        open_quote = (
+            order.quotes.filter(is_active=True, status__in=Quote.OPEN_STATUSES)
+            .order_by("-number")
+            .first()
+        )
+        if open_quote:
+            return Response(
+                {
+                    "detail": (
+                        f"Já existe um orçamento em aberto (#{open_quote.number}, "
+                        f"{open_quote.get_status_display().lower()}) para esta OS. "
+                        "Aprove, recuse ou cancele o orçamento atual antes de criar outro."
+                    )
+                },
+                status=http_status.HTTP_409_CONFLICT,
+            )
         quote = create_quote_from_order(
             order,
             user=request.user,
