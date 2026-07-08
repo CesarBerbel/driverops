@@ -28,5 +28,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.ts',
+    // userEvent-driven tests can exceed the 5s default when the whole suite
+    // runs in parallel on slower/Windows machines; a higher ceiling keeps the
+    // full run stable without masking genuinely hung tests.
+    testTimeout: 15000,
   },
 })

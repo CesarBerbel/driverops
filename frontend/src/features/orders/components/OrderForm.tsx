@@ -111,6 +111,13 @@ function vehicleLabelOf(vehicle: Vehicle): string {
   return desc ? `${plate} · ${desc}` : plate;
 }
 
+function orderVehicleLabelOf(order: WorkOrder): string {
+  const plate = formatPlateForDisplay(order.vehicle_plate);
+  return order.vehicle_description
+    ? `${plate} · ${order.vehicle_description}`
+    : plate;
+}
+
 interface OrderFormProps {
   order: WorkOrder | null;
   onSuccess: () => void;
@@ -147,12 +154,21 @@ export function OrderForm({ order, onSuccess, onCancel }: OrderFormProps) {
     control,
     register,
     handleSubmit,
+    reset,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
     defaultValues: order ? toFormValues(order) : EMPTY_ORDER_VALUES,
   });
+
+  useEffect(() => {
+    if (!order || isDirty) return;
+    reset(toFormValues(order));
+    setCustomerName(order.customer_name);
+    setCustomerWhatsapp(order.customer_whatsapp);
+    setVehicleLabel(orderVehicleLabelOf(order));
+  }, [order, isDirty, reset]);
 
   const serviceArray = useFieldArray({ control, name: "service_items" });
   const packageArray = useFieldArray({ control, name: "package_items" });

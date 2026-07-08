@@ -94,6 +94,7 @@ function renderPage() {
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { queryClient };
 }
 
 describe("KanbanPage (desktop board)", () => {
@@ -164,6 +165,31 @@ describe("KanbanPage (desktop board)", () => {
 
     await waitFor(() =>
       expect(ordersApi.moveWorkOrder).toHaveBeenCalledWith(1, "diagnosing"),
+    );
+  });
+
+  it("updates the cached order detail after a move", async () => {
+    const order = workOrder();
+    const updated = {
+      ...order,
+      status: "diagnosing" as OrderStatus,
+      status_display: "Em diagnóstico",
+    };
+    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([order]);
+    vi.mocked(ordersApi.moveWorkOrder).mockResolvedValue(updated);
+    const user = userEvent.setup();
+    const { queryClient } = renderPage();
+    queryClient.setQueryData(["work-orders", 1], order);
+
+    await screen.findByText("ABC1D23");
+    await user.click(screen.getByRole("button", { name: "Mover OS de status" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Em diagnóstico" }));
+
+    await waitFor(() =>
+      expect(queryClient.getQueryData<WorkOrder>(["work-orders", 1])).toMatchObject({
+        status: "diagnosing",
+        status_display: "Em diagnóstico",
+      }),
     );
   });
 });

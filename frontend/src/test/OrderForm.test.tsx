@@ -138,17 +138,25 @@ function workOrder(overrides: Partial<WorkOrder> = {}): WorkOrder {
   };
 }
 
-function renderForm(order: WorkOrder | null = null, onSuccess = vi.fn()) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+function formTree(
+  order: WorkOrder | null,
+  onSuccess: () => void,
+  queryClient: QueryClient,
+) {
+  return (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <OrderForm order={order} onSuccess={onSuccess} onCancel={vi.fn()} />
       </MemoryRouter>
       <Toaster />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
-  return { onSuccess };
+}
+
+function renderForm(order: WorkOrder | null = null, onSuccess = vi.fn()) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const view = render(formTree(order, onSuccess, queryClient));
+  return { onSuccess, queryClient, ...view };
 }
 
 describe("OrderForm", () => {
@@ -266,6 +274,30 @@ describe("OrderForm", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Trocar cliente")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Trocar veículo")).not.toBeInTheDocument();
+  });
+
+  it("refreshes the status select when the loaded OS changes", async () => {
+    const { queryClient, rerender, onSuccess } = renderForm(workOrder());
+
+    expect(screen.getByLabelText("Status da OS")).toHaveTextContent("Aberta");
+
+    rerender(
+      formTree(
+        workOrder({
+          status: "diagnosing",
+          status_display: "Em diagnóstico",
+          updated_at: "2026-07-04T00:01:00Z",
+        }),
+        onSuccess,
+        queryClient,
+      ),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Status da OS")).toHaveTextContent(
+        "Em diagnóstico",
+      ),
+    );
   });
 
   it("adds a custom (avulso) service line requiring a description", async () => {

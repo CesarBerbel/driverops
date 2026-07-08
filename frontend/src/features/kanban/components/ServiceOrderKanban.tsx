@@ -35,6 +35,10 @@ export function ServiceOrderKanban({ orders, columns, queryKey }: ServiceOrderKa
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<WorkOrder[]>(queryKey);
+      const previousDetail = queryClient.getQueryData<WorkOrder>([
+        "work-orders",
+        id,
+      ]);
       queryClient.setQueryData<WorkOrder[]>(queryKey, (old) =>
         (old ?? []).map((o) =>
           o.id === id
@@ -42,10 +46,19 @@ export function ServiceOrderKanban({ orders, columns, queryKey }: ServiceOrderKa
             : o,
         ),
       );
-      return { previous };
+      queryClient.setQueryData<WorkOrder>(["work-orders", id], (old) =>
+        old ? { ...old, status, status_display: statusLabel(status) } : old,
+      );
+      return { previous, previousDetail };
     },
     onError: (error, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      if (context?.previousDetail) {
+        queryClient.setQueryData(
+          ["work-orders", context.previousDetail.id],
+          context.previousDetail,
+        );
+      }
       toast.error(
         extractErrorMessage(error, "Não foi possível mover a OS."),
         { id: "kanban-move" },
@@ -56,9 +69,11 @@ export function ServiceOrderKanban({ orders, columns, queryKey }: ServiceOrderKa
       queryClient.setQueryData<WorkOrder[]>(queryKey, (old) =>
         (old ?? []).map((o) => (o.id === updated.id ? updated : o)),
       );
+      queryClient.setQueryData(["work-orders", updated.id], updated);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ["work-orders"] });
     },
   });
 
