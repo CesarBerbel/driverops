@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Car,
+  ExternalLink,
   KanbanSquare,
   Loader2,
   MessageCircle,
@@ -433,7 +434,7 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="vehicle_id">Placa do veículo</Label>
-                  {!isEditMode && (
+                  {!isEditMode ? (
                     <Button
                       type="button"
                       variant="link"
@@ -444,8 +445,28 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                       <Car className="size-3" />
                       Adicionar veículo
                     </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setVehicleSheetOpen(true)}
+                    >
+                      <ExternalLink className="size-3" />
+                      Ver detalhes
+                    </Button>
                   )}
                 </div>
+                {isEditMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setVehicleSheetOpen(true)}
+                    className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm font-medium hover:bg-accent"
+                  >
+                    {vehicleLabel || "Ver veículo"}
+                  </button>
+                ) : (
                 <VehicleCombobox
                   selectedLabel={vehicleLabel}
                   onSelect={selectVehicle}
@@ -454,9 +475,11 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                   disabled={isEditMode}
                   invalid={Boolean(errors.vehicle_id)}
                 />
+                )}
                 {isEditMode && (
                   <p className="text-xs text-muted-foreground">
-                    O veículo não pode ser alterado após a abertura da OS.
+                    O veículo não pode ser alterado após a abertura da OS. Clique para ver os
+                    detalhes.
                   </p>
                 )}
                 {errors.vehicle_id && (
@@ -479,7 +502,7 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="customer_id">Cliente</Label>
-                  {!isEditMode && (
+                  {!isEditMode ? (
                     <Button
                       type="button"
                       variant="link"
@@ -490,18 +513,40 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                       <UserPlus className="size-3" />
                       Adicionar cliente
                     </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setCustomerSheetOpen(true)}
+                    >
+                      <ExternalLink className="size-3" />
+                      Ver detalhes
+                    </Button>
                   )}
                 </div>
-                <CustomerCombobox
-                  selectedName={customerName}
-                  onSelect={selectCustomer}
-                  onClear={clearCustomer}
-                  disabled={isEditMode}
-                  invalid={Boolean(errors.customer_id)}
-                />
+                {isEditMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setCustomerSheetOpen(true)}
+                    className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm font-medium hover:bg-accent"
+                  >
+                    {customerName || "Ver cliente"}
+                  </button>
+                ) : (
+                  <CustomerCombobox
+                    selectedName={customerName}
+                    onSelect={selectCustomer}
+                    onClear={clearCustomer}
+                    disabled={isEditMode}
+                    invalid={Boolean(errors.customer_id)}
+                  />
+                )}
                 {isEditMode && (
                   <p className="text-xs text-muted-foreground">
-                    O cliente não pode ser alterado após a abertura da OS.
+                    O cliente não pode ser alterado após a abertura da OS. Clique para ver os
+                    detalhes.
                   </p>
                 )}
                 {errors.customer_id && (
@@ -1022,17 +1067,17 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         )}
       </ServiceOrderTabs>
 
-      {/* Inline cadastros -- abrem sem perder os dados já preenchidos na OS */}
+      {/* Cadastro inline ao criar; visualização/edição do registro ao editar a OS. */}
       <CustomerFormSheet
         open={customerSheetOpen}
         onOpenChange={setCustomerSheetOpen}
-        customerId={null}
+        customerId={isEditMode ? customerId ?? null : null}
         onCreated={selectCustomer}
       />
       <VehicleFormSheet
         open={vehicleSheetOpen}
         onOpenChange={setVehicleSheetOpen}
-        vehicleId={null}
+        vehicleId={isEditMode ? vehicleId ?? null : null}
         defaultCustomerId={customerId}
         defaultCustomerName={customerName}
         onCreated={selectVehicle}

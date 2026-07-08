@@ -252,15 +252,19 @@ describe("OrderForm", () => {
   it("locks the customer and vehicle when editing an existing OS", async () => {
     renderForm(workOrder());
 
-    // Both are shown as read-only selections...
+    // Both are shown as clickable read-only selections (open the detail sheet)...
     expect(screen.getByText("Maria Silva")).toBeInTheDocument();
     expect(screen.getByText(/ABC-1234/)).toBeInTheDocument();
     expect(
-      screen.getByText("O cliente não pode ser alterado após a abertura da OS."),
+      screen.getByText(/O cliente não pode ser alterado após a abertura da OS/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("O veículo não pode ser alterado após a abertura da OS."),
+      screen.getByText(/O veículo não pode ser alterado após a abertura da OS/),
     ).toBeInTheDocument();
+    // ...via a "Ver detalhes" affordance.
+    expect(
+      screen.getAllByRole("button", { name: /ver detalhes/i }).length,
+    ).toBeGreaterThanOrEqual(2);
 
     // ...with no way to change or clear them.
     expect(
@@ -271,6 +275,13 @@ describe("OrderForm", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Trocar cliente")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Trocar veículo")).not.toBeInTheDocument();
+  });
+
+  it("opens the customer detail sheet when the customer is clicked", async () => {
+    const user = userEvent.setup();
+    renderForm(workOrder());
+    await user.click(screen.getByRole("button", { name: "Maria Silva" }));
+    expect(await screen.findByText("Editar cliente")).toBeInTheDocument();
   });
 
   it("refreshes the status select when the loaded OS changes", async () => {

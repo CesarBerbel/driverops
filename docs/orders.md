@@ -86,7 +86,9 @@ As sete abas, nesta ordem:
    prioridade operacional) e o **Cliente** logo abaixo (preenchido automaticamente ao escolher o
    veículo); à **direita**, os **Dados principais** da OS (data de abertura, previsão de entrega,
    quilometragem, **Status** e **Técnico responsável**). No tablet/mobile as colunas empilham,
-   preservando a ordem **Veículo → Cliente → Dados principais**.
+   preservando a ordem **Veículo → Cliente → Dados principais**. Numa OS já salva o veículo e o
+   cliente ficam **clicáveis** (ou pelo link **Ver detalhes**): abrem o cadastro do registro num
+   painel lateral para visualizar/editar sem sair da OS.
 2. **Relato e diagnóstico** — relato do cliente (obrigatório), diagnóstico técnico e **observações
    internas** (uso interno; não aparecem no PDF nem na página pública do cliente).
 3. **Serviços e peças** — serviços, pacotes e peças (cadastrados ou avulsos), com cadastro inline.
