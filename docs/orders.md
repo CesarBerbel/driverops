@@ -224,6 +224,24 @@ manual retorna um aviso). Cada envio é registrado como evento **"Cliente notifi
 canal ("E-mail (automático)" ou "E-mail (manual)"). Em desenvolvimento os e-mails caem no
 **[Mailpit](getting-started.md)** (`http://localhost:8025`).
 
+## PDF da OS
+
+O editor da OS tem um botão **"PDF"** na barra de ações que **abre o PDF da OS em nova aba**
+(`GET /api/work-orders/{id}/pdf/`, exige `orders.view`). O documento reaproveita a mesma
+infraestrutura do [PDF do orçamento](quotes.md) (xhtml2pdf + logo embutido/reduzido) e traz:
+
+- **Cabeçalho** com dados e logo da oficina + número da OS, status e data de emissão.
+- **Veículo** (placa em destaque, marca/modelo, ano, cor, km) e **cliente** (documento, contatos).
+- **Datas** (abertura/previsão), **técnico responsável**, **relato** e **diagnóstico**.
+- **Itens** (serviços, pacotes e peças) com quantidade, valor unitário e subtotal.
+- **Totais** (serviços/pacotes/peças, desconto quando houver, **valor final**) e o **pagamento**
+  (pago, saldo devedor e situação).
+- **Termos** de **autorização de serviço** e **condições gerais** + **rodapé**, todos vindos de
+  [Configurações da OS](configuracoes.md).
+
+Os totais e itens vêm do `WorkOrderSerializer` (fonte da verdade no backend), então o PDF **nunca
+diverge** da tela. A geração é tolerante a logo/termo ausente.
+
 ## Técnico responsável
 
 Cada OS pode ter um **técnico responsável** (opcional), escolhido no bloco "Dados principais". O
@@ -363,6 +381,8 @@ Todas as rotas exigem autenticação (cookie JWT):
 | DELETE | `/api/work-orders/{id}/` | Soft delete (`is_active = False`, 204) |
 | POST | `/api/work-orders/{id}/reactivate/` | Reativa uma OS desabilitada |
 | POST | `/api/work-orders/{id}/move/` | Muda o status respeitando o fluxo do Kanban |
+| GET | `/api/work-orders/{id}/pdf/` | PDF da OS (inline) |
+| POST | `/api/work-orders/{id}/notify-customer/` | Envia e-mail ao cliente com o status atual (exige `orders.edit`) |
 | GET | `/api/work-orders/{id}/status-history/` | Linha do tempo de status (mais recente primeiro) |
 | GET | `/api/work-orders/{id}/events/` | Linha do tempo unificada (filtro opcional `?type=`) |
 | GET | `/api/work-orders/technicians/` | Técnicos ativos, para o seletor de responsável |

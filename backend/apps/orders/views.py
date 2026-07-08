@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status as http_status
 from rest_framework import viewsets
@@ -16,6 +17,7 @@ from .notifications import (
     maybe_notify_status_change,
     notify_status,
 )
+from .pdf import render_order_pdf
 from .serializers import (
     OrderAttachmentSerializer,
     OrderEventSerializer,
@@ -49,6 +51,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         "attachments": "view",
         "attachment": "edit",
         "notify_customer": "edit",
+        "pdf": "view",
     }
 
     def get_queryset(self):
@@ -220,6 +223,17 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             self._on_status_change(order, old_status)
         serializer = WorkOrderSerializer(order, context=self.get_serializer_context())
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def pdf(self, request, pk=None):
+        """Gera o PDF da OS (inline)."""
+        order = self.get_object()
+        pdf_bytes = render_order_pdf(order, request=request)
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'inline; filename="os-{order.number:04d}.pdf"'
+        )
+        return response
 
     @action(detail=True, methods=["post"], url_path="notify-customer")
     def notify_customer(self, request, pk=None):

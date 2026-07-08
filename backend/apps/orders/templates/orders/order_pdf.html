@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: A4; margin: 1.3cm 1.3cm 1.6cm 1.3cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 8.5pt; color: #1f2937; }
+  h1, h2, h3 { margin: 0; }
+  .muted { color: #6b7280; }
+  .small { font-size: 7.5pt; }
+
+  .header { width: 100%; border-bottom: 1.5px solid #111827; padding-bottom: 6px; }
+  .header td { vertical-align: top; }
+  .logo { max-width: 90px; max-height: 45px; }
+  .brand { font-size: 12.5pt; font-weight: bold; color: #111827; }
+  .doc-box { text-align: right; }
+  .doc-title { font-size: 13pt; font-weight: bold; letter-spacing: 1px; color: #111827; }
+  .doc-line { font-size: 8pt; }
+  .status-chip {
+    display: inline-block; padding: 1px 6px; border: 1px solid #111827;
+    border-radius: 3px; font-size: 7.5pt; font-weight: bold;
+  }
+
+  .section { margin-top: 9px; }
+  .section-title {
+    font-weight: bold; font-size: 8.5pt; text-transform: uppercase;
+    letter-spacing: 0.4px; color: #374151; border-bottom: 0.5px solid #d1d5db;
+    padding-bottom: 2px; margin-bottom: 4px;
+  }
+
+  table.info { width: 100%; }
+  table.info td { vertical-align: top; padding-right: 8px; }
+  .plate {
+    display: inline-block; border: 1.5px solid #111827; border-radius: 3px;
+    padding: 1px 8px; font-weight: bold; font-size: 11pt; letter-spacing: 1px;
+  }
+  .block { white-space: pre-line; }
+
+  table.items { width: 100%; border-collapse: collapse; margin-top: 3px; }
+  table.items th {
+    background: #111827; color: #fff; text-align: left; padding: 3px 5px;
+    font-size: 7.5pt; font-weight: bold;
+  }
+  table.items td { padding: 2.5px 5px; border-bottom: 0.5px solid #e5e7eb; font-size: 8pt; }
+  .right { text-align: right; }
+  .center { text-align: center; }
+  .tag { font-size: 6.5pt; color: #6b7280; text-transform: uppercase; }
+
+  table.totals { width: 45%; margin-left: 55%; margin-top: 6px; }
+  table.totals td { padding: 2px 5px; font-size: 8pt; }
+  table.totals tr.grand td {
+    border-top: 1px solid #111827; font-weight: bold; font-size: 9.5pt;
+  }
+
+  .terms { margin-top: 10px; font-size: 7.5pt; color: #374151; white-space: pre-line; }
+  .terms .section-title { color: #374151; }
+  .footer { margin-top: 12px; border-top: 0.5px solid #d1d5db; padding-top: 4px;
+    font-size: 7pt; color: #6b7280; white-space: pre-line; text-align: center; }
+</style>
+</head>
+<body>
+  <!-- Cabeçalho: oficina + documento -->
+  <table class="header">
+    <tr>
+      <td style="width: 60%;">
+        {% if logo %}<img class="logo" src="{{ logo }}" /><br />{% endif %}
+        <span class="brand">{{ profile.trade_name|default:profile.legal_name|default:"Oficina" }}</span>
+        <div class="small muted">
+          {% if profile.legal_name and profile.trade_name %}{{ profile.legal_name }}<br />{% endif %}
+          {% if profile.cnpj %}CNPJ: {{ profile.cnpj }}<br />{% endif %}
+          {% if profile.phone or profile.whatsapp %}Tel: {{ profile.phone|default:profile.whatsapp }}<br />{% endif %}
+          {% if profile.email %}{{ profile.email }}<br />{% endif %}
+          {% if profile.street %}{{ profile.street }}{% if profile.number %}, {{ profile.number }}{% endif %}
+            {% if profile.city %} - {{ profile.city }}/{{ profile.state }}{% endif %}{% endif %}
+        </div>
+      </td>
+      <td class="doc-box">
+        <div class="doc-title">ORDEM DE SERVIÇO</div>
+        <div class="doc-line">Nº {{ order.number|stringformat:"04d" }}</div>
+        <div class="doc-line"><span class="status-chip">{{ status_display }}</span></div>
+        <div class="doc-line small muted">Emitido em {{ emitted_at }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Veículo + Cliente -->
+  <div class="section">
+    <table class="info">
+      <tr>
+        <td style="width: 50%;">
+          <div class="section-title">Veículo</div>
+          <span class="plate">{{ vehicle.license_plate }}</span>
+          <div class="small">
+            {% if vehicle_description %}{{ vehicle_description }}<br />{% endif %}
+            {% if vehicle_year %}Ano: {{ vehicle_year }}{% endif %}
+            {% if vehicle.color %} · Cor: {{ vehicle.color }}{% endif %}<br />
+            {% if vehicle_mileage %}Km: {{ vehicle_mileage }}{% endif %}
+          </div>
+        </td>
+        <td style="width: 50%;">
+          <div class="section-title">Cliente</div>
+          <strong>{{ customer.name }}</strong>
+          <div class="small">
+            {% if customer.document %}CPF/CNPJ: {{ customer.document }}<br />{% endif %}
+            {% if customer.phone or customer.whatsapp %}Tel: {{ customer.phone|default:customer.whatsapp }}<br />{% endif %}
+            {% if customer.email %}{{ customer.email }}{% endif %}
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Datas / técnico -->
+  <div class="section">
+    <table class="info small">
+      <tr>
+        <td><span class="muted">Abertura:</span> {{ opened_at }}</td>
+        <td><span class="muted">Previsão de entrega:</span> {{ expected_delivery|default:"—" }}</td>
+        <td><span class="muted">Técnico:</span> {{ technician|default:"—" }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Relato / diagnóstico -->
+  {% if customer_report %}
+  <div class="section">
+    <div class="section-title">Relato do cliente</div>
+    <div class="block small">{{ customer_report }}</div>
+  </div>
+  {% endif %}
+  {% if diagnosis %}
+  <div class="section">
+    <div class="section-title">Diagnóstico técnico</div>
+    <div class="block small">{{ diagnosis }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Itens -->
+  {% for group in groups %}
+  <div class="section">
+    <div class="section-title">{{ group.title }}</div>
+    <table class="items">
+      <thead>
+        <tr>
+          <th style="width: 58%;">Descrição</th>
+          <th class="right" style="width: 12%;">Qtd</th>
+          <th class="right" style="width: 15%;">Valor unit.</th>
+          <th class="right" style="width: 15%;">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in group.items %}
+        <tr>
+          <td>{{ item.description }}{% if item.is_custom %} <span class="tag">avulso</span>{% endif %}</td>
+          <td class="right">{{ item.quantity }}</td>
+          <td class="right">{{ item.unit_price }}</td>
+          <td class="right">{{ item.subtotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+
+  <!-- Totais -->
+  <table class="totals">
+    <tr><td class="muted">Serviços</td><td class="right">{{ totals.services }}</td></tr>
+    <tr><td class="muted">Pacotes</td><td class="right">{{ totals.packages }}</td></tr>
+    <tr><td class="muted">Peças</td><td class="right">{{ totals.parts }}</td></tr>
+    {% if has_discount %}
+    <tr><td class="muted">Total bruto</td><td class="right">{{ totals.gross }}</td></tr>
+    <tr><td class="muted">Desconto</td><td class="right">- {{ discount }}</td></tr>
+    {% endif %}
+    <tr class="grand"><td>Valor final</td><td class="right">{{ totals.final }}</td></tr>
+  </table>
+
+  <!-- Pagamento -->
+  <div class="section">
+    <table class="info small">
+      <tr>
+        <td><span class="muted">Pago:</span> {{ payment.paid }}</td>
+        <td><span class="muted">Saldo devedor:</span> {{ payment.balance }}</td>
+        <td><span class="muted">Situação:</span> {{ payment.status_display }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Termos -->
+  {% if service_authorization_terms %}
+  <div class="terms">
+    <div class="section-title">Autorização de serviço</div>
+    {{ service_authorization_terms }}
+  </div>
+  {% endif %}
+  {% if general_conditions %}
+  <div class="terms">
+    <div class="section-title">Condições gerais</div>
+    {{ general_conditions }}
+  </div>
+  {% endif %}
+
+  {% if footer_text %}<div class="footer">{{ footer_text }}</div>{% endif %}
+</body>
+</html>
