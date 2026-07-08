@@ -11,6 +11,7 @@ function Button({
   variant,
   size,
   asChild = false,
+  type,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
@@ -19,6 +20,10 @@ function Button({
   return (
     <Comp
       data-slot="button"
+      // Padrão "button": evita que botões de ação dentro de um <form> (ex.: gerar
+      // PDF/copiar link no painel de orçamento da OS) disparem o submit e naveguem
+      // para fora. Botões de envio devem declarar type="submit" explicitamente.
+      type={asChild ? type : (type ?? "button")}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
