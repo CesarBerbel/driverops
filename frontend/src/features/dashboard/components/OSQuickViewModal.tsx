@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OrderPdfButton } from "@/features/orders/components/OrderPdfButton";
 import { formatPlateForDisplay } from "@/features/vehicles/plate";
 import type {
   WorkOrder,
@@ -160,6 +161,7 @@ export function OSQuickViewModal({ order, open, onOpenChange }: OSQuickViewModal
             </div>
 
             <DialogFooter className="flex-row justify-end gap-2 border-t p-4">
+              <OrderPdfButton orderId={order.id} className="mr-auto" />
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Fechar
               </Button>

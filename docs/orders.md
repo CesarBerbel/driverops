@@ -242,6 +242,10 @@ infraestrutura do [PDF do orçamento](quotes.md) (xhtml2pdf + logo embutido/redu
 Os totais e itens vêm do `WorkOrderSerializer` (fonte da verdade no backend), então o PDF **nunca
 diverge** da tela. A geração é tolerante a logo/termo ausente.
 
+Além do editor, o PDF pode ser gerado direto do **card da OS no dashboard** (ícone no canto
+superior do card) e do **modal de visualização rápida** (botão "PDF" no rodapé), sem precisar abrir
+a OS.
+
 ## Técnico responsável
 
 Cada OS pode ter um **técnico responsável** (opcional), escolhido no bloco "Dados principais". O
