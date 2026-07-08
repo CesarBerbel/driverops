@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .public_views import PublicLandingView
 from .views import (
     KanbanSettingsView,
     OrderSettingsView,
@@ -8,6 +9,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("public/landing/", PublicLandingView.as_view(), name="public-landing"),
     path("workshop-profile/", WorkshopProfileView.as_view(), name="workshop-profile"),
     path(
         "workshop-profile/logo/",
