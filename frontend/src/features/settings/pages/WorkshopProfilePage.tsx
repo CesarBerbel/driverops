@@ -49,6 +49,7 @@ function toFormValues(profile: WorkshopProfile): WorkshopProfileFormValues {
     city: profile.city,
     state: profile.state,
     country: profile.country || "Brasil",
+    business_hours: profile.business_hours,
     notes: profile.notes,
   };
 }
@@ -375,6 +376,14 @@ function WorkshopProfileForm({
             <div className="space-y-2">
               <Label htmlFor="website">Site</Label>
               <Input id="website" placeholder="https://" {...register("website")} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="business_hours">Horário de funcionamento</Label>
+              <Input
+                id="business_hours"
+                placeholder="Seg a Sex, 8h às 18h · Sáb, 8h às 12h"
+                {...register("business_hours")}
+              />
             </div>
           </CardContent>
         </Card>

@@ -44,6 +44,7 @@ class WorkshopProfileSerializer(serializers.ModelSerializer):
             "city",
             "state",
             "country",
+            "business_hours",
             "notes",
             "updated_at",
         ]

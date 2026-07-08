@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "apps.workshop",
     "apps.quotes",
     "apps.financial",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [

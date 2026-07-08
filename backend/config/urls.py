@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/", include("apps.workshop.urls")),
     path("api/", include("apps.quotes.urls")),
     path("api/", include("apps.financial.urls")),
+    path("api/", include("apps.notifications.urls")),
 ]
 
 # Serve uploaded media in development (no-op when DEBUG is False).

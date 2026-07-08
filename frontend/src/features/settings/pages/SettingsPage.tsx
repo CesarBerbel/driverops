@@ -1,4 +1,5 @@
 import {
+  Bell,
   Building2,
   ChevronRight,
   ClipboardList,
@@ -37,6 +38,14 @@ const SETTINGS_CARDS = [
     title: "Kanban OS",
     description: "Escolha quais colunas de status aparecem no Kanban e em que ordem.",
     permission: "settings.view",
+  },
+  {
+    to: "/settings/notification-templates",
+    icon: Bell,
+    title: "Templates de Notificação ao Cliente",
+    description:
+      "Modelos profissionais e configuráveis das comunicações da oficina com o cliente (e-mail, WhatsApp, SMS e interno).",
+    permission: "notifications.view",
   },
   {
     to: "/users",

@@ -79,6 +79,8 @@ class WorkshopProfile(SingletonModel):
     city = models.CharField(max_length=100, blank=True)
     state = models.CharField(max_length=2, blank=True)
     country = models.CharField(max_length=60, blank=True, default="Brasil")
+    # Horário de funcionamento (texto livre), usado nas notificações ao cliente.
+    business_hours = models.CharField(max_length=200, blank=True)
     notes = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -39,7 +39,8 @@ def test_auto_email_on_milestone(auth_client, order_with_email):
     _move(auth_client, order_with_email, "ready")
     assert len(mail.outbox) == 1
     assert mail.outbox[0].to == ["cliente@example.com"]
-    assert "Pronta para entrega" in mail.outbox[0].subject
+    # Assunto vem do template do evento "pronta para retirada".
+    assert "pronto" in mail.outbox[0].subject.lower()
     assert OrderEvent.objects.filter(
         order=order_with_email, event_type=OrderEvent.Type.CUSTOMER_NOTIFIED
     ).exists()
@@ -109,7 +110,8 @@ def test_auto_email_uses_configured_statuses(auth_client, order_with_email):
     order_with_email.save(update_fields=["status"])
     _move(auth_client, order_with_email, "in_progress")
     assert len(mail.outbox) == 1
-    assert "Em execução" in mail.outbox[0].subject
+    # Assunto vem do template do evento "em execução".
+    assert "execução" in mail.outbox[0].subject.lower()
 
 
 def test_email_on_creation_when_enabled(auth_client, customer, vehicle):

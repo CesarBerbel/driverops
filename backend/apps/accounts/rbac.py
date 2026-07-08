@@ -139,6 +139,15 @@ MODULES = [
         [("view", "Visualizar", False), ("edit", "Alterar configurações", True)],
     ),
     (
+        "notifications",
+        "Templates de Notificação",
+        [
+            ("view", "Visualizar templates", False),
+            ("edit", "Editar/ativar/restaurar templates", True),
+            ("test", "Enviar mensagem de teste", True),
+        ],
+    ),
+    (
         "users",
         "Usuários",
         [("view", "Visualizar", False), ("manage", "Gerenciar usuários", True)],

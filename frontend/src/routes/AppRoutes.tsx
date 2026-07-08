@@ -18,6 +18,7 @@ import { FinancialPage } from "@/features/financial/pages/FinancialPage";
 import { ReportsPage } from "@/features/financial/pages/ReportsPage";
 import { KanbanPage } from "@/features/kanban/pages/KanbanPage";
 import { LandingPage } from "@/features/landing/pages/LandingPage";
+import { NotificationTemplatesPage } from "@/features/notifications/pages/NotificationTemplatesPage";
 import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
 import { PartsPage } from "@/features/parts/pages/PartsPage";
@@ -59,6 +60,12 @@ export function AppRoutes() {
           <Route path="/settings/workshop" element={<WorkshopProfilePage />} />
           <Route path="/settings/orders" element={<OrderSettingsPage />} />
           <Route path="/settings/kanban" element={<KanbanSettingsPage />} />
+          <Route element={<RequirePermission code="notifications.view" />}>
+            <Route
+              path="/settings/notification-templates"
+              element={<NotificationTemplatesPage />}
+            />
+          </Route>
           <Route path="/settings/categories" element={<ClientCategoriesPage />} />
           <Route path="/settings/categories/parts" element={<PartCategoriesPage />} />
           <Route path="/settings/categories/services" element={<ServiceCategoriesPage />} />

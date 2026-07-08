@@ -19,6 +19,7 @@ export interface WorkshopProfile {
   city: string;
   state: string;
   country: string;
+  business_hours: string;
   notes: string;
   updated_at: string;
 }

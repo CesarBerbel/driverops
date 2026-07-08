@@ -185,7 +185,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
                 "updated_at",
             ]
         )
-        send_quote_approval_email(quote, email)
+        send_quote_approval_email(quote, email, actor=request.user)
         record_event(
             quote.work_order,
             OrderEvent.Type.QUOTE_SENT,
