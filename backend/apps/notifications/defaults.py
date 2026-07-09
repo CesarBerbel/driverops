@@ -405,8 +405,7 @@ def build_whatsapp(recipe):
 
 def build_sms(recipe):
     return (
-        f"{{{{oficina.nome}}}}: {recipe['lead']} "
-        "Dúvidas: {{oficina.telefone}}"
+        f"{{{{oficina.nome}}}}: {recipe['lead']} " "Dúvidas: {{oficina.telefone}}"
     ).strip()
 
 

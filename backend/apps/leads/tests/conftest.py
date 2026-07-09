@@ -30,7 +30,9 @@ def _login(client, email, password="StrongPass123"):
 @pytest.fixture
 def atendente_client(db):
     # Atendente: leads.view/attend/convert.
-    u = User.objects.create_user(email="rec@example.com", password="StrongPass123", full_name="Rec")
+    u = User.objects.create_user(
+        email="rec@example.com", password="StrongPass123", full_name="Rec"
+    )
     u.role = Role.objects.filter(key="atendente").first()
     u.save(update_fields=["role"])
     return _login(Client(), u.email)
@@ -38,14 +40,18 @@ def atendente_client(db):
 
 @pytest.fixture
 def super_client(db):
-    User.objects.create_superuser(email="root@example.com", password="StrongPass123", full_name="Root")
+    User.objects.create_superuser(
+        email="root@example.com", password="StrongPass123", full_name="Root"
+    )
     return _login(Client(), "root@example.com")
 
 
 @pytest.fixture
 def estoque_client(db):
     # Estoque: sem permissões de leads.
-    u = User.objects.create_user(email="est@example.com", password="StrongPass123", full_name="Est")
+    u = User.objects.create_user(
+        email="est@example.com", password="StrongPass123", full_name="Est"
+    )
     u.role = Role.objects.filter(key="estoque").first()
     u.save(update_fields=["role"])
     return _login(Client(), u.email)
@@ -54,14 +60,21 @@ def estoque_client(db):
 @pytest.fixture
 def customer(db):
     return Customer.objects.create(
-        name="Maria Silva", phone="11988887777", whatsapp="11988887777", email="maria@example.com"
+        name="Maria Silva",
+        phone="11988887777",
+        whatsapp="11988887777",
+        email="maria@example.com",
     )
 
 
 @pytest.fixture
 def vehicle(db, customer):
     return Vehicle.objects.create(
-        customer=customer, license_plate="ABC1D23", brand="Fiat", model="Uno", model_year=2020
+        customer=customer,
+        license_plate="ABC1D23",
+        brand="Fiat",
+        model="Uno",
+        model_year=2020,
     )
 
 

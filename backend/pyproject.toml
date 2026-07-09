@@ -1,0 +1,24 @@
+# Configuração de lint/format/cobertura do backend. Antes rodava tudo nos
+# defaults; aqui formalizamos as regras (com isort/pyupgrade) e a cobertura.
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = ["**/migrations/*"]
+
+[tool.ruff.lint]
+# E/F (padrão) + I (ordenação de imports) + UP (moderniza sintaxe).
+# E501 fica a cargo do black (que já formata o projeto).
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 88
+
+[tool.coverage.run]
+source = ["apps"]
+omit = ["*/migrations/*", "*/tests/*", "*/conftest.py", "manage.py", "config/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

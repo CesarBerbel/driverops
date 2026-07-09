@@ -5,7 +5,14 @@ from .models import NotificationLog, NotificationTemplate
 
 @admin.register(NotificationTemplate)
 class NotificationTemplateAdmin(admin.ModelAdmin):
-    list_display = ["event", "channel", "name", "is_active", "is_customized", "updated_at"]
+    list_display = [
+        "event",
+        "channel",
+        "name",
+        "is_active",
+        "is_customized",
+        "updated_at",
+    ]
     list_filter = ["channel", "is_active", "is_customized"]
     search_fields = ["name", "description", "event"]
     readonly_fields = ["updated_at", "updated_by", "is_customized"]

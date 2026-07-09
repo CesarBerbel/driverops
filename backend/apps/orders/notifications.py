@@ -42,7 +42,9 @@ def _record(order, to_email, label, actor, channel):
     )
 
 
-def _notify_event(order, event_key, label, actor, channel, *, payment=None) -> str | None:
+def _notify_event(
+    order, event_key, label, actor, channel, *, payment=None
+) -> str | None:
     """Envia um evento via motor de templates e registra na timeline se enviado."""
     result = send_notification(
         event_key,

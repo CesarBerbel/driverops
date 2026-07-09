@@ -36,7 +36,9 @@ class Customer(models.Model):
         # find_customer_conflicts cobre o caso cruzado telefone<->WhatsApp).
         constraints = [
             models.UniqueConstraint(
-                fields=["phone"], condition=~models.Q(phone=""), name="uniq_customer_phone"
+                fields=["phone"],
+                condition=~models.Q(phone=""),
+                name="uniq_customer_phone",
             ),
             models.UniqueConstraint(
                 fields=["whatsapp"],

@@ -2,7 +2,7 @@
 
 import pytest
 
-from apps.alerts.models import NotifModule, NotifStatus, Notification
+from apps.alerts.models import Notification, NotifModule, NotifStatus
 from apps.alerts.tests.conftest import make_notification
 
 pytestmark = pytest.mark.django_db
@@ -150,9 +150,12 @@ def test_rules_get_and_patch_permission(atendente_client, super_client):
     # Atendente vê (alerts.view) mas não configura (alerts.configure).
     assert atendente_client.get("/api/notification-rules/").status_code == 200
     patch = {"notif_type": "os_overdue", "is_enabled": False, "lead_time_hours": 12}
-    assert atendente_client.patch(
-        "/api/notification-rules/", data=patch, content_type="application/json"
-    ).status_code == 403
+    assert (
+        atendente_client.patch(
+            "/api/notification-rules/", data=patch, content_type="application/json"
+        ).status_code
+        == 403
+    )
     resp = super_client.patch(
         "/api/notification-rules/", data=patch, content_type="application/json"
     )

@@ -42,7 +42,9 @@ class OriginCheckMiddleware:
             and self.allowed
         ):
             origin = request.META.get("HTTP_ORIGIN")
-            source = _origin(origin) if origin else _origin(request.META.get("HTTP_REFERER"))
+            source = (
+                _origin(origin) if origin else _origin(request.META.get("HTTP_REFERER"))
+            )
             # Só bloqueia quando há uma origem declarada e ela não é permitida.
             if source is not None and source.rstrip("/") not in self.allowed:
                 return JsonResponse(

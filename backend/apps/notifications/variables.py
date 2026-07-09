@@ -86,10 +86,18 @@ VARIABLE_GROUPS = [
             ("oficina.telefone", "Telefone", "(11) 3555-1234"),
             ("oficina.whatsapp", "WhatsApp", "(11) 98765-4321"),
             ("oficina.email", "E-mail", "contato@autocentersilva.com.br"),
-            ("oficina.endereco", "Endereço", "Rua das Oficinas, 100 - Centro - São Paulo - SP"),
+            (
+                "oficina.endereco",
+                "Endereço",
+                "Rua das Oficinas, 100 - Centro - São Paulo - SP",
+            ),
             ("oficina.site", "Site", "www.autocentersilva.com.br"),
             ("oficina.logo", "Logo (URL)", "https://.../logo.png"),
-            ("oficina.horario_funcionamento", "Horário de funcionamento", "Seg a Sex, 8h às 18h"),
+            (
+                "oficina.horario_funcionamento",
+                "Horário de funcionamento",
+                "Seg a Sex, 8h às 18h",
+            ),
         ],
     ),
     (
@@ -126,13 +134,29 @@ VARIABLE_GROUPS = [
             ("ordem_servico.status", "Status atual", "Pronta para entrega"),
             ("ordem_servico.data_abertura", "Data de abertura", "08/07/2026"),
             ("ordem_servico.data_prevista", "Data prevista de entrega", "12/07/2026"),
-            ("ordem_servico.relato_cliente", "Relato do cliente", "Barulho na suspensão"),
+            (
+                "ordem_servico.relato_cliente",
+                "Relato do cliente",
+                "Barulho na suspensão",
+            ),
             ("ordem_servico.diagnostico", "Diagnóstico", "Bieletas desgastadas"),
-            ("ordem_servico.observacoes", "Observações", "Cliente pediu revisão dos freios"),
-            ("ordem_servico.servicos", "Serviços vinculados", "Troca de bieletas; Alinhamento"),
+            (
+                "ordem_servico.observacoes",
+                "Observações",
+                "Cliente pediu revisão dos freios",
+            ),
+            (
+                "ordem_servico.servicos",
+                "Serviços vinculados",
+                "Troca de bieletas; Alinhamento",
+            ),
             ("ordem_servico.pecas", "Peças vinculadas", "Par de bieletas dianteiras"),
             ("ordem_servico.valor_total", "Valor total estimado", "R$ 780,00"),
-            ("ordem_servico.link_portal", "Link do portal do cliente", "https://.../os/42"),
+            (
+                "ordem_servico.link_portal",
+                "Link do portal do cliente",
+                "https://.../os/42",
+            ),
         ],
     ),
     (
@@ -147,8 +171,16 @@ VARIABLE_GROUPS = [
             ("orcamento.itens_aprovados", "Itens aprovados", "Troca de bieletas"),
             ("orcamento.itens_recusados", "Itens recusados", "Alinhamento"),
             ("orcamento.prazo_validade", "Prazo de validade", "15/07/2026"),
-            ("orcamento.link_aprovacao", "Link de aprovação", "https://.../orcamento/token"),
-            ("orcamento.link_pdf", "Link de visualização em PDF", "https://.../orcamento/token"),
+            (
+                "orcamento.link_aprovacao",
+                "Link de aprovação",
+                "https://.../orcamento/token",
+            ),
+            (
+                "orcamento.link_pdf",
+                "Link de visualização em PDF",
+                "https://.../orcamento/token",
+            ),
         ],
     ),
     (
@@ -241,7 +273,9 @@ def _workshop_context(workshop):
             logo_url = ""
     return {
         "oficina.nome": workshop.trade_name or workshop.legal_name or "",
-        "oficina.cnpj": format_cnpj(only_digits(workshop.cnpj)) if workshop.cnpj else "",
+        "oficina.cnpj": (
+            format_cnpj(only_digits(workshop.cnpj)) if workshop.cnpj else ""
+        ),
         "oficina.telefone": format_phone(workshop.phone),
         "oficina.whatsapp": format_phone(workshop.whatsapp),
         "oficina.email": workshop.email or "",

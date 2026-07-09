@@ -13,7 +13,14 @@ from apps.customers.utils import only_digits
 from apps.orders.status_groups import OPERATIONAL_STATUSES
 from apps.vehicles.models import Vehicle
 
-from .models import ContactPeriod, LeadEvent, LeadSettings, LeadStatus, RequestType, SiteLead
+from .models import (
+    ContactPeriod,
+    LeadEvent,
+    LeadSettings,
+    LeadStatus,
+    RequestType,
+    SiteLead,
+)
 from .serializers import (
     LeadDetailSerializer,
     LeadListSerializer,
@@ -30,7 +37,6 @@ from .services import (
     record_event,
     set_status,
 )
-
 
 # --- público ---------------------------------------------------------------
 
@@ -50,7 +56,9 @@ class PublicLeadConfigView(APIView):
                 "plate_required": conf.plate_required,
                 "allow_without_vehicle": conf.allow_without_vehicle,
                 "require_consent": conf.require_consent,
-                "request_types": [{"key": k, "label": v} for k, v in RequestType.choices],
+                "request_types": [
+                    {"key": k, "label": v} for k, v in RequestType.choices
+                ],
                 "periods": [{"key": k, "label": v} for k, v in ContactPeriod.choices],
             }
         )
@@ -141,7 +149,9 @@ class LeadViewSet(
         return Response(serializer.data)
 
     def get_queryset(self):
-        qs = SiteLead.objects.select_related("assigned_to", "linked_customer", "linked_vehicle")
+        qs = SiteLead.objects.select_related(
+            "assigned_to", "linked_customer", "linked_vehicle"
+        )
         p = self.request.query_params
         if p.get("status"):
             qs = qs.filter(status=p["status"])
@@ -189,7 +199,10 @@ class LeadViewSet(
         lead = self.get_object()
         channel = request.data.get("channel", "")
         record_event(
-            lead, LeadEvent.Type.CONTACT, f"Contato registrado ({channel})".strip(), actor=request.user
+            lead,
+            LeadEvent.Type.CONTACT,
+            f"Contato registrado ({channel})".strip(),
+            actor=request.user,
         )
         if lead.status in (LeadStatus.NEW, LeadStatus.IN_ANALYSIS):
             set_status(lead, LeadStatus.CONTACTED, actor=request.user)
@@ -208,9 +221,11 @@ class LeadViewSet(
         record_event(
             lead,
             LeadEvent.Type.ASSIGN,
-            f"Responsável: {lead.assigned_to.full_name or lead.assigned_to.email}"
-            if lead.assigned_to
-            else "Responsável removido.",
+            (
+                f"Responsável: {lead.assigned_to.full_name or lead.assigned_to.email}"
+                if lead.assigned_to
+                else "Responsável removido."
+            ),
             actor=request.user,
         )
         record_audit(request, "site_lead.assign", new_value={"lead_id": lead.id})
@@ -224,20 +239,34 @@ class LeadViewSet(
         if new_status not in valid:
             raise ValidationError({"status": "Status inválido."})
         set_status(lead, new_status, actor=request.user)
-        record_audit(request, "site_lead.status", new_value={"lead_id": lead.id, "status": new_status})
+        record_audit(
+            request,
+            "site_lead.status",
+            new_value={"lead_id": lead.id, "status": new_status},
+        )
         return Response(LeadDetailSerializer(lead).data)
 
     @action(detail=True, methods=["post"], url_path="mark-duplicate")
     def mark_duplicate(self, request, pk=None):
         lead = self.get_object()
-        set_status(lead, LeadStatus.DUPLICATE, actor=request.user, description="Marcado como duplicado.")
+        set_status(
+            lead,
+            LeadStatus.DUPLICATE,
+            actor=request.user,
+            description="Marcado como duplicado.",
+        )
         record_audit(request, "site_lead.duplicate", new_value={"lead_id": lead.id})
         return Response(LeadDetailSerializer(lead).data)
 
     @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):
         lead = self.get_object()
-        set_status(lead, LeadStatus.CANCELED, actor=request.user, description="Pedido cancelado.")
+        set_status(
+            lead,
+            LeadStatus.CANCELED,
+            actor=request.user,
+            description="Pedido cancelado.",
+        )
         record_audit(request, "site_lead.cancel", new_value={"lead_id": lead.id})
         return Response(LeadDetailSerializer(lead).data)
 
@@ -251,15 +280,28 @@ class LeadViewSet(
             raise ValidationError({"customer": "Cliente não encontrado."})
         lead.linked_customer = customer
         lead.save(update_fields=["linked_customer", "updated_at"])
-        record_event(lead, LeadEvent.Type.LINK_CUSTOMER, f"Cliente vinculado: {customer.name}.", actor=request.user)
-        record_audit(request, "site_lead.link_customer", new_value={"lead_id": lead.id, "customer": customer.id})
+        record_event(
+            lead,
+            LeadEvent.Type.LINK_CUSTOMER,
+            f"Cliente vinculado: {customer.name}.",
+            actor=request.user,
+        )
+        record_audit(
+            request,
+            "site_lead.link_customer",
+            new_value={"lead_id": lead.id, "customer": customer.id},
+        )
         return Response(LeadDetailSerializer(lead).data)
 
     @action(detail=True, methods=["post"], url_path="create-customer")
     def create_customer(self, request, pk=None):
         lead = self.get_object()
         customer = create_customer_from_lead(lead, actor=request.user)
-        record_audit(request, "site_lead.create_customer", new_value={"lead_id": lead.id, "customer": customer.id})
+        record_audit(
+            request,
+            "site_lead.create_customer",
+            new_value={"lead_id": lead.id, "customer": customer.id},
+        )
         return Response(LeadDetailSerializer(lead).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="update-customer")
@@ -275,7 +317,12 @@ class LeadViewSet(
         if lead.document:
             customer.document = only_digits(lead.document)
         customer.save()
-        record_event(lead, LeadEvent.Type.LINK_CUSTOMER, "Dados do cliente atualizados.", actor=request.user)
+        record_event(
+            lead,
+            LeadEvent.Type.LINK_CUSTOMER,
+            "Dados do cliente atualizados.",
+            actor=request.user,
+        )
         return Response(LeadDetailSerializer(lead).data)
 
     @action(detail=True, methods=["post"], url_path="link-vehicle")
@@ -286,19 +333,38 @@ class LeadViewSet(
             raise ValidationError({"vehicle": "Veículo não encontrado."})
         lead.linked_vehicle = vehicle
         lead.save(update_fields=["linked_vehicle", "updated_at"])
-        record_event(lead, LeadEvent.Type.LINK_VEHICLE, f"Veículo vinculado: {vehicle.license_plate}.", actor=request.user)
-        record_audit(request, "site_lead.link_vehicle", new_value={"lead_id": lead.id, "vehicle": vehicle.id})
+        record_event(
+            lead,
+            LeadEvent.Type.LINK_VEHICLE,
+            f"Veículo vinculado: {vehicle.license_plate}.",
+            actor=request.user,
+        )
+        record_audit(
+            request,
+            "site_lead.link_vehicle",
+            new_value={"lead_id": lead.id, "vehicle": vehicle.id},
+        )
         return Response(LeadDetailSerializer(lead).data)
 
     @action(detail=True, methods=["post"], url_path="create-vehicle")
     def create_vehicle(self, request, pk=None):
         lead = self.get_object()
         if lead.linked_customer is None:
-            raise ValidationError({"detail": "Vincule ou crie o cliente antes do veículo."})
+            raise ValidationError(
+                {"detail": "Vincule ou crie o cliente antes do veículo."}
+            )
         if not lead.vehicle_plate:
-            raise ValidationError({"detail": "O pedido não informou a placa do veículo."})
-        vehicle = create_vehicle_from_lead(lead, actor=request.user, customer=lead.linked_customer)
-        record_audit(request, "site_lead.create_vehicle", new_value={"lead_id": lead.id, "vehicle": vehicle.id})
+            raise ValidationError(
+                {"detail": "O pedido não informou a placa do veículo."}
+            )
+        vehicle = create_vehicle_from_lead(
+            lead, actor=request.user, customer=lead.linked_customer
+        )
+        record_audit(
+            request,
+            "site_lead.create_vehicle",
+            new_value={"lead_id": lead.id, "vehicle": vehicle.id},
+        )
         return Response(LeadDetailSerializer(lead).data, status=status.HTTP_201_CREATED)
 
     # --- conversões ---
@@ -306,7 +372,9 @@ class LeadViewSet(
     def _guard_conversion(self, request, lead):
         conf = LeadSettings.get_solo()
         if lead.linked_customer is None or lead.linked_vehicle is None:
-            raise ValidationError({"detail": "Defina o cliente e o veículo antes de converter."})
+            raise ValidationError(
+                {"detail": "Defina o cliente e o veículo antes de converter."}
+            )
         # Divergência: veículo vinculado pertence a outro cliente.
         if lead.linked_vehicle.customer_id != lead.linked_customer_id:
             if conf.block_conversion_when_vehicle_other_customer:
@@ -337,7 +405,11 @@ class LeadViewSet(
         if not conf.allow_create_os:
             raise PermissionDenied("A criação de OS a partir do site está desativada.")
         order = create_os_from_lead(lead, actor=request.user)
-        record_audit(request, "site_lead.convert_os", new_value={"lead_id": lead.id, "order": order.id})
+        record_audit(
+            request,
+            "site_lead.convert_os",
+            new_value={"lead_id": lead.id, "order": order.id},
+        )
         return Response(LeadDetailSerializer(lead).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="convert-quote")
@@ -345,7 +417,11 @@ class LeadViewSet(
         lead = self.get_object()
         self._guard_conversion(request, lead)
         quote = create_quote_from_lead(lead, actor=request.user)
-        record_audit(request, "site_lead.convert_quote", new_value={"lead_id": lead.id, "quote": quote.id})
+        record_audit(
+            request,
+            "site_lead.convert_quote",
+            new_value={"lead_id": lead.id, "quote": quote.id},
+        )
         return Response(LeadDetailSerializer(lead).data, status=status.HTTP_201_CREATED)
 
 
@@ -367,5 +443,9 @@ class LeadSettingsView(APIView):
         serializer = LeadSettingsSerializer(conf, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         updated = serializer.save(updated_by=request.user)
-        record_audit(request, "site_lead.settings", new_value={"changed": list(request.data.keys())})
+        record_audit(
+            request,
+            "site_lead.settings",
+            new_value={"changed": list(request.data.keys())},
+        )
         return Response(LeadSettingsSerializer(updated).data)

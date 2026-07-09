@@ -1,0 +1,31 @@
+# Hooks opcionais de qualidade. Para ativar localmente:
+#   pip install pre-commit && pre-commit install
+# Rodam apenas nos arquivos alterados no commit. O CI continua sendo a fonte da
+# verdade; isto só antecipa os erros mais comuns.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        name: ruff (backend)
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        name: ruff-format (nao usado -- black e o formatter)
+        stages: [manual]
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        name: black (backend)
+        files: ^backend/.*\.py$
+
+  - repo: local
+    hooks:
+      - id: oxlint
+        name: oxlint (frontend)
+        entry: bash -c 'cd frontend && npx oxlint'
+        language: system
+        files: ^frontend/src/.*\.(ts|tsx)$
+        pass_filenames: false

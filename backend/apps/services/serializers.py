@@ -7,7 +7,6 @@ from apps.parts.models import Part
 
 from .models import PackageService, Service, ServicePackage, ServicePart
 
-
 CENTS = Decimal("0.01")
 
 

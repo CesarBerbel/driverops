@@ -42,11 +42,19 @@ def test_metadata_exposes_variables_events_channels(admin_client):
     assert resp.status_code == 200
     body = resp.json()
     assert {group["key"] for group in body["variables"]} >= {
-        "oficina", "cliente", "veiculo", "ordem_servico", "orcamento", "financeiro"
+        "oficina",
+        "cliente",
+        "veiculo",
+        "ordem_servico",
+        "orcamento",
+        "financeiro",
     }
     assert any(e["key"] == "quote_sent" for e in body["events"])
     assert {c["key"] for c in body["channels"]} == {
-        "email", "whatsapp", "sms", "internal"
+        "email",
+        "whatsapp",
+        "sms",
+        "internal",
     }
 
 
@@ -159,7 +167,9 @@ def test_test_send_requires_recipient(super_client):
 
 def test_bulk_deactivate_and_activate(super_client):
     ids = list(
-        NotificationTemplate.objects.filter(channel="email").values_list("id", flat=True)[:3]
+        NotificationTemplate.objects.filter(channel="email").values_list(
+            "id", flat=True
+        )[:3]
     )
     resp = super_client.post(
         f"{BASE}bulk-status/",
@@ -168,9 +178,7 @@ def test_bulk_deactivate_and_activate(super_client):
     )
     assert resp.status_code == 200
     assert resp.json()["updated"] == 3
-    assert (
-        NotificationTemplate.objects.filter(id__in=ids, is_active=False).count() == 3
-    )
+    assert NotificationTemplate.objects.filter(id__in=ids, is_active=False).count() == 3
     # Reativa
     resp = super_client.post(
         f"{BASE}bulk-status/",
@@ -178,9 +186,7 @@ def test_bulk_deactivate_and_activate(super_client):
         content_type="application/json",
     )
     assert resp.json()["updated"] == 3
-    assert (
-        NotificationTemplate.objects.filter(id__in=ids, is_active=True).count() == 3
-    )
+    assert NotificationTemplate.objects.filter(id__in=ids, is_active=True).count() == 3
     assert AuditLog.objects.filter(action="notification.template.bulk_status").exists()
 
 

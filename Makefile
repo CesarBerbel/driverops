@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help install up down restart logs migrate makemigrations seed-admin createsuperuser \
-        test test-backend test-frontend lint build shell-backend shell-frontend psql seed-scenarios \
-        seed-rbac
+        test test-backend test-frontend coverage coverage-backend coverage-frontend \
+        lint build shell-backend shell-frontend psql seed-scenarios seed-rbac
 
 ## Show available targets
 help:
@@ -85,7 +85,16 @@ test-backend:
 test-frontend:
 	docker compose exec frontend npm run test -- --run
 
-## Lint backend (ruff + black --check) and frontend (eslint)
+## Test coverage (backend pytest-cov + frontend vitest v8)
+coverage: coverage-backend coverage-frontend
+
+coverage-backend:
+	docker compose exec backend pytest --cov --cov-report=term-missing
+
+coverage-frontend:
+	docker compose exec frontend npm run test:coverage
+
+## Lint backend (ruff + black --check) and frontend (oxlint)
 lint:
 	docker compose exec backend ruff check .
 	docker compose exec backend black --check .

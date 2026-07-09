@@ -17,7 +17,9 @@ class PublicLeadCreateSerializer(serializers.ModelSerializer):
     # ("(11) 99999-8888", "ABC-1D23") chegue aos validate_*() e seja normalizada.
     phone = serializers.CharField(max_length=20)
     document = serializers.CharField(required=False, allow_blank=True, max_length=20)
-    vehicle_plate = serializers.CharField(required=False, allow_blank=True, max_length=10)
+    vehicle_plate = serializers.CharField(
+        required=False, allow_blank=True, max_length=10
+    )
 
     class Meta:
         model = SiteLead
@@ -145,10 +147,16 @@ def build_indicator_maps(leads):
         for v in vehicles:
             plate_to_vehicle.setdefault(
                 v["license_plate"],
-                {"customer_id": v["customer_id"], "has_open_os": v["id"] in open_vehicle_ids},
+                {
+                    "customer_id": v["customer_id"],
+                    "has_open_os": v["id"] in open_vehicle_ids,
+                },
             )
 
-    return {"phone_to_customer": phone_to_customer, "plate_to_vehicle": plate_to_vehicle}
+    return {
+        "phone_to_customer": phone_to_customer,
+        "plate_to_vehicle": plate_to_vehicle,
+    }
 
 
 class LeadIndicatorsMixin(serializers.Serializer):
@@ -163,7 +171,11 @@ class LeadIndicatorsMixin(serializers.Serializer):
     @staticmethod
     def _indicators_from_maps(obj, maps):
         customer_id = maps["phone_to_customer"].get(obj.phone) if obj.phone else None
-        veh = maps["plate_to_vehicle"].get(obj.vehicle_plate) if obj.vehicle_plate else None
+        veh = (
+            maps["plate_to_vehicle"].get(obj.vehicle_plate)
+            if obj.vehicle_plate
+            else None
+        )
         vehicle_divergent = False
         has_open_os = False
         if veh is not None:
@@ -216,9 +228,13 @@ class LeadIndicatorsMixin(serializers.Serializer):
 
 
 class LeadListSerializer(LeadIndicatorsMixin, serializers.ModelSerializer):
-    request_type_display = serializers.CharField(source="get_request_type_display", read_only=True)
+    request_type_display = serializers.CharField(
+        source="get_request_type_display", read_only=True
+    )
     status_display = serializers.CharField(source="get_status_display", read_only=True)
-    best_period_display = serializers.CharField(source="get_best_period_display", read_only=True)
+    best_period_display = serializers.CharField(
+        source="get_best_period_display", read_only=True
+    )
     assigned_to_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -252,7 +268,9 @@ class LeadListSerializer(LeadIndicatorsMixin, serializers.ModelSerializer):
 
 
 class LeadEventSerializer(serializers.ModelSerializer):
-    event_type_display = serializers.CharField(source="get_event_type_display", read_only=True)
+    event_type_display = serializers.CharField(
+        source="get_event_type_display", read_only=True
+    )
     actor_name = serializers.SerializerMethodField()
 
     class Meta:

@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.test import Client
 
 from apps.accounts.models import Role
-from apps.alerts.models import NotifModule, NotifPriority, NotifType, Notification
+from apps.alerts.models import Notification, NotifModule, NotifPriority, NotifType
 
 User = get_user_model()
 
@@ -27,9 +27,13 @@ def _login(client, email, password="StrongPass123"):
 
 def make_user(email, role_key=None, *, is_superuser=False, password="StrongPass123"):
     if is_superuser:
-        u = User.objects.create_superuser(email=email, password=password, full_name="Root")
+        u = User.objects.create_superuser(
+            email=email, password=password, full_name="Root"
+        )
     else:
-        u = User.objects.create_user(email=email, password=password, full_name=email.split("@")[0])
+        u = User.objects.create_user(
+            email=email, password=password, full_name=email.split("@")[0]
+        )
     if role_key:
         u.role = Role.objects.filter(key=role_key).first()
         u.save(update_fields=["role"])

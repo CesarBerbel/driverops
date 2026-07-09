@@ -44,8 +44,16 @@ class _CanViewOrUseAI(BasePermission):
 
 
 _AUDITED_SETTINGS = [
-    "is_active", "provider", "model", "base_url", "api_key_env",
-    "temperature", "max_tokens", "timeout_seconds", "log_texts", "retention_days",
+    "is_active",
+    "provider",
+    "model",
+    "base_url",
+    "api_key_env",
+    "temperature",
+    "max_tokens",
+    "timeout_seconds",
+    "log_texts",
+    "retention_days",
 ]
 
 
@@ -79,7 +87,11 @@ class AISettingsView(APIView):
         serializer.is_valid(raise_exception=True)
         updated = serializer.save(updated_by=request.user)
         after = {f: getattr(updated, f) for f in _AUDITED_SETTINGS}
-        changed = {f: {"from": before[f], "to": after[f]} for f in _AUDITED_SETTINGS if before[f] != after[f]}
+        changed = {
+            f: {"from": before[f], "to": after[f]}
+            for f in _AUDITED_SETTINGS
+            if before[f] != after[f]
+        }
         record_audit(request, "ai.settings.update", new_value={"changed": changed})
         return Response(AISettingsSerializer(updated).data)
 
@@ -223,15 +235,11 @@ def _run_generation(request, *, is_test):
     except ActionNotAllowed as exc:
         raise ValidationError({"detail": str(exc)})
     except AIDisabledError as exc:
-        return Response(
-            {"detail": exc.user_message, "code": exc.code}, status=409
-        )
+        return Response({"detail": exc.user_message, "code": exc.code}, status=409)
     except AIProviderError as exc:
         # Falha de provedor: preserva o texto original (o frontend não substitui).
         status = 422 if exc.code in ("config_incomplete", "auth_error") else 503
-        return Response(
-            {"detail": exc.user_message, "code": exc.code}, status=status
-        )
+        return Response({"detail": exc.user_message, "code": exc.code}, status=status)
 
     return Response(
         {
@@ -247,9 +255,7 @@ def _run_generation(request, *, is_test):
     )
 
 
-class AIUsageLogViewSet(
-    mixins.ListModelMixin, viewsets.GenericViewSet
-):
+class AIUsageLogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """Log de uso da IA. Listar exige ai.logs; marcar desfecho exige ai.use."""
 
     serializer_class = AIUsageLogSerializer

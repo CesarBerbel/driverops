@@ -29,7 +29,7 @@ def resolve_action(instruction, action_key):
         raise ActionNotAllowed("Ação de IA desconhecida.")
     if required_flag and not getattr(instruction, required_flag, False):
         raise ActionNotAllowed(
-            f"A ação \"{label}\" não está habilitada para o campo "
+            f'A ação "{label}" não está habilitada para o campo '
             f"{instruction.get_field_key_display()}."
         )
     return label, action_text
@@ -49,9 +49,13 @@ def _style_lines(instruction):
     if instruction.remove_slang:
         lines.append("Remova gírias, mantendo o texto fiel ao conteúdo original.")
     else:
-        lines.append("Mantenha o texto fiel ao relato, sem 'corrigir' o estilo do autor.")
+        lines.append(
+            "Mantenha o texto fiel ao relato, sem 'corrigir' o estilo do autor."
+        )
     if instruction.visible_to_customer:
-        lines.append("Este texto será visível ao cliente: evite expor informações internas.")
+        lines.append(
+            "Este texto será visível ao cliente: evite expor informações internas."
+        )
     else:
         lines.append("Este texto é de uso interno: não deve ser exibido ao cliente.")
     return lines

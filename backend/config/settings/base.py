@@ -230,7 +230,11 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": LOG_LEVEL},
     "loggers": {
         # Erros de request (500) do Django vão para o console com stack trace.
-        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
         # Loggers das nossas apps (ex.: apps.alerts, apps.leads).
         "apps": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
     },

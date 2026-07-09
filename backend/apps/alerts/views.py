@@ -9,10 +9,10 @@ from apps.accounts.audit import record_audit
 from apps.accounts.permissions import HasModulePermission, require_permission
 
 from .models import (
-    NotifStatus,
     Notification,
     NotificationPreference,
     NotificationRule,
+    NotifStatus,
     NotifType,
 )
 from .serializers import (
@@ -52,7 +52,11 @@ class NotificationViewSet(
 
         p = self.request.query_params
         status_filter = p.get("status")
-        if status_filter in {NotifStatus.UNREAD, NotifStatus.READ, NotifStatus.ARCHIVED}:
+        if status_filter in {
+            NotifStatus.UNREAD,
+            NotifStatus.READ,
+            NotifStatus.ARCHIVED,
+        }:
             qs = qs.filter(status=status_filter)
         elif status_filter == "all":
             pass
@@ -113,7 +117,9 @@ class NotificationViewSet(
     def mark_read_bulk(self, request):
         ids = request.data.get("ids")
         if not isinstance(ids, list) or not ids:
-            return Response({"detail": "Informe os ids."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Informe os ids."}, status=status.HTTP_400_BAD_REQUEST
+            )
         updated = mark_read(request.user, ids=ids)
         return Response({"updated": updated})
 
@@ -188,7 +194,9 @@ class NotificationPreferenceView(APIView):
 
     def patch(self, request):
         pref = NotificationPreference.get_for(request.user)
-        serializer = NotificationPreferenceSerializer(pref, data=request.data, partial=True)
+        serializer = NotificationPreferenceSerializer(
+            pref, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)

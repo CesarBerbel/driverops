@@ -51,11 +51,9 @@ def resolve_template(event, channel):
     Usa o template do banco quando existe **e está ativo**; senão, o padrão de
     fábrica (fallback seguro). ``fields`` sempre traz name/subject/html/text.
     """
-    template = (
-        NotificationTemplate.objects.filter(
-            event=event, channel=channel, is_active=True
-        ).first()
-    )
+    template = NotificationTemplate.objects.filter(
+        event=event, channel=channel, is_active=True
+    ).first()
     if template is not None:
         fields = {
             "name": template.name,
@@ -167,7 +165,9 @@ def send_notification(
             # Sem API de envio: preparamos o link para envio manual.
             result.link = _whatsapp_link(result.recipient, result.text)
             result.status = (
-                NotificationLog.Status.SENT if is_test else NotificationLog.Status.SKIPPED
+                NotificationLog.Status.SENT
+                if is_test
+                else NotificationLog.Status.SKIPPED
             )
             if not is_test:
                 result.error = "WhatsApp sem envio automático (use o link)."

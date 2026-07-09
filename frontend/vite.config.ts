@@ -32,5 +32,12 @@ export default defineConfig({
     // runs in parallel on slower/Windows machines; a higher ceiling keeps the
     // full run stable without masking genuinely hung tests.
     testTimeout: 15000,
+    // Cobertura via `npm run test:coverage` (requer @vitest/coverage-v8).
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/test/**', 'src/**/*.d.ts', 'src/components/ui/**'],
+    },
   },
 })

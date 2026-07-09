@@ -14,7 +14,14 @@ from .services import render_notification, send_notification
 from .variables import build_context, sample_context, variable_catalog
 
 # Campos de conteúdo cujas alterações interessam à auditoria.
-_AUDITED_FIELDS = ["name", "description", "subject", "html_content", "text_content", "is_active"]
+_AUDITED_FIELDS = [
+    "name",
+    "description",
+    "subject",
+    "html_content",
+    "text_content",
+    "is_active",
+]
 
 
 class NotificationTemplateViewSet(
@@ -68,9 +75,7 @@ class NotificationTemplateViewSet(
     def perform_update(self, serializer):
         instance = serializer.instance
         before = {f: getattr(instance, f) for f in _AUDITED_FIELDS}
-        template = serializer.save(
-            updated_by=self.request.user, is_customized=True
-        )
+        template = serializer.save(updated_by=self.request.user, is_customized=True)
         after = {f: getattr(template, f) for f in _AUDITED_FIELDS}
         changed = {
             f: {"from": before[f], "to": after[f]}
@@ -80,8 +85,11 @@ class NotificationTemplateViewSet(
         record_audit(
             self.request,
             "notification.template.update",
-            old_value={"template_id": template.id, "event": template.event,
-                       "channel": template.channel},
+            old_value={
+                "template_id": template.id,
+                "event": template.event,
+                "channel": template.channel,
+            },
             new_value={"template_id": template.id, "changed": changed},
         )
 
@@ -97,10 +105,16 @@ class NotificationTemplateViewSet(
         record_audit(
             request,
             "notification.template.restore",
-            old_value={"template_id": template.id, **before,
-                       "html_content": bool(before["html_content"])},
-            new_value={"template_id": template.id, "event": template.event,
-                       "channel": template.channel},
+            old_value={
+                "template_id": template.id,
+                **before,
+                "html_content": bool(before["html_content"]),
+            },
+            new_value={
+                "template_id": template.id,
+                "event": template.event,
+                "channel": template.channel,
+            },
         )
         return Response(self.get_serializer(template).data)
 
@@ -198,8 +212,12 @@ class NotificationTemplateViewSet(
         record_audit(
             request,
             "notification.template.test",
-            new_value={"template_id": template.id, "channel": template.channel,
-                       "to": to, "status": result.status},
+            new_value={
+                "template_id": template.id,
+                "channel": template.channel,
+                "to": to,
+                "status": result.status,
+            },
         )
         return Response(
             {
@@ -280,9 +298,11 @@ class NotificationTemplateViewSet(
             rows.append(
                 {
                     "action": log.action,
-                    "actor": (log.actor.full_name or log.actor.email)
-                    if log.actor_id
-                    else None,
+                    "actor": (
+                        (log.actor.full_name or log.actor.email)
+                        if log.actor_id
+                        else None
+                    ),
                     "changed": list((payload.get("changed") or {}).keys()),
                     "created_at": log.created_at,
                 }

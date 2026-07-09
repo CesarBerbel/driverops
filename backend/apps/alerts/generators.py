@@ -166,7 +166,7 @@ def check_os_stalled():
             NotifType.OS_STALLED,
             title=f"OS #{order.number} parada",
             message=(
-                f"A OS #{order.number} está em \"{order.get_status_display()}\" "
+                f'A OS #{order.number} está em "{order.get_status_display()}" '
                 f"há {days} dia(s)."
             ),
             related_type="WorkOrder",

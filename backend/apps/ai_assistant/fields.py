@@ -116,7 +116,9 @@ ACTIONS = [
     ),
 ]
 ACTION_KEYS = [key for key, *_rest in ACTIONS]
-ACTION_MAP = {key: (label, instruction, flag) for key, label, instruction, flag in ACTIONS}
+ACTION_MAP = {
+    key: (label, instruction, flag) for key, label, instruction, flag in ACTIONS
+}
 
 
 # --- prompt global padrão da oficina -----------------------------------------
@@ -240,7 +242,11 @@ FIELDS = [
         tone="technical",
         audience="internal",
         allowed_context=[
-            "customer_report", "diagnosis", "services", "parts", "history"
+            "customer_report",
+            "diagnosis",
+            "services",
+            "parts",
+            "history",
         ],
     ),
     _field(
@@ -295,7 +301,12 @@ FIELDS = [
         tone="objective",
         audience="internal",
         allowed_context=[
-            "order", "customer_report", "diagnosis", "services", "parts", "quote"
+            "order",
+            "customer_report",
+            "diagnosis",
+            "services",
+            "parts",
+            "quote",
         ],
     ),
     _field(

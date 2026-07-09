@@ -63,8 +63,21 @@ class _Balanced(HTMLParser):
 
     #: tags que não exigem fechamento
     VOID = {
-        "area", "base", "br", "col", "embed", "hr", "img", "input",
-        "link", "meta", "param", "source", "track", "wbr", "!doctype",
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+        "!doctype",
     }
 
     def __init__(self):
@@ -136,7 +149,11 @@ def validate_template_fields(*, channel, name, subject, html_content, text_conte
         readable = ", ".join(f"{{{{{key}}}}}" for key in unknown)
         errors.append(f"Variáveis inexistentes: {readable}.")
 
-    for label, value in (("assunto", subject), ("HTML", html_content), ("texto", text_content)):
+    for label, value in (
+        ("assunto", subject),
+        ("HTML", html_content),
+        ("texto", text_content),
+    ):
         if value and _has_dangling_braces(value):
             errors.append(f"Há chaves de variável mal formadas no campo {label}.")
 
@@ -149,7 +166,18 @@ def validate_template_fields(*, channel, name, subject, html_content, text_conte
 # --- HTML -> texto puro -------------------------------------------------------
 
 _BLOCK_TAGS = {
-    "p", "div", "br", "tr", "li", "h1", "h2", "h3", "h4", "table", "ul", "ol",
+    "p",
+    "div",
+    "br",
+    "tr",
+    "li",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "table",
+    "ul",
+    "ol",
 }
 
 

@@ -232,7 +232,9 @@ class NotificationRule(models.Model):
     def get_for(cls, notif_type):
         rule, _ = cls.objects.get_or_create(
             notif_type=notif_type,
-            defaults={"priority": DEFAULT_PRIORITY.get(notif_type, NotifPriority.IMPORTANT)},
+            defaults={
+                "priority": DEFAULT_PRIORITY.get(notif_type, NotifPriority.IMPORTANT)
+            },
         )
         return rule
 
@@ -241,7 +243,9 @@ class NotificationPreference(models.Model):
     """Preferências individuais do usuário (não ampliam permissões)."""
 
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_pref"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notification_pref",
     )
     muted_modules = models.JSONField(default=list, blank=True)
     only_assigned = models.BooleanField(default=False)

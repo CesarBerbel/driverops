@@ -17,12 +17,12 @@ from .models import (
     HIGH_PRIORITY,
     MODULE_PERMISSION,
     TYPE_MODULE,
-    NotifOrigin,
-    NotifPriority,
-    NotifStatus,
     Notification,
     NotificationPreference,
     NotificationRule,
+    NotifOrigin,
+    NotifPriority,
+    NotifStatus,
 )
 
 
@@ -96,10 +96,23 @@ def _send_internal_email(user, title, message):
     )
 
 
-def _upsert(user, *, notif_type, module, priority, fields, dedup_key, expires_at, origin, created_by):
+def _upsert(
+    user,
+    *,
+    notif_type,
+    module,
+    priority,
+    fields,
+    dedup_key,
+    expires_at,
+    origin,
+    created_by,
+):
     """Cria a notificação ou, se já existe (dedup) e ainda não lida, atualiza."""
     if dedup_key:
-        existing = Notification.objects.filter(recipient=user, dedup_key=dedup_key).first()
+        existing = Notification.objects.filter(
+            recipient=user, dedup_key=dedup_key
+        ).first()
         if existing:
             if existing.status == NotifStatus.UNREAD:
                 for key, value in fields.items():
@@ -148,7 +161,11 @@ def emit(
     if not (rule.is_enabled and rule.show_in_bell):
         return []
     module = TYPE_MODULE[notif_type]
-    prio = priority or rule.priority or DEFAULT_PRIORITY.get(notif_type, NotifPriority.IMPORTANT)
+    prio = (
+        priority
+        or rule.priority
+        or DEFAULT_PRIORITY.get(notif_type, NotifPriority.IMPORTANT)
+    )
     if expires_at is None and rule.auto_expire_days:
         expires_at = timezone.now() + timedelta(days=rule.auto_expire_days)
 
@@ -230,7 +247,9 @@ def create_manual(
             url=url,
             expires_at=expires_at,
             origin=NotifOrigin.MANUAL,
-            created_by=created_by if getattr(created_by, "is_authenticated", False) else None,
+            created_by=(
+                created_by if getattr(created_by, "is_authenticated", False) else None
+            ),
         )
         created.append(notif)
     return created

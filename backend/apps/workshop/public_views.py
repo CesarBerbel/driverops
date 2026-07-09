@@ -67,7 +67,8 @@ class PublicLandingView(APIView):
                     "zip_code": p.zip_code,
                 },
                 "services": [
-                    {"name": s["name"], "description": s["description"]} for s in services
+                    {"name": s["name"], "description": s["description"]}
+                    for s in services
                 ],
             }
         )

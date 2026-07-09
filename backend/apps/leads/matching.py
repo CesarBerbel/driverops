@@ -90,9 +90,7 @@ def match_vehicle(*, plate=""):
     if not plate:
         return {"found": False, "vehicle": None, "owner": None}
     vehicle = (
-        Vehicle.objects.select_related("customer")
-        .filter(license_plate=plate)
-        .first()
+        Vehicle.objects.select_related("customer").filter(license_plate=plate).first()
     )
     if vehicle is None:
         return {"found": False, "vehicle": None, "owner": None}

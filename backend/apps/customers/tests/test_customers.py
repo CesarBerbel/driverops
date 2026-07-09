@@ -173,7 +173,9 @@ def test_update_revalidates_document_against_new_type(auth_client):
 
 
 def test_create_rejects_duplicate_phone(auth_client):
-    Customer.objects.create(name="Primeiro", phone="11988887777", whatsapp="11988887777")
+    Customer.objects.create(
+        name="Primeiro", phone="11988887777", whatsapp="11988887777"
+    )
 
     response = auth_client.post(
         "/api/customers/",
@@ -238,13 +240,17 @@ def test_create_allows_empty_phone_and_document_for_many_customers(auth_client):
     Customer.objects.create(name="Sem contato")
 
     response = auth_client.post(
-        "/api/customers/", data={"name": "Outro sem contato"}, content_type="application/json"
+        "/api/customers/",
+        data={"name": "Outro sem contato"},
+        content_type="application/json",
     )
     assert response.status_code == 201
 
 
 def test_update_keeps_own_phone_without_conflict(auth_client):
-    customer = Customer.objects.create(name="Dono", phone="11988887777", whatsapp="11988887777")
+    customer = Customer.objects.create(
+        name="Dono", phone="11988887777", whatsapp="11988887777"
+    )
 
     response = auth_client.patch(
         f"/api/customers/{customer.id}/",
@@ -267,7 +273,9 @@ def test_delete_soft_deletes_and_reactivate_restores(auth_client):
     # Inativos somem da listagem padrão, aparecem com status=inactive.
     active_ids = [c["id"] for c in auth_client.get("/api/customers/").data]
     assert customer.id not in active_ids
-    inactive_ids = [c["id"] for c in auth_client.get("/api/customers/?status=inactive").data]
+    inactive_ids = [
+        c["id"] for c in auth_client.get("/api/customers/?status=inactive").data
+    ]
     assert customer.id in inactive_ids
 
     # Reativar restaura.

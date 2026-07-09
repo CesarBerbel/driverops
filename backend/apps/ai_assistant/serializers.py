@@ -5,7 +5,9 @@ from .models import AIFieldInstruction, AISettings, AIUsageLog
 
 
 class AISettingsSerializer(serializers.ModelSerializer):
-    provider_display = serializers.CharField(source="get_provider_display", read_only=True)
+    provider_display = serializers.CharField(
+        source="get_provider_display", read_only=True
+    )
     key_configured = serializers.SerializerMethodField()
     updated_by_name = serializers.SerializerMethodField()
 
@@ -52,17 +54,23 @@ class AISettingsSerializer(serializers.ModelSerializer):
 
     def validate_max_tokens(self, value):
         if not (1 <= value <= 8000):
-            raise serializers.ValidationError("Máximo de tokens deve estar entre 1 e 8000.")
+            raise serializers.ValidationError(
+                "Máximo de tokens deve estar entre 1 e 8000."
+            )
         return value
 
     def validate_timeout_seconds(self, value):
         if not (1 <= value <= 120):
-            raise serializers.ValidationError("O timeout deve estar entre 1 e 120 segundos.")
+            raise serializers.ValidationError(
+                "O timeout deve estar entre 1 e 120 segundos."
+            )
         return value
 
 
 class AIFieldInstructionSerializer(serializers.ModelSerializer):
-    field_key_display = serializers.CharField(source="get_field_key_display", read_only=True)
+    field_key_display = serializers.CharField(
+        source="get_field_key_display", read_only=True
+    )
     updated_by_name = serializers.SerializerMethodField()
 
     class Meta:

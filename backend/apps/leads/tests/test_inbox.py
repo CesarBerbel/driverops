@@ -32,7 +32,9 @@ def test_analyze_detects_divergent_vehicle(vehicle, customer):
     lead = SiteLead.objects.create(
         name="Outro", phone="11900000000", vehicle_plate="ABC1D23", consent=True
     )
-    other = type(customer).objects.create(name="Pedro", phone="11900000000", whatsapp="11900000000")
+    other = type(customer).objects.create(
+        name="Pedro", phone="11900000000", whatsapp="11900000000"
+    )
     analysis = analyze_lead(lead)
     assert analysis["vehicle_match"]["found"] is True
     assert analysis["verification"] == "divergent"
@@ -88,10 +90,19 @@ def test_inbox_list_indicators_are_not_n_plus_one(
 
 
 def test_note_and_contact(atendente_client, lead):
-    assert atendente_client.post(
-        f"{BASE}{lead.id}/note/", data={"text": "Ligou, sem resposta"}, content_type="application/json"
-    ).status_code == 200
-    resp = atendente_client.post(f"{BASE}{lead.id}/contact/", data={"channel": "telefone"}, content_type="application/json")
+    assert (
+        atendente_client.post(
+            f"{BASE}{lead.id}/note/",
+            data={"text": "Ligou, sem resposta"},
+            content_type="application/json",
+        ).status_code
+        == 200
+    )
+    resp = atendente_client.post(
+        f"{BASE}{lead.id}/contact/",
+        data={"channel": "telefone"},
+        content_type="application/json",
+    )
     assert resp.status_code == 200
     lead.refresh_from_db()
     assert lead.status == "contacted"
@@ -109,7 +120,9 @@ def test_create_customer_and_vehicle_then_convert_os(atendente_client, lead):
     lead.refresh_from_db()
     assert lead.linked_vehicle is not None
     # Converte em OS.
-    r3 = atendente_client.post(f"{BASE}{lead.id}/convert-os/", content_type="application/json")
+    r3 = atendente_client.post(
+        f"{BASE}{lead.id}/convert-os/", content_type="application/json"
+    )
     assert r3.status_code == 201
     lead.refresh_from_db()
     assert lead.work_order is not None
@@ -118,7 +131,9 @@ def test_create_customer_and_vehicle_then_convert_os(atendente_client, lead):
     assert AuditLog.objects.filter(action="site_lead.convert_os").exists()
 
 
-def test_create_customer_blocked_when_phone_already_exists(atendente_client, lead, customer):
+def test_create_customer_blocked_when_phone_already_exists(
+    atendente_client, lead, customer
+):
     # Já existe cliente com o telefone do pedido -> criar novo é bloqueado.
     lead.phone = customer.phone
     lead.save(update_fields=["phone"])
@@ -128,36 +143,56 @@ def test_create_customer_blocked_when_phone_already_exists(atendente_client, lea
 
 
 def test_convert_os_requires_customer_and_vehicle(atendente_client, lead):
-    resp = atendente_client.post(f"{BASE}{lead.id}/convert-os/", content_type="application/json")
+    resp = atendente_client.post(
+        f"{BASE}{lead.id}/convert-os/", content_type="application/json"
+    )
     assert resp.status_code == 400
 
 
 def test_convert_os_blocks_divergent_vehicle(atendente_client, customer, vehicle):
     # Pedido com a placa da Maria, mas cliente vinculado é outro.
-    lead = SiteLead.objects.create(name="Pedro", phone="11900001111", vehicle_plate="ABC1D23", consent=True)
-    other = type(customer).objects.create(name="Pedro", phone="11900001111", whatsapp="11900001111")
+    lead = SiteLead.objects.create(
+        name="Pedro", phone="11900001111", vehicle_plate="ABC1D23", consent=True
+    )
+    other = type(customer).objects.create(
+        name="Pedro", phone="11900001111", whatsapp="11900001111"
+    )
     lead.linked_customer = other
     lead.linked_vehicle = vehicle  # pertence à Maria
     lead.save()
-    resp = atendente_client.post(f"{BASE}{lead.id}/convert-os/", content_type="application/json")
+    resp = atendente_client.post(
+        f"{BASE}{lead.id}/convert-os/", content_type="application/json"
+    )
     assert resp.status_code == 400
     assert resp.json().get("code") == "vehicle_divergent"
 
 
 def test_convert_os_warns_open_os_until_confirmed(atendente_client, customer, vehicle):
     WorkOrder.objects.create(
-        customer=customer, vehicle=vehicle, opened_at="2026-07-04", customer_report="x", status="open"
+        customer=customer,
+        vehicle=vehicle,
+        opened_at="2026-07-04",
+        customer_report="x",
+        status="open",
     )
-    lead = SiteLead.objects.create(name="Maria", phone="11988887777", vehicle_plate="ABC1D23", consent=True)
+    lead = SiteLead.objects.create(
+        name="Maria", phone="11988887777", vehicle_plate="ABC1D23", consent=True
+    )
     lead.linked_customer = customer
     lead.linked_vehicle = vehicle
     lead.save()
     # Sem confirm: alerta.
-    r1 = atendente_client.post(f"{BASE}{lead.id}/convert-os/", content_type="application/json")
+    r1 = atendente_client.post(
+        f"{BASE}{lead.id}/convert-os/", content_type="application/json"
+    )
     assert r1.status_code == 400
     assert r1.json().get("code") == "open_os"
     # Com confirm: prossegue.
-    r2 = atendente_client.post(f"{BASE}{lead.id}/convert-os/", data={"confirm": True}, content_type="application/json")
+    r2 = atendente_client.post(
+        f"{BASE}{lead.id}/convert-os/",
+        data={"confirm": True},
+        content_type="application/json",
+    )
     assert r2.status_code == 201
 
 
@@ -171,11 +206,18 @@ def test_convert_permission_required(estoque_client, lead):
 def test_settings_get_and_config_permission(atendente_client, super_client):
     assert atendente_client.get("/api/lead-settings/").status_code == 200
     # Atendente não tem leads.config.
-    assert atendente_client.patch(
-        "/api/lead-settings/", data={"plate_required": False}, content_type="application/json"
-    ).status_code == 403
+    assert (
+        atendente_client.patch(
+            "/api/lead-settings/",
+            data={"plate_required": False},
+            content_type="application/json",
+        ).status_code
+        == 403
+    )
     resp = super_client.patch(
-        "/api/lead-settings/", data={"plate_required": False}, content_type="application/json"
+        "/api/lead-settings/",
+        data={"plate_required": False},
+        content_type="application/json",
     )
     assert resp.status_code == 200
     assert LeadSettings.get_solo().plate_required is False

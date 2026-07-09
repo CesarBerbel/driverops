@@ -59,12 +59,16 @@ def test_honeypot_blocks_spam():
 
 
 def test_consent_required_when_configured():
-    resp = Client().post(URL, data=_payload(consent=False), content_type="application/json")
+    resp = Client().post(
+        URL, data=_payload(consent=False), content_type="application/json"
+    )
     assert resp.status_code == 400
 
 
 def test_plate_required_by_default():
-    resp = Client().post(URL, data=_payload(vehicle_plate=""), content_type="application/json")
+    resp = Client().post(
+        URL, data=_payload(vehicle_plate=""), content_type="application/json"
+    )
     assert resp.status_code == 400
 
 
@@ -72,7 +76,9 @@ def test_plate_optional_when_allowed():
     conf = LeadSettings.get_solo()
     conf.allow_without_vehicle = True
     conf.save()
-    resp = Client().post(URL, data=_payload(vehicle_plate=""), content_type="application/json")
+    resp = Client().post(
+        URL, data=_payload(vehicle_plate=""), content_type="application/json"
+    )
     assert resp.status_code == 201
 
 

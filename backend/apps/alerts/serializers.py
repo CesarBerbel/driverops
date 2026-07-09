@@ -2,20 +2,26 @@ from rest_framework import serializers
 
 from .models import (
     TYPE_MODULE,
-    NotifPriority,
     Notification,
     NotificationPreference,
     NotificationRule,
+    NotifPriority,
 )
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    notif_type_display = serializers.CharField(source="get_notif_type_display", read_only=True)
+    notif_type_display = serializers.CharField(
+        source="get_notif_type_display", read_only=True
+    )
     module_display = serializers.CharField(source="get_module_display", read_only=True)
-    priority_display = serializers.CharField(source="get_priority_display", read_only=True)
+    priority_display = serializers.CharField(
+        source="get_priority_display", read_only=True
+    )
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     is_read = serializers.BooleanField(read_only=True)
-    audience_role_name = serializers.CharField(source="audience_role.name", read_only=True, default=None)
+    audience_role_name = serializers.CharField(
+        source="audience_role.name", read_only=True, default=None
+    )
 
     class Meta:
         model = Notification
@@ -47,7 +53,9 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 
 class NotificationRuleSerializer(serializers.ModelSerializer):
-    notif_type_display = serializers.CharField(source="get_notif_type_display", read_only=True)
+    notif_type_display = serializers.CharField(
+        source="get_notif_type_display", read_only=True
+    )
     module = serializers.SerializerMethodField()
 
     class Meta:

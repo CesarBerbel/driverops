@@ -10,10 +10,13 @@ from apps.notifications.rendering import (
 
 
 def test_render_substitutes_known_variables():
-    out = render("Olá, {{cliente.nome}}! OS {{ordem_servico.numero}}.", {
-        "cliente.nome": "João",
-        "ordem_servico.numero": "0042",
-    })
+    out = render(
+        "Olá, {{cliente.nome}}! OS {{ordem_servico.numero}}.",
+        {
+            "cliente.nome": "João",
+            "ordem_servico.numero": "0042",
+        },
+    )
     assert out == "Olá, João! OS 0042."
 
 
@@ -67,7 +70,11 @@ def test_validate_rejects_unknown_variable():
 
 def test_validate_requires_subject_and_html_for_email():
     errors = validate_template_fields(
-        channel="email", name="X", subject="", html_content="", text_content="",
+        channel="email",
+        name="X",
+        subject="",
+        html_content="",
+        text_content="",
     )
     assert any("assunto" in e for e in errors)
     assert any("HTML" in e for e in errors)
@@ -76,7 +83,11 @@ def test_validate_requires_subject_and_html_for_email():
 
 def test_validate_requires_text_for_non_email():
     errors = validate_template_fields(
-        channel="whatsapp", name="X", subject="", html_content="", text_content="",
+        channel="whatsapp",
+        name="X",
+        subject="",
+        html_content="",
+        text_content="",
     )
     assert any("conteúdo da mensagem" in e for e in errors)
 

@@ -7,11 +7,19 @@ interface CheckboxProps {
   onCheckedChange: (checked: boolean) => void;
   id?: string;
   disabled?: boolean;
+  className?: string;
   "aria-label"?: string;
 }
 
 // Checkbox acessível (role="checkbox"), sem dependência externa.
-export function Checkbox({ checked, onCheckedChange, id, disabled, ...rest }: CheckboxProps) {
+export function Checkbox({
+  checked,
+  onCheckedChange,
+  id,
+  disabled,
+  className,
+  ...rest
+}: CheckboxProps) {
   return (
     <button
       type="button"
@@ -24,6 +32,7 @@ export function Checkbox({ checked, onCheckedChange, id, disabled, ...rest }: Ch
         "flex size-4 shrink-0 items-center justify-center rounded border transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         checked ? "border-primary bg-primary text-primary-foreground" : "border-input",
         disabled && "cursor-not-allowed opacity-50",
+        className,
       )}
       {...rest}
     >

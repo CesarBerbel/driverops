@@ -14,7 +14,9 @@ GEN = "/api/ai/generate/"
 
 
 def _mock_generate(text="Sugestão gerada.", **kw):
-    return ProviderResult(text=text, model="claude-opus-4-8", input_tokens=12, output_tokens=8, **kw)
+    return ProviderResult(
+        text=text, model="claude-opus-4-8", input_tokens=12, output_tokens=8, **kw
+    )
 
 
 # --- configuração / metadados ---
@@ -69,11 +71,14 @@ def test_field_instructions_list(admin_client):
 
 def test_edit_field_requires_edit_permission(admin_client, super_client):
     tid = AIFieldInstruction.objects.get(field_key="diagnosis").id
-    assert admin_client.patch(
-        f"/api/ai/field-instructions/{tid}/",
-        data={"instruction": "nova"},
-        content_type="application/json",
-    ).status_code == 403
+    assert (
+        admin_client.patch(
+            f"/api/ai/field-instructions/{tid}/",
+            data={"instruction": "nova"},
+            content_type="application/json",
+        ).status_code
+        == 403
+    )
     resp = super_client.patch(
         f"/api/ai/field-instructions/{tid}/",
         data={"instruction": "Nova instrução técnica."},
@@ -111,7 +116,9 @@ def test_restore_field_default(super_client):
 
 def test_generate_success(tecnico_client, work_order):
     with patch("apps.ai_assistant.services.get_provider") as gp:
-        gp.return_value.generate.return_value = _mock_generate("O cliente relatou um barulho.")
+        gp.return_value.generate.return_value = _mock_generate(
+            "O cliente relatou um barulho."
+        )
         resp = tecnico_client.post(
             GEN,
             data={
@@ -180,7 +187,8 @@ def test_generate_provider_failure_preserves_text(tecnico_client):
 
 def test_generate_validates_input(tecnico_client):
     resp = tecnico_client.post(
-        GEN, data={"field": "diagnosis", "action": "improve", "text": "  "},
+        GEN,
+        data={"field": "diagnosis", "action": "improve", "text": "  "},
         content_type="application/json",
     )
     assert resp.status_code == 400
@@ -200,11 +208,14 @@ def test_test_prompt_requires_test_permission(super_client, admin_client):
     assert resp.status_code == 200
     assert resp.json()["suggestion"] == "Amostra."
     # Administrador não tem ai.test.
-    assert admin_client.post(
-        "/api/ai/test/",
-        data={"field": "diagnosis", "action": "improve", "text": "exemplo"},
-        content_type="application/json",
-    ).status_code == 403
+    assert (
+        admin_client.post(
+            "/api/ai/test/",
+            data={"field": "diagnosis", "action": "improve", "text": "exemplo"},
+            content_type="application/json",
+        ).status_code
+        == 403
+    )
 
 
 def test_logs_require_logs_permission(super_client, admin_client):

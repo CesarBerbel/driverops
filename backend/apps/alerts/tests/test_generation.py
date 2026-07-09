@@ -6,12 +6,12 @@ from decimal import Decimal
 import pytest
 
 from apps.alerts.models import (
-    NotifModule,
-    NotifPriority,
-    NotifType,
     Notification,
     NotificationPreference,
     NotificationRule,
+    NotifModule,
+    NotifPriority,
+    NotifType,
 )
 from apps.alerts.services import emit
 from apps.alerts.tests.conftest import make_user
@@ -40,7 +40,9 @@ def _order(status, expected_delivery=None):
     from apps.vehicles.models import Vehicle
 
     c = Customer.objects.create(name="Cliente OS")
-    v = Vehicle.objects.create(customer=c, license_plate="OSX1A23", brand="VW", model="Gol")
+    v = Vehicle.objects.create(
+        customer=c, license_plate="OSX1A23", brand="VW", model="Gol"
+    )
     return WorkOrder.objects.create(
         customer=c,
         vehicle=v,
@@ -100,9 +102,7 @@ def test_disabled_rule_emits_nothing(atendente):
     rule = NotificationRule.get_for(NotifType.SITE_LEAD_CREATED)
     rule.is_enabled = False
     rule.save()
-    created = emit(
-        NotifType.SITE_LEAD_CREATED, title="x", message="y", dedup_key="k1"
-    )
+    created = emit(NotifType.SITE_LEAD_CREATED, title="x", message="y", dedup_key="k1")
     assert created == []
 
 
@@ -126,8 +126,9 @@ def test_lead_sla_generator(atendente):
 
     old = _lead()
     # força created_at para o passado (auto_now_add não aceita no create).
-    from apps.leads.models import SiteLead
     from django.utils import timezone
+
+    from apps.leads.models import SiteLead
 
     SiteLead.objects.filter(pk=old.pk).update(
         created_at=timezone.now() - timedelta(hours=48)
@@ -140,7 +141,9 @@ def test_os_overdue_generator(atendente):
     from apps.alerts.generators import check_os_overdue
     from apps.orders.models import WorkOrder
 
-    _order(WorkOrder.Status.IN_PROGRESS, expected_delivery=date.today() - timedelta(days=2))
+    _order(
+        WorkOrder.Status.IN_PROGRESS, expected_delivery=date.today() - timedelta(days=2)
+    )
     created = check_os_overdue()
     assert len(created) == 1
     assert created[0].notif_type == NotifType.OS_OVERDUE
@@ -178,7 +181,10 @@ def test_stock_low_generator(atendente):
 
     cat = Category.objects.create(category_type="part", name="Filtros")
     Part.objects.create(
-        category=cat, name="Filtro de óleo", current_quantity=Decimal("1"), min_quantity=Decimal("5")
+        category=cat,
+        name="Filtro de óleo",
+        current_quantity=Decimal("1"),
+        min_quantity=Decimal("5"),
     )
     created = check_stock_low()
     # atendente não tem parts.view; ninguém recebe? cria estoquista.
@@ -194,7 +200,9 @@ def test_payments_today_generator(financeiro):
     from apps.orders.models import WorkOrder
 
     order = _order(WorkOrder.Status.FINISHED)
-    Payment.objects.create(order=order, amount=Decimal("150.00"), method="pix", paid_at=date.today())
+    Payment.objects.create(
+        order=order, amount=Decimal("150.00"), method="pix", paid_at=date.today()
+    )
     created = check_payments_today()
     assert len(created) >= 1
     assert created[0].notif_type == NotifType.PAYMENTS_TODAY

@@ -16,9 +16,7 @@ def _plate(vehicle):
 
 
 def _join_items(items):
-    return "; ".join(
-        (getattr(i, "description", "") or "") for i in items
-    ).strip("; ")
+    return "; ".join((getattr(i, "description", "") or "") for i in items).strip("; ")
 
 
 def _group_lines(order, group):
@@ -47,16 +45,26 @@ def _group_lines(order, group):
             f"OS nº: {order.number:04d}",
             f"Status: {order.get_status_display()}",
             f"Abertura: {order.opened_at}",
-            f"Previsão de entrega: {order.expected_delivery}"
-            if order.expected_delivery
-            else "",
+            (
+                f"Previsão de entrega: {order.expected_delivery}"
+                if order.expected_delivery
+                else ""
+            ),
         ]
     if group == "customer_report":
-        return [f"Relato do cliente: {order.customer_report}"] if order.customer_report else []
+        return (
+            [f"Relato do cliente: {order.customer_report}"]
+            if order.customer_report
+            else []
+        )
     if group == "diagnosis":
         return [f"Diagnóstico: {order.diagnosis}"] if order.diagnosis else []
     if group == "internal_notes":
-        return [f"Observações internas: {order.internal_notes}"] if order.internal_notes else []
+        return (
+            [f"Observações internas: {order.internal_notes}"]
+            if order.internal_notes
+            else []
+        )
     if group == "services":
         services = _join_items(
             list(order.service_items.all()) + list(order.package_items.all())

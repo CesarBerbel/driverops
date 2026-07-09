@@ -99,7 +99,11 @@ class WorkshopLogoView(APIView):
             )
         if not _looks_like_supported_image(file):
             return Response(
-                {"logo": ["O arquivo não é uma imagem válida (PNG, JPG, WEBP ou GIF)."]},
+                {
+                    "logo": [
+                        "O arquivo não é uma imagem válida (PNG, JPG, WEBP ou GIF)."
+                    ]
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         profile = WorkshopProfile.get_solo()

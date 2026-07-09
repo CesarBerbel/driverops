@@ -48,8 +48,20 @@ def get_instruction(field_key):
 
 
 def _log(
-    *, user, work_order, field_key, action, settings, result, status,
-    error_code="", error="", request=None, is_test=False, system="", user_text="",
+    *,
+    user,
+    work_order,
+    field_key,
+    action,
+    settings,
+    result,
+    status,
+    error_code="",
+    error="",
+    request=None,
+    is_test=False,
+    system="",
+    user_text="",
 ):
     log_texts = settings.log_texts
     return AIUsageLog.objects.create(
@@ -68,12 +80,21 @@ def _log(
         input_text=(user_text[:8000] if log_texts else ""),
         output_text=((result.text[:8000] if result else "") if log_texts else ""),
         ip=client_ip(request) if request is not None else None,
-        user_agent=(request.META.get("HTTP_USER_AGENT", "")[:500] if request is not None else ""),
+        user_agent=(
+            request.META.get("HTTP_USER_AGENT", "")[:500] if request is not None else ""
+        ),
     )
 
 
 def generate_suggestion(
-    *, user, field_key, action, original_text, work_order=None, request=None, is_test=False
+    *,
+    user,
+    field_key,
+    action,
+    original_text,
+    work_order=None,
+    request=None,
+    is_test=False,
 ):
     """Gera uma sugestão de IA para um campo/ação. Levanta erro tratável em falha.
 
@@ -108,19 +129,35 @@ def generate_suggestion(
         result = provider.generate(system=system, user=user_prompt)
     except AIProviderError as exc:
         _log(
-            user=user, work_order=work_order, field_key=field_key, action=action,
-            settings=settings, result=None, status=AIUsageLog.Status.FAILED,
-            error_code=exc.code, error=exc.detail or exc.user_message, request=request,
-            is_test=is_test, user_text=original_text or "",
+            user=user,
+            work_order=work_order,
+            field_key=field_key,
+            action=action,
+            settings=settings,
+            result=None,
+            status=AIUsageLog.Status.FAILED,
+            error_code=exc.code,
+            error=exc.detail or exc.user_message,
+            request=request,
+            is_test=is_test,
+            user_text=original_text or "",
         )
         raise
 
     if not result.text.strip():
         _log(
-            user=user, work_order=work_order, field_key=field_key, action=action,
-            settings=settings, result=result, status=AIUsageLog.Status.FAILED,
-            error_code="empty", error="Resposta vazia do provedor.", request=request,
-            is_test=is_test, user_text=original_text or "",
+            user=user,
+            work_order=work_order,
+            field_key=field_key,
+            action=action,
+            settings=settings,
+            result=result,
+            status=AIUsageLog.Status.FAILED,
+            error_code="empty",
+            error="Resposta vazia do provedor.",
+            request=request,
+            is_test=is_test,
+            user_text=original_text or "",
         )
         raise AIProviderError(
             "Não foi possível gerar a sugestão agora. O texto original foi preservado.",
@@ -128,9 +165,16 @@ def generate_suggestion(
         )
 
     log = _log(
-        user=user, work_order=work_order, field_key=field_key, action=action,
-        settings=settings, result=result, status=AIUsageLog.Status.SUCCESS,
-        request=request, is_test=is_test, user_text=original_text or "",
+        user=user,
+        work_order=work_order,
+        field_key=field_key,
+        action=action,
+        settings=settings,
+        result=result,
+        status=AIUsageLog.Status.SUCCESS,
+        request=request,
+        is_test=is_test,
+        user_text=original_text or "",
     )
     return Suggestion(
         suggestion=result.text.strip(),

@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.db import models
 
-from .events import EVENT_CHOICES, EVENT_CONTEXT
 from .defaults import default_template
+from .events import EVENT_CHOICES, EVENT_CONTEXT
 
 
 class NotificationTemplate(models.Model):

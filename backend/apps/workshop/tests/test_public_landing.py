@@ -53,8 +53,18 @@ def test_public_landing_never_exposes_sensitive_fields():
     # Só campos institucionais públicos; nada de notas internas, IE, responsável.
     assert set(body["workshop"]).issubset(
         {
-            "trade_name", "legal_name", "cnpj", "email", "phone", "whatsapp",
-            "website", "business_hours", "logo", "address_line", "city", "state",
+            "trade_name",
+            "legal_name",
+            "cnpj",
+            "email",
+            "phone",
+            "whatsapp",
+            "website",
+            "business_hours",
+            "logo",
+            "address_line",
+            "city",
+            "state",
             "zip_code",
         }
     )

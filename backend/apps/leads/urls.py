@@ -12,7 +12,9 @@ router = DefaultRouter()
 router.register("leads", LeadViewSet, basename="lead")
 
 urlpatterns = [
-    path("public/lead-config/", PublicLeadConfigView.as_view(), name="public-lead-config"),
+    path(
+        "public/lead-config/", PublicLeadConfigView.as_view(), name="public-lead-config"
+    ),
     path("public/leads/", PublicLeadCreateView.as_view(), name="public-lead-create"),
     path("lead-settings/", LeadSettingsView.as_view(), name="lead-settings"),
     *router.urls,

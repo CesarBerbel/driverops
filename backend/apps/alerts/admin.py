@@ -13,7 +13,13 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(NotificationRule)
 class NotificationRuleAdmin(admin.ModelAdmin):
-    list_display = ("notif_type", "is_enabled", "priority", "lead_time_hours", "stall_days")
+    list_display = (
+        "notif_type",
+        "is_enabled",
+        "priority",
+        "lead_time_hours",
+        "stall_days",
+    )
     list_filter = ("is_enabled",)
 
 

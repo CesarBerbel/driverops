@@ -6,7 +6,9 @@ from .rendering import validate_template_fields
 
 class NotificationTemplateSerializer(serializers.ModelSerializer):
     event_display = serializers.CharField(source="get_event_display", read_only=True)
-    channel_display = serializers.CharField(source="get_channel_display", read_only=True)
+    channel_display = serializers.CharField(
+        source="get_channel_display", read_only=True
+    )
     context_kind = serializers.CharField(read_only=True)
     updated_by_name = serializers.SerializerMethodField()
 

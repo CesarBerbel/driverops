@@ -127,7 +127,9 @@ class AnthropicProvider(BaseProvider):
                 code="refusal",
             )
         text = "".join(
-            block.text for block in message.content if getattr(block, "type", "") == "text"
+            block.text
+            for block in message.content
+            if getattr(block, "type", "") == "text"
         ).strip()
         usage = getattr(message, "usage", None)
         return ProviderResult(
@@ -146,7 +148,10 @@ class _HTTPProvider(BaseProvider):
 
         try:
             resp = requests.post(
-                url, headers=headers, json=payload, timeout=self.settings.timeout_seconds
+                url,
+                headers=headers,
+                json=payload,
+                timeout=self.settings.timeout_seconds,
             )
         except requests.Timeout as exc:
             raise AIProviderError(
@@ -215,7 +220,9 @@ class OpenAIProvider(_HTTPProvider):
 class GeminiProvider(_HTTPProvider):
     def generate(self, *, system, user):
         key = _read_key(self.settings)
-        base = (self.settings.base_url or "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
+        base = (
+            self.settings.base_url or "https://generativelanguage.googleapis.com/v1beta"
+        ).rstrip("/")
         url = f"{base}/models/{self.settings.model}:generateContent?key={key}"
         payload = {
             "systemInstruction": {"parts": [{"text": system}]},

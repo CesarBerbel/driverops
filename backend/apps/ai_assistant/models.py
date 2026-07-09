@@ -101,10 +101,22 @@ class AIFieldInstruction(models.Model):
     )
 
     _DEFAULT_FIELDS = [
-        "name", "description", "instruction", "tone", "detail_level", "audience",
-        "can_rewrite", "can_fix_grammar", "can_summarize", "can_expand",
-        "use_context", "allowed_context", "preserve_technical_terms",
-        "keep_first_person", "remove_slang", "visible_to_customer",
+        "name",
+        "description",
+        "instruction",
+        "tone",
+        "detail_level",
+        "audience",
+        "can_rewrite",
+        "can_fix_grammar",
+        "can_summarize",
+        "can_expand",
+        "use_context",
+        "allowed_context",
+        "preserve_technical_terms",
+        "keep_first_person",
+        "remove_slang",
+        "visible_to_customer",
     ]
 
     class Meta:

@@ -17,7 +17,9 @@ from apps.workshop.models import WorkshopProfile
 from .models import LeadEvent, LeadSettings, LeadStatus
 
 
-def record_event(lead, event_type, description="", *, actor=None, from_status="", to_status=""):
+def record_event(
+    lead, event_type, description="", *, actor=None, from_status="", to_status=""
+):
     LeadEvent.objects.create(
         lead=lead,
         actor=actor if getattr(actor, "is_authenticated", False) else None,
@@ -64,7 +66,9 @@ def notify_new_lead(lead):
     except Exception:  # pragma: no cover - o aviso interno nunca quebra o pedido
         import logging
 
-        logging.getLogger("apps.alerts").exception("Falha ao criar aviso de novo pedido")
+        logging.getLogger("apps.alerts").exception(
+            "Falha ao criar aviso de novo pedido"
+        )
 
     conf = LeadSettings.get_solo()
 
@@ -103,7 +107,9 @@ def notify_new_lead(lead):
             recipient_list=[lead.email],
             fail_silently=True,
         )
-        record_event(lead, LeadEvent.Type.NOTIFY, f"Confirmação enviada para {lead.email}.")
+        record_event(
+            lead, LeadEvent.Type.NOTIFY, f"Confirmação enviada para {lead.email}."
+        )
 
 
 # --- conversões ------------------------------------------------------------
@@ -141,7 +147,10 @@ def create_customer_from_lead(lead, *, actor):
     lead.linked_customer = customer
     lead.save(update_fields=["linked_customer", "updated_at"])
     record_event(
-        lead, LeadEvent.Type.CREATE_CUSTOMER, f"Cliente criado: {customer.name}.", actor=actor
+        lead,
+        LeadEvent.Type.CREATE_CUSTOMER,
+        f"Cliente criado: {customer.name}.",
+        actor=actor,
     )
     return customer
 
@@ -184,7 +193,12 @@ def create_os_from_lead(lead, *, actor):
             f"Solicitação: {lead.get_request_type_display()}."
         ),
     )
-    os_record_event(order, OrderEvent.Type.CREATED, "OS criada a partir de pedido do site", actor=actor)
+    os_record_event(
+        order,
+        OrderEvent.Type.CREATED,
+        "OS criada a partir de pedido do site",
+        actor=actor,
+    )
     lead.work_order = order
     lead.save(update_fields=["work_order", "updated_at"])
     record_event(
@@ -202,9 +216,14 @@ def create_quote_from_lead(lead, *, actor):
     from apps.quotes.services import create_quote_from_order
 
     order = lead.work_order or create_os_from_lead(lead, actor=actor)
-    quote = create_quote_from_order(order, user=actor if getattr(actor, "is_authenticated", False) else None)
+    quote = create_quote_from_order(
+        order, user=actor if getattr(actor, "is_authenticated", False) else None
+    )
     record_event(
-        lead, LeadEvent.Type.CONVERT_QUOTE, f"Orçamento #{quote.number:04d} gerado.", actor=actor
+        lead,
+        LeadEvent.Type.CONVERT_QUOTE,
+        f"Orçamento #{quote.number:04d} gerado.",
+        actor=actor,
     )
     set_status(lead, LeadStatus.CONVERTED_QUOTE, actor=actor)
     return quote
