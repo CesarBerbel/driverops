@@ -28,6 +28,8 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       target: dev
+    # Nome explícito para o serviço de cron reaproveitar a mesma imagem.
+    image: driverops-backend
     env_file:
       - .env
     volumes:
@@ -40,6 +42,36 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+
+  # Agendador dos avisos da Central de Notificações baseados em data (OS
+  # vencendo/atrasada, pagamentos, estoque etc.). Reaproveita a imagem do
+  # backend, mas troca o entrypoint para NÃO subir o servidor nem rodar
+  # migrations -- apenas espera o banco e chama o comando em loop. O comando é
+  # idempotente (deduplicação por chave), então repetir de hora em hora é
+  # seguro. Ajuste o intervalo com NOTIFICATIONS_SYNC_INTERVAL (segundos).
+  notifications-cron:
+    image: driverops-backend
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - ./scripts:/app/scripts:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        bash /app/scripts/wait-for-postgres.sh
+        # Dá um tempo para o backend concluir as migrations no primeiro boot.
+        sleep 20
+        while true; do
+          python manage.py sync_notifications || true
+          sleep "$${NOTIFICATIONS_SYNC_INTERVAL:-3600}"
+        done
+    restart: unless-stopped
 
   frontend:
     build:

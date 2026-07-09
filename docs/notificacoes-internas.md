@@ -76,12 +76,25 @@ tooltip. Notificações lidas ficam mais discretas; não lidas têm marcador.
 > prontas com saldo em aberto* — ambos dados reais e computáveis. Não há módulo
 > de **agenda**, então avisos de agendamento ficam fora desta versão.
 
-O comando é **idempotente** (deduplicação por `dedup_key`); pode ser agendado no
-cron sem gerar avisos repetidos:
+O comando é **idempotente** (deduplicação por `dedup_key`); pode ser executado à
+mão ou agendado sem gerar avisos repetidos:
 
 ```bash
 docker compose exec backend python manage.py sync_notifications
 ```
+
+### Agendamento (serviço `notifications-cron`)
+
+O `docker-compose.yml` já traz um serviço **`notifications-cron`** que sobe junto
+com o ambiente. Ele reaproveita a imagem do backend (`driverops-backend`), mas
+troca o *entrypoint* para **não** subir o servidor nem rodar migrations: apenas
+espera o banco e chama `sync_notifications` em loop. Assim, os avisos por data
+passam a ser gerados sozinhos.
+
+- Intervalo padrão: **1 hora**. Ajuste com a variável `NOTIFICATIONS_SYNC_INTERVAL`
+  (em segundos) no `.env`.
+- Os avisos por **evento** (novo pedido do site) não dependem deste serviço.
+- Como o comando é idempotente, reiniciar o serviço não duplica avisos.
 
 ## Deduplicação e agrupamento
 
