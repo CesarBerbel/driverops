@@ -35,6 +35,14 @@ def test_metadata_lists_fields_actions_context(admin_client):
     assert any(g["key"] == "diagnosis" for g in body["context_groups"])
 
 
+def test_default_provider_is_openai(db):
+    # O fixture autouse força anthropic; recriamos para checar o default do model.
+    AISettings.objects.all().delete()
+    conf = AISettings.get_solo()
+    assert conf.provider == "openai"
+    assert conf.model == "gpt-4o-mini"
+
+
 def test_settings_get_and_edit_permission(admin_client, super_client):
     assert admin_client.get("/api/ai/settings/").status_code == 200
     # Administrador tem view mas NÃO edit (crítica).

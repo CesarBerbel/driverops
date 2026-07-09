@@ -29,9 +29,9 @@ class AISettings(SingletonModel):
 
     is_active = models.BooleanField(default=False)
     provider = models.CharField(
-        max_length=20, choices=Provider.choices, default=Provider.ANTHROPIC
+        max_length=20, choices=Provider.choices, default=Provider.OPENAI
     )
-    model = models.CharField(max_length=80, default="claude-opus-4-8")
+    model = models.CharField(max_length=80, default="gpt-4o-mini")
     # Override de endpoint (provedor custom/gemini). Vazio = padrão do provedor.
     base_url = models.CharField(max_length=300, blank=True)
     # Nome da variável de ambiente com a chave. Vazio = padrão do provedor.

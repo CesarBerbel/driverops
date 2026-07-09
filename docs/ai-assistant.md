@@ -44,20 +44,24 @@ ambiente** que a contém (padrão de segredos do projeto). Defina a chave no `.e
 
 ```bash
 # .env (não versionado)
-ANTHROPIC_API_KEY=sk-ant-...      # provedor padrão
-# OPENAI_API_KEY=sk-...           # se usar OpenAI
+OPENAI_API_KEY=sk-...             # provedor padrão (OpenAI / gpt-4o-mini)
+# ANTHROPIC_API_KEY=sk-ant-...    # se usar Anthropic (Claude)
 # GEMINI_API_KEY=...              # se usar Gemini
 
 docker compose up -d backend      # recria o container para ler a nova variável
 ```
+
+> O provedor **padrão é a OpenAI** (`gpt-4o-mini`), lendo `OPENAI_API_KEY`. A IA
+> já vem **ativa** por padrão; troque o provedor/modelo em Configurações se
+> preferir Anthropic/Gemini.
 
 Na tela **Configurações → Assistente de IA** (com `ai.edit`):
 
 | Campo | Descrição |
 |---|---|
 | **Assistente de IA ativo** | Interruptor geral. Desligado, os botões de IA não aparecem na OS. |
-| **Provedor** | `Anthropic (Claude)` (padrão), `OpenAI`, `Gemini` ou `Outro (compatível OpenAI)`. |
-| **Modelo** | Ex.: `claude-opus-4-8` (padrão), `claude-haiku-4-5`, `gpt-4o-mini`. |
+| **Provedor** | `OpenAI` (padrão), `Anthropic (Claude)`, `Gemini` ou `Outro (compatível OpenAI)`. |
+| **Modelo** | Ex.: `gpt-4o-mini` (padrão), `gpt-4o`, `claude-opus-4-8`, `claude-haiku-4-5`. |
 | **Variável de ambiente da chave** | Em branco usa o padrão do provedor (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, …). O indicador mostra se a chave está configurada no servidor. |
 | **Endpoint** | Opcional. Para provedor *custom* (Azure OpenAI, OpenRouter, local) ou Gemini com `base_url` próprio. |
 | **Temperatura** | 0–2. **Ignorada** em modelos Anthropic Opus (não aceitam temperatura); usada em OpenAI/Gemini. |
