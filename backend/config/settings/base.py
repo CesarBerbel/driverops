@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "apps.ai_assistant",
     "apps.leads",
     "apps.alerts",
+    "apps.checkin",
 ]
 
 MIDDLEWARE = [

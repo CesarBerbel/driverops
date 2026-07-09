@@ -28,6 +28,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Serviços](services.md) | Cadastro de serviços, peças padrão, pacotes de serviços, cálculo de valores, soft delete |
 | [Ordens de Serviço](orders.md) | OS com veículo/cliente, itens cadastrados e avulsos, cálculo de valores, status, soft delete |
 | [Orçamento da OS](quotes.md) | Orçamento a partir da OS, snapshot/versões, PDF, aprovação física/tablet/link por e-mail, página pública e auditoria |
+| [Check-in do Veículo](checkin.md) | Aba de check-in de entrada: mapa de avarias, severidade, fotos, checklist, objetos, conclusão/reabertura, permissões e auditoria |
 | [Kanban OS](kanban.md) | Tela própria full width, colunas por status, drag and drop, transições, filtros, modal rápido e configuração de colunas |
 | [Financeiro](financial.md) | Pagamentos por OS, status financeiro, contas a receber, despesas, relatórios e resultado (DRE), permissões |
 | [Configurações da Oficina/OS](configuracoes.md) | Dados da oficina e configurações da OS (prazo padrão, termos para PDFs), singletons, permissões |

@@ -76,7 +76,7 @@ import { orderSchema, type OrderFormValues } from "../schemas";
 import type { OrderDiscountType, WorkOrder } from "../types";
 import { NotifyCustomerButton } from "./NotifyCustomerButton";
 import { OrderPdfButton } from "./OrderPdfButton";
-import { OrderAttachments } from "./OrderAttachments";
+import { VehicleCheckInTab } from "@/features/checkin/VehicleCheckInTab";
 import { OrderEventTimeline } from "./OrderEventTimeline";
 import { OrderLineList } from "./OrderLineList";
 import { OrderStatusStepper } from "./OrderStatusStepper";
@@ -273,9 +273,9 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
     { key: "items", label: "Serviços e peças", hasError: tabHasError("items") },
     {
       key: "photos",
-      label: "Fotos",
+      label: "Check-in",
       disabled: !isEditMode,
-      disabledHint: "Salve a OS para anexar fotos.",
+      disabledHint: "Salve a OS para fazer o check-in.",
     },
     {
       key: "budget",
@@ -868,9 +868,9 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
           </div>
         )}
 
-        {/* Aba 4 -- Fotos/anexos (apenas em OS já salva). */}
+        {/* Aba 4 -- Check-in do veículo (apenas em OS já salva). */}
         {activeTab === "photos" && orderId !== null && (
-          <OrderAttachments orderId={orderId} />
+          <VehicleCheckInTab orderId={orderId} />
         )}
 
         {/* Aba 5 -- Orçamento (apenas em OS já salva). */}

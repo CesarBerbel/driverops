@@ -180,6 +180,16 @@ MODULES = [
         ],
     ),
     (
+        "checkin",
+        "Check-in do Veículo",
+        [
+            ("view", "Visualizar o check-in", False),
+            ("edit", "Registrar/editar (avarias, fotos, itens, objetos)", False),
+            ("complete", "Concluir o check-in", False),
+            ("reopen", "Reabrir check-in concluído", True),
+        ],
+    ),
+    (
         "users",
         "Usuários",
         [("view", "Visualizar", False), ("manage", "Gerenciar usuários", True)],
@@ -239,6 +249,7 @@ ROLE_DEFS = {
                 "users.view",
                 "users.manage",
                 "alerts.configure",
+                "checkin.reopen",
             }
         ),
     },
@@ -265,6 +276,9 @@ ROLE_DEFS = {
             "leads.attend",
             "leads.convert",
             "alerts.view",
+            "checkin.view",
+            "checkin.edit",
+            "checkin.complete",
         ],
     },
     "tecnico": {
@@ -281,6 +295,8 @@ ROLE_DEFS = {
             "vehicles.view",
             "ai.use",
             "alerts.view",
+            "checkin.view",
+            "checkin.edit",
         ],
     },
     "estoque": {
