@@ -47,6 +47,22 @@ class KanbanSettingsView(_SoloSettingsView):
     serializer_class = KanbanSettingsSerializer
 
 
+def _looks_like_supported_image(file):
+    """Confere a assinatura (magic bytes) do arquivo, não só a extensão.
+
+    Evita que um arquivo com extensão de imagem mas conteúdo arbitrário (ex.:
+    SVG/HTML com script, ou um executável renomeado) seja aceito como logo.
+    """
+    head = file.read(12)
+    file.seek(0)
+    return (
+        head.startswith(b"\x89PNG\r\n\x1a\n")  # PNG
+        or head.startswith(b"\xff\xd8\xff")  # JPEG
+        or head[:6] in (b"GIF87a", b"GIF89a")  # GIF
+        or (head[:4] == b"RIFF" and head[8:12] == b"WEBP")  # WEBP
+    )
+
+
 class WorkshopLogoView(APIView):
     """Upload (POST) / remoção (DELETE) do logotipo da oficina.
 
@@ -79,6 +95,11 @@ class WorkshopLogoView(APIView):
         if file.size > self.MAX_SIZE:
             return Response(
                 {"logo": ["O arquivo deve ter no máximo 2 MB."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not _looks_like_supported_image(file):
+            return Response(
+                {"logo": ["O arquivo não é uma imagem válida (PNG, JPG, WEBP ou GIF)."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         profile = WorkshopProfile.get_solo()

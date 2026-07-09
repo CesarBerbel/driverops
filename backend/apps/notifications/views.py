@@ -150,7 +150,7 @@ class NotificationTemplateViewSet(
         return Response(
             {
                 "subject": render(template.subject, context),
-                "html": render(template.html_content, context),
+                "html": render(template.html_content, context, escape=True),
                 "text": render(template.text_content, context),
                 "errors": errors,
             }

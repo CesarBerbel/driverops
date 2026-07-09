@@ -66,6 +66,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.core.middleware.OriginCheckMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -199,3 +200,32 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 # Reset links expire after 1 hour (Django default is 3 days -- too long for a
 # password reset flow).
 PASSWORD_RESET_TIMEOUT = 60 * 60
+
+# ---------------------------------------------------------------------------
+# Logging (console estruturado; nível via LOG_LEVEL, default INFO)
+# ---------------------------------------------------------------------------
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+    "loggers": {
+        # Erros de request (500) do Django vão para o console com stack trace.
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        # Loggers das nossas apps (ex.: apps.alerts, apps.leads).
+        "apps": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
+    },
+}

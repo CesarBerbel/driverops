@@ -9,3 +9,6 @@ gunicorn>=23.0,<24.0
 xhtml2pdf>=0.2.16,<0.3
 # Assistente de IA para textos da OS (provedor padrão: Anthropic/Claude).
 anthropic>=0.40,<1.0
+# Observabilidade opcional em produção: só é inicializado se SENTRY_DSN estiver
+# definido (ver config/settings/prod.py). Sem DSN/instalação, é um no-op.
+sentry-sdk>=2.0,<3.0

@@ -83,7 +83,7 @@ def render_notification(event, channel, context):
         channel=channel,
         template=template,
         subject=render(fields["subject"], context),
-        html=render(fields["html_content"], context),
+        html=render(fields["html_content"], context, escape=True),
         text=render(fields["text_content"], context),
         errors=errors,
     )

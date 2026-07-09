@@ -25,6 +25,24 @@ def test_render_tolerates_spaces_in_braces():
     assert render("{{ cliente.nome }}", {"cliente.nome": "Ana"}) == "Ana"
 
 
+def test_render_escapes_values_when_requested():
+    # Valor com marcação não deve injetar HTML no corpo do e-mail.
+    out = render(
+        "<p>Olá, {{cliente.nome}}</p>",
+        {"cliente.nome": "<script>alert(1)</script>"},
+        escape=True,
+    )
+    assert "<script>" not in out
+    assert "&lt;script&gt;" in out
+    # O template em si (a tag <p>) permanece intacto.
+    assert out.startswith("<p>Olá,")
+
+
+def test_render_does_not_escape_plain_text():
+    out = render("{{cliente.nome}}", {"cliente.nome": "A & B"})
+    assert out == "A & B"
+
+
 def test_extract_variables():
     found = extract_variables("{{cliente.nome}} e {{veiculo.placa}}")
     assert found == {"cliente.nome", "veiculo.placa"}

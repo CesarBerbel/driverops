@@ -8,6 +8,7 @@
 """
 
 import re
+from html import escape as html_escape
 from html import unescape
 from html.parser import HTMLParser
 
@@ -32,14 +33,21 @@ def unknown_variables(*texts):
     return sorted(extract_variables(*texts) - ALL_VARIABLE_KEYS)
 
 
-def render(text, context):
-    """Substitui as variáveis conhecidas; chaves ausentes viram string vazia."""
+def render(text, context, *, escape=False):
+    """Substitui as variáveis conhecidas; chaves ausentes viram string vazia.
+
+    Com ``escape=True`` os **valores** substituídos são escapados como HTML
+    (o template em si não é tocado). Use ao renderizar o corpo HTML de e-mails,
+    pois parte do contexto vem de entrada não confiável (ex.: nome de cliente
+    criado a partir de um pedido público) e não deve injetar marcação.
+    """
     if not text:
         return ""
 
     def _sub(match):
         key = match.group(1)
-        return str(context.get(key, ""))
+        value = str(context.get(key, ""))
+        return html_escape(value) if escape else value
 
     return _VAR_RE.sub(_sub, text)
 

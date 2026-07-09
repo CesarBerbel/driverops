@@ -157,6 +157,19 @@ def test_logo_upload_rejects_non_image_extension(super_client, settings, tmp_pat
     assert "logo" in response.json()
 
 
+def test_logo_upload_rejects_fake_image_content(super_client, settings, tmp_path):
+    # Extensão de imagem, mas conteúdo é SVG/HTML (vetor de XSS) -> bloqueado
+    # pela checagem de magic bytes, não só da extensão.
+    settings.MEDIA_ROOT = str(tmp_path)
+    fake = SimpleUploadedFile(
+        "logo.png", b"<svg onload=alert(1)></svg>", content_type="image/png"
+    )
+    response = super_client.post("/api/workshop-profile/logo/", data={"logo": fake})
+    assert response.status_code == 400
+    assert "logo" in response.json()
+    assert not WorkshopProfile.get_solo().logo
+
+
 def test_logo_upload_requires_a_file(super_client):
     response = super_client.post("/api/workshop-profile/logo/", data={})
     assert response.status_code == 400
