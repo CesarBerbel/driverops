@@ -3,6 +3,7 @@ import { Inbox, KanbanSquare, LayoutDashboard, Plus, Truck } from "lucide-react"
 import { Link, NavLink } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/features/alerts/components/NotificationBell";
 import { usePermissionCheck } from "@/features/auth/usePermission";
 import { getLeadsPendingCount } from "@/features/leads/api";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,8 @@ export function Topbar() {
           </Link>
         </Button>
       )}
+
+      {can("alerts.view") && <NotificationBell />}
 
       <UserMenu />
     </header>

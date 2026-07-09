@@ -169,6 +169,17 @@ MODULES = [
         ],
     ),
     (
+        "alerts",
+        "Central de Notificações",
+        [
+            ("view", "Ver a central e os avisos", False),
+            ("configure", "Configurar avisos internos", True),
+            ("send_manual", "Enviar aviso manual", False),
+            ("view_financial", "Ver avisos financeiros", False),
+            ("view_admin", "Ver avisos administrativos", False),
+        ],
+    ),
+    (
         "users",
         "Usuários",
         [("view", "Visualizar", False), ("manage", "Gerenciar usuários", True)],
@@ -227,6 +238,7 @@ ROLE_DEFS = {
                 "quotes.cancel",
                 "users.view",
                 "users.manage",
+                "alerts.configure",
             }
         ),
     },
@@ -252,6 +264,7 @@ ROLE_DEFS = {
             "leads.view",
             "leads.attend",
             "leads.convert",
+            "alerts.view",
         ],
     },
     "tecnico": {
@@ -267,6 +280,7 @@ ROLE_DEFS = {
             "customers.view",
             "vehicles.view",
             "ai.use",
+            "alerts.view",
         ],
     },
     "estoque": {
@@ -275,7 +289,7 @@ ROLE_DEFS = {
         "codes": _codes_for_modules(["parts"], ["view", "create", "edit", "reactivate"])
         + ["parts.stock_move"]
         + _codes_for_modules(["suppliers"])
-        + ["dashboard.view", "orders.view"],
+        + ["dashboard.view", "orders.view", "alerts.view"],
     },
     "financeiro": {
         "name": "Financeiro",
@@ -290,6 +304,8 @@ ROLE_DEFS = {
             "reports.export",
             "orders.view",
             "quotes.view",
+            "alerts.view",
+            "alerts.view_financial",
         ],
     },
 }

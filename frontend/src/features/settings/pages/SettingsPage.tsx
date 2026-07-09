@@ -1,5 +1,6 @@
 import {
   Bell,
+  BellRing,
   Building2,
   ChevronRight,
   ClipboardList,
@@ -64,6 +65,14 @@ const SETTINGS_CARDS = [
     description:
       "Controle o formulário público de contato e o comportamento dos pedidos recebidos pelo site.",
     permission: "leads.view",
+  },
+  {
+    to: "/settings/notifications",
+    icon: BellRing,
+    title: "Central de Notificações",
+    description:
+      "Escolha quais avisos internos a oficina recebe (pedidos, OS, pagamentos, estoque) e ajuste suas preferências.",
+    permission: "alerts.view",
   },
   {
     to: "/users",

@@ -22,6 +22,13 @@ vi.mock("@/features/leads/api", () => ({
   getLeadsPendingCount: vi.fn().mockResolvedValue(0),
 }));
 
+vi.mock("@/features/alerts/api", () => ({
+  getUnreadCount: vi.fn().mockResolvedValue(0),
+  listNotifications: vi.fn().mockResolvedValue([]),
+  markAllRead: vi.fn(),
+  markRead: vi.fn(),
+}));
+
 function renderTopbar() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(

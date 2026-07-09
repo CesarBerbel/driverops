@@ -55,6 +55,17 @@ def _workshop_name():
 def notify_new_lead(lead):
     """Registra o pedido, avisa a oficina (e-mail opcional) e responde o cliente."""
     record_event(lead, LeadEvent.Type.CREATED, "Pedido recebido pelo site.")
+
+    # Central de Notificações interna: aviso operacional para a equipe.
+    try:
+        from apps.alerts.generators import notify_site_lead_created
+
+        notify_site_lead_created(lead)
+    except Exception:  # pragma: no cover - o aviso interno nunca quebra o pedido
+        import logging
+
+        logging.getLogger("apps.alerts").exception("Falha ao criar aviso de novo pedido")
+
     conf = LeadSettings.get_solo()
 
     if conf.notify_email:
