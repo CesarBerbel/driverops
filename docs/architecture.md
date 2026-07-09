@@ -59,7 +59,7 @@ as categorias de clientes, peças e serviços -- a unicidade do nome é escopada
 `(category_type, name)`, e `is_active` nunca é exposto como um campo de "status" na API pública,
 apenas usado para filtrar a listagem e decidir se a categoria pode ser reativada; ver
 [Categorias](categories.md)), `customers`
-(cadastro de clientes com endereço completo, sem exclusão -- ver [Clientes](customers.md)), `vehicles`
+(cadastro de clientes com endereço completo e soft delete -- ver [Clientes](customers.md)), `vehicles`
 (cadastro de veículos com soft delete, obrigatoriamente vinculado a um cliente -- ver
 [Veículos](vehicles.md)), `suppliers` (cadastro de fornecedores com endereço completo e soft
 delete, mesmo formato de campos de `customers` -- ver [Fornecedores](suppliers.md)), `parts`
@@ -71,6 +71,15 @@ os grupos de período -- ver [Dashboard](dashboard.md)). A listagem de OS també
 `?board=operational` (só OS no fluxo, sem finalizadas/canceladas) e `?period=` para as visões do
 Dashboard. Ver também [Segurança](security.md) para as decisões por trás do
 esquema de autenticação.
+
+**Paginação (opt-in).** As listagens do DRF usam `OptionalPageNumberPagination`
+(`apps/core/pagination.py`): sem o parâmetro `?page` a resposta é a lista completa
+(comportamento histórico, consumido pelo frontend como array); com `?page=N`
+(e opcional `?page_size=`, máx. 200) a resposta vira o envelope paginado
+`{count, next, previous, results}`. Assim qualquer endpoint é paginável sob
+demanda sem exigir mudança simultânea no frontend, que pode adotar página a
+página. Observabilidade e logging estruturado ficam em `LOGGING` (nível por
+`LOG_LEVEL`), com captura de erros opcional via Sentry em produção.
 
 `apps.vehicles` depende de `apps.customers` (FK `Vehicle.customer`), nunca o contrário -- o
 `CustomerViewSet.get_queryset()` anota `vehicle_count` (contagem de veículos ativos de cada cliente)

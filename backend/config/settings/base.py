@@ -148,6 +148,10 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # Paginação opt-in: só pagina quando o cliente envia ?page (ver
+    # apps/core/pagination.py). Sem ?page a listagem volta completa, como hoje.
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.OptionalPageNumberPagination",
+    "PAGE_SIZE": 50,
     "DEFAULT_THROTTLE_RATES": {
         "login": "5/min",
         "password_reset": "3/min",

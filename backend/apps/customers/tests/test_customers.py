@@ -287,6 +287,27 @@ def test_db_unique_constraint_blocks_duplicate_phone(auth_client):
             Customer.objects.create(name="Segundo", phone="11955554444")
 
 
+def test_list_without_page_param_returns_full_array(auth_client):
+    for i in range(3):
+        Customer.objects.create(name=f"Cliente {i}")
+    resp = auth_client.get("/api/customers/")
+    assert resp.status_code == 200
+    # Sem ?page -> lista crua (comportamento historico preservado).
+    assert isinstance(resp.data, list)
+    assert len(resp.data) == 3
+
+
+def test_list_paginates_on_demand_with_page_param(auth_client):
+    for i in range(3):
+        Customer.objects.create(name=f"Cliente {i}")
+    resp = auth_client.get("/api/customers/?page=1&page_size=2")
+    assert resp.status_code == 200
+    # Com ?page -> envelope paginado.
+    assert resp.data["count"] == 3
+    assert len(resp.data["results"]) == 2
+    assert resp.data["next"] is not None
+
+
 def test_list_includes_vehicle_count_of_active_vehicles_only(auth_client):
     from apps.vehicles.models import Vehicle
 
