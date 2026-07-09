@@ -46,11 +46,21 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { getLead, leadActions } from "../api";
 import { STATUS_OPTIONS, timeSince } from "../constants";
-import type { LeadDetail } from "../types";
+import type { CustomerBrief, LeadDetail } from "../types";
 
 function errorCode(err: unknown): string | undefined {
   const anyErr = err as { response?: { data?: { code?: string } } };
   return anyErr?.response?.data?.code;
+}
+
+/** Dado que diferencia clientes homônimos na hora de vincular (doc/telefone/e-mail). */
+function candidateHint(c: CustomerBrief): string {
+  const parts: string[] = [];
+  if (c.document) parts.push(c.document);
+  const phone = c.phone || c.whatsapp;
+  if (phone) parts.push(formatPhone(phone));
+  if (c.email) parts.push(c.email);
+  return parts.join(" · ");
 }
 
 export function LeadDetailPage() {
@@ -211,30 +221,43 @@ export function LeadDetailPage() {
                   Possível cliente: {suggestedCustomer.name}. Revise antes de criar novo cadastro.
                 </p>
               ) : a.customer_match.confidence === "conflict" ? (
-                <p className="text-sm text-amber-700">Dados conflitantes — vários clientes possíveis.</p>
+                <p className="text-sm text-amber-700">
+                  Mais de um cliente com estes dados. Escolha abaixo o cliente correto para vincular.
+                </p>
               ) : (
                 <p className="text-sm text-muted-foreground">Cliente novo (sem correspondência).</p>
               )}
               {canConvert && !lead.linked_customer && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {suggestedCustomer && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={action.isPending}
-                      onClick={() =>
-                        action.mutate(() => leadActions.linkCustomer(id, suggestedCustomer.id))
-                      }
-                    >
-                      Vincular ao existente
-                    </Button>
+                <div className="mt-2 space-y-2">
+                  {a.customer_match.candidates.length > 0 && (
+                    <div className="flex flex-col gap-1">
+                      {a.customer_match.candidates.map((cand) => (
+                        <Button
+                          key={cand.id}
+                          size="sm"
+                          variant="outline"
+                          className="h-auto justify-start py-1.5 text-left"
+                          disabled={action.isPending}
+                          onClick={() => action.mutate(() => leadActions.linkCustomer(id, cand.id))}
+                        >
+                          <span>
+                            Vincular a <strong>{cand.name}</strong>
+                            {candidateHint(cand) && (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({candidateHint(cand)})
+                              </span>
+                            )}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
                   )}
                   <Button
                     size="sm"
                     disabled={action.isPending}
                     onClick={() => action.mutate(() => leadActions.createCustomer(id))}
                   >
-                    <UserPlus className="size-4" /> Criar cliente
+                    <UserPlus className="size-4" /> Criar cliente novo
                   </Button>
                 </div>
               )}
