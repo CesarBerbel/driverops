@@ -21,7 +21,15 @@ export interface WorkshopProfile {
   country: string;
   business_hours: string;
   notes: string;
+  testimonials: WorkshopTestimonial[];
   updated_at: string;
+}
+
+export interface WorkshopTestimonial {
+  name: string;
+  service: string;
+  rating: number;
+  quote: string;
 }
 
 // The logo is uploaded/removed via a dedicated endpoint, not the profile PATCH.

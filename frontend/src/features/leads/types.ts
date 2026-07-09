@@ -143,7 +143,6 @@ export interface LeadSettings {
   auto_reply_enabled: boolean;
   notify_email: boolean;
   allow_create_os: boolean;
-  allow_create_appointment: boolean;
   require_review_on_divergence: boolean;
   block_conversion_when_vehicle_other_customer: boolean;
   updated_at: string;

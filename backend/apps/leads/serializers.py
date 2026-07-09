@@ -96,7 +96,6 @@ class LeadSettingsSerializer(serializers.ModelSerializer):
             "auto_reply_enabled",
             "notify_email",
             "allow_create_os",
-            "allow_create_appointment",
             "require_review_on_divergence",
             "block_conversion_when_vehicle_other_customer",
             "updated_at",

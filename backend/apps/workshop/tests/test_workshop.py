@@ -58,6 +58,26 @@ def test_superuser_updates_and_normalizes_brazilian_fields(super_client):
     assert body["state"] == "SP"
 
 
+def test_testimonials_are_sanitized_on_save(super_client):
+    response = super_client.patch(
+        "/api/workshop-profile/",
+        data={
+            "trade_name": "Oficina X",
+            "testimonials": [
+                {"name": "  Ana  ", "service": "Freios", "rating": 9, "quote": "Top!"},
+                {"name": "", "quote": "sem nome -> descartado"},
+                {"name": "Bruno", "quote": ""},  # sem quote -> descartado
+            ],
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    testimonials = response.json()["testimonials"]
+    assert len(testimonials) == 1  # só o válido sobrou
+    assert testimonials[0]["name"] == "Ana"  # trim aplicado
+    assert testimonials[0]["rating"] == 5  # clamp 1..5
+
+
 def test_trade_name_is_required(super_client):
     response = super_client.patch(
         "/api/workshop-profile/",

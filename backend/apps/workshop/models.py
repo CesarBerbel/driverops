@@ -68,6 +68,9 @@ class WorkshopProfile(SingletonModel):
     # Horário de funcionamento (texto livre), usado nas notificações ao cliente.
     business_hours = models.CharField(max_length=200, blank=True)
     notes = models.TextField(blank=True)
+    # Depoimentos exibidos na landing pública. Lista de objetos
+    # {name, service, rating, quote}. Vazio => a landing usa exemplos padrão.
+    testimonials = models.JSONField(default=list, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

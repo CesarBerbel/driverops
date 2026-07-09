@@ -30,6 +30,8 @@ class LeadStatus(models.TextChoices):
     CONTACTED = "contacted", "Cliente contatado"
     AWAITING_RETURN = "awaiting_return", "Aguardando retorno"
     CONVERTED_CUSTOMER = "converted_customer", "Convertido em cliente"
+    # Status manual: o projeto não tem módulo de agenda; marcar aqui indica que
+    # o atendente agendou por fora (telefone/WhatsApp). Não há criação automática.
     CONVERTED_APPOINTMENT = "converted_appointment", "Convertido em agendamento"
     CONVERTED_OS = "converted_os", "Convertido em OS"
     CONVERTED_QUOTE = "converted_quote", "Convertido em orçamento"
@@ -62,7 +64,6 @@ class LeadSettings(SingletonModel):
     auto_reply_enabled = models.BooleanField(default=False)
     notify_email = models.BooleanField(default=False)
     allow_create_os = models.BooleanField(default=True)
-    allow_create_appointment = models.BooleanField(default=True)
     require_review_on_divergence = models.BooleanField(default=True)
     block_conversion_when_vehicle_other_customer = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)

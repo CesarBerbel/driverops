@@ -19,7 +19,15 @@ export interface PublicService {
   description: string;
 }
 
+export interface PublicTestimonial {
+  name: string;
+  service: string;
+  rating: number;
+  quote: string;
+}
+
 export interface LandingData {
   workshop: PublicWorkshop;
   services: PublicService[];
+  testimonials?: PublicTestimonial[];
 }

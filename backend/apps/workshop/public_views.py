@@ -70,5 +70,9 @@ class PublicLandingView(APIView):
                     {"name": s["name"], "description": s["description"]}
                     for s in services
                 ],
+                # Depoimentos configurados pela oficina (vazio => landing usa exemplos).
+                "testimonials": (
+                    p.testimonials if isinstance(p.testimonials, list) else []
+                ),
             }
         )

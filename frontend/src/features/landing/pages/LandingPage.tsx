@@ -93,6 +93,10 @@ export function LandingPage() {
       ? data.services.map((s) => ({ icon: Wrench, title: s.name, description: s.description }))
       : SERVICES_FALLBACK;
 
+  // Depoimentos configurados pela oficina; na ausência, usa os exemplos.
+  const testimonials =
+    data?.testimonials && data.testimonials.length > 0 ? data.testimonials : TESTIMONIALS;
+
   if (isLoading) {
     return (
       <div className="grid min-h-svh place-items-center bg-[#0b0d12] text-white">
@@ -329,7 +333,7 @@ export function LandingPage() {
           <h2 className="text-2xl font-bold sm:text-3xl">O que nossos clientes dizem</h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {TESTIMONIALS.map((t) => (
+          {testimonials.map((t) => (
             <figure
               key={t.name}
               className="flex flex-col rounded-xl border border-white/10 bg-white/[0.03] p-5"

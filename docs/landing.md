@@ -25,7 +25,7 @@ A página consome dados **reais** quando configurados, com **fallback seguro**:
 | Nome, logo, contatos, endereço, horário, CNPJ | Configurações → Dados da Oficina (`WorkshopProfile`) | Nome genérico + mark tipográfico; seções/itens vazios são ocultados |
 | Serviços | Serviços **ativos** (`Service.is_active`) | Catálogo padrão de serviços com ícones |
 | Marcas | Lista estática organizada | Mensagem neutra se vazia |
-| Depoimentos | Estrutura pronta (exemplos por ora) | — |
+| Depoimentos | Configurados em Configurações → Dados da Oficina (`WorkshopProfile.testimonials`) e servidos pelo endpoint público | Exemplos padrão quando não há nenhum cadastrado |
 
 O endpoint público expõe **apenas** campos institucionais seguros (nunca notas
 internas, inscrição estadual, responsável, etc.).

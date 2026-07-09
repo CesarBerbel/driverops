@@ -46,9 +46,36 @@ class WorkshopProfileSerializer(serializers.ModelSerializer):
             "country",
             "business_hours",
             "notes",
+            "testimonials",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]
+
+    def validate_testimonials(self, value):
+        """Normaliza a lista de depoimentos (texto puro, campos e limites)."""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Formato inválido.")
+        cleaned = []
+        for item in value[:12]:  # limite razoável de depoimentos
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name", "")).strip()[:80]
+            quote = str(item.get("quote", "")).strip()[:400]
+            if not name or not quote:
+                continue
+            try:
+                rating = int(item.get("rating", 5))
+            except (TypeError, ValueError):
+                rating = 5
+            cleaned.append(
+                {
+                    "name": name,
+                    "service": str(item.get("service", "")).strip()[:80],
+                    "rating": min(5, max(1, rating)),
+                    "quote": quote,
+                }
+            )
+        return cleaned
 
     def validate_trade_name(self, value):
         value = value.strip()

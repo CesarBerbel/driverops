@@ -25,7 +25,6 @@ const TOGGLES: { key: keyof LeadSettings; label: string; help?: string }[] = [
   { key: "auto_reply_enabled", label: "Enviar confirmação automática ao cliente" },
   { key: "notify_email", label: "Notificar a oficina por e-mail a cada pedido" },
   { key: "allow_create_os", label: "Permitir criar OS a partir do pedido" },
-  { key: "allow_create_appointment", label: "Permitir criar agendamento a partir do pedido" },
   { key: "require_review_on_divergence", label: "Exigir revisão manual em caso de divergência" },
   { key: "block_conversion_when_vehicle_other_customer", label: "Bloquear conversão quando o veículo pertence a outro cliente" },
 ];

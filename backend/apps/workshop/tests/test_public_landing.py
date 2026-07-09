@@ -20,6 +20,17 @@ def test_public_landing_is_accessible_without_auth():
     assert "services" in body
 
 
+def test_public_landing_includes_configured_testimonials():
+    profile = WorkshopProfile.get_solo()
+    profile.testimonials = [
+        {"name": "Ricardo M.", "service": "Revisão", "rating": 5, "quote": "Ótimo!"}
+    ]
+    profile.save()
+    body = Client().get(URL).json()
+    assert body["testimonials"][0]["name"] == "Ricardo M."
+    assert body["testimonials"][0]["rating"] == 5
+
+
 def test_public_landing_returns_workshop_data():
     profile = WorkshopProfile.get_solo()
     profile.trade_name = "Bandeirantes Auto Mecânica"

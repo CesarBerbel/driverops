@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ArrowLeft, ImageOff, Loader2, Lock, Trash2, Upload } from "lucide-react";
 import { useRef } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -51,6 +51,7 @@ function toFormValues(profile: WorkshopProfile): WorkshopProfileFormValues {
     country: profile.country || "Brasil",
     business_hours: profile.business_hours,
     notes: profile.notes,
+    testimonials: profile.testimonials ?? [],
   };
 }
 
@@ -244,6 +245,8 @@ function WorkshopProfileForm({
     resolver: zodResolver(workshopProfileSchema),
     defaultValues,
   });
+
+  const testimonials = useFieldArray({ control, name: "testimonials" });
 
   const mutation = useMutation({
     mutationFn: updateWorkshopProfile,
@@ -457,6 +460,82 @@ function WorkshopProfileForm({
           </CardHeader>
           <CardContent>
             <Textarea id="notes" rows={4} {...register("notes")} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base">Depoimentos da landing</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Exibidos na página pública. Sem depoimentos, mostramos exemplos padrão.
+              </p>
+            </div>
+            {canEdit && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  testimonials.append({ name: "", service: "", rating: 5, quote: "" })
+                }
+              >
+                Adicionar
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {testimonials.fields.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum depoimento cadastrado.</p>
+            ) : (
+              testimonials.fields.map((field, index) => (
+                <div key={field.id} className="space-y-2 rounded-md border p-3">
+                  <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                    <Input
+                      placeholder="Nome (ex.: Ricardo M.)"
+                      {...register(`testimonials.${index}.name`)}
+                    />
+                    <Input
+                      placeholder="Serviço (ex.: Revisão preventiva)"
+                      {...register(`testimonials.${index}.service`)}
+                    />
+                    <Controller
+                      control={control}
+                      name={`testimonials.${index}.rating`}
+                      render={({ field: rf }) => (
+                        <Input
+                          type="number"
+                          min={1}
+                          max={5}
+                          className="w-20"
+                          aria-label="Nota (1 a 5)"
+                          value={rf.value ?? 5}
+                          onChange={(e) => rf.onChange(Number(e.target.value))}
+                        />
+                      )}
+                    />
+                  </div>
+                  <Textarea
+                    rows={2}
+                    placeholder="Depoimento do cliente"
+                    {...register(`testimonials.${index}.quote`)}
+                  />
+                  {canEdit && (
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => testimonials.remove(index)}
+                      >
+                        <Trash2 className="size-4" /> Remover
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </fieldset>

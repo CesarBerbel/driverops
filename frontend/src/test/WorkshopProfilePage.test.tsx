@@ -36,6 +36,7 @@ function profile(overrides: Partial<WorkshopProfile> = {}): WorkshopProfile {
     country: "Brasil",
     business_hours: "",
     notes: "",
+    testimonials: [],
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };

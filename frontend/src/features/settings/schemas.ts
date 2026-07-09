@@ -29,6 +29,16 @@ export const workshopProfileSchema = z.object({
   country: z.string().optional(),
   business_hours: z.string().optional(),
   notes: z.string().optional(),
+  testimonials: z
+    .array(
+      z.object({
+        name: z.string().trim().max(80),
+        service: z.string().trim().max(80),
+        rating: z.number().int().min(1).max(5),
+        quote: z.string().trim().max(400),
+      }),
+    )
+    .optional(),
 });
 
 export type WorkshopProfileFormValues = z.infer<typeof workshopProfileSchema>;
