@@ -96,6 +96,15 @@ def test_create_customer_and_vehicle_then_convert_os(atendente_client, lead):
     assert AuditLog.objects.filter(action="site_lead.convert_os").exists()
 
 
+def test_create_customer_blocked_when_phone_already_exists(atendente_client, lead, customer):
+    # Já existe cliente com o telefone do pedido -> criar novo é bloqueado.
+    lead.phone = customer.phone
+    lead.save(update_fields=["phone"])
+    resp = atendente_client.post(f"{BASE}{lead.id}/create-customer/")
+    assert resp.status_code == 400
+    assert resp.json().get("code") == "customer_exists"
+
+
 def test_convert_os_requires_customer_and_vehicle(atendente_client, lead):
     resp = atendente_client.post(f"{BASE}{lead.id}/convert-os/", content_type="application/json")
     assert resp.status_code == 400

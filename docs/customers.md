@@ -90,11 +90,22 @@ UX, mas quem decide é a API):
 - Documento, se preenchido, precisa ter 11 dígitos (CPF) ou 14 dígitos (CNPJ), de acordo com o tipo
   de cliente selecionado no mesmo request.
 - E-mail, se preenchido, precisa ter formato válido.
+- **Telefone/WhatsApp e documento são únicos por cliente.** Um número de telefone identifica um único
+  cliente: telefone e WhatsApp compartilham o mesmo espaço de números, então o sistema recusa cadastrar
+  (ou editar) um cliente com um número já usado por outro — seja no telefone, seja no WhatsApp. O
+  documento, quando informado, também não pode se repetir. A regra vale tanto na API de clientes quanto
+  na criação de cliente a partir de um [Pedido do Site](pedidos-site.md) (que orienta a vincular ao
+  cliente existente em vez de duplicar). A validação fica centralizada em
+  [`find_customer_conflicts`](../backend/apps/customers/utils.py) e é aplicada no serializer, no
+  `Customer.clean()` (admin) e no serviço de conversão de leads.
 
 ## WhatsApp
 
-O campo WhatsApp é independente do Telefone (um cliente pode ter números diferentes para cada um) e
-usa a mesma máscara/normalização. **Em todo lugar que o número aparece, ele é um link clicável** que
+O campo WhatsApp é independente do Telefone dentro do mesmo cliente (ele pode ter números diferentes
+para cada um), mas ambos ocupam o mesmo espaço de números entre clientes: um número usado por um
+cliente (no telefone ou no WhatsApp) não pode ser cadastrado em outro (ver
+[Como os dados são salvos](#como-os-dados-são-salvos)). O campo usa a mesma máscara/normalização.
+**Em todo lugar que o número aparece, ele é um link clicável** que
 abre uma conversa no WhatsApp Web/app via o link de "click-to-chat" `https://wa.me/<código do
 país><número>`:
 

@@ -172,6 +172,88 @@ def test_update_revalidates_document_against_new_type(auth_client):
     assert response.status_code == 400
 
 
+def test_create_rejects_duplicate_phone(auth_client):
+    Customer.objects.create(name="Primeiro", phone="11988887777", whatsapp="11988887777")
+
+    response = auth_client.post(
+        "/api/customers/",
+        data={"name": "Segundo", "phone": "(11) 98888-7777"},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "phone" in response.data
+
+
+def test_create_rejects_phone_already_used_as_whatsapp(auth_client):
+    # O número já existe no WhatsApp de outro cliente -- mesmo espaço de números.
+    Customer.objects.create(name="Primeiro", whatsapp="11988887777")
+
+    response = auth_client.post(
+        "/api/customers/",
+        data={"name": "Segundo", "phone": "11988887777"},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "phone" in response.data
+
+
+def test_create_rejects_duplicate_whatsapp(auth_client):
+    Customer.objects.create(name="Primeiro", whatsapp="11988887777")
+
+    response = auth_client.post(
+        "/api/customers/",
+        data={"name": "Segundo", "whatsapp": "(11) 98888-7777"},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "whatsapp" in response.data
+
+
+def test_create_rejects_whatsapp_already_used_as_phone(auth_client):
+    # O número já existe no telefone de outro cliente -> bloqueia também no WhatsApp.
+    Customer.objects.create(name="Primeiro", phone="11988887777")
+
+    response = auth_client.post(
+        "/api/customers/",
+        data={"name": "Segundo", "whatsapp": "11988887777"},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "whatsapp" in response.data
+
+
+def test_create_rejects_duplicate_document(auth_client):
+    Customer.objects.create(name="Primeiro", document="12345678900")
+
+    response = auth_client.post(
+        "/api/customers/",
+        data={"name": "Segundo", "document": "123.456.789-00"},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert "document" in response.data
+
+
+def test_create_allows_empty_phone_and_document_for_many_customers(auth_client):
+    Customer.objects.create(name="Sem contato")
+
+    response = auth_client.post(
+        "/api/customers/", data={"name": "Outro sem contato"}, content_type="application/json"
+    )
+    assert response.status_code == 201
+
+
+def test_update_keeps_own_phone_without_conflict(auth_client):
+    customer = Customer.objects.create(name="Dono", phone="11988887777", whatsapp="11988887777")
+
+    response = auth_client.patch(
+        f"/api/customers/{customer.id}/",
+        data={"name": "Dono Renomeado"},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+
+
 def test_delete_is_not_exposed(auth_client):
     customer = Customer.objects.create(name="Someone")
 

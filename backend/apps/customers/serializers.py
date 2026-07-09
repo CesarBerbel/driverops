@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import Customer
-from .utils import only_digits
+from .utils import find_customer_conflicts, only_digits
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -107,4 +107,34 @@ class CustomerSerializer(serializers.ModelSerializer):
                         }
                     )
             attrs["document"] = digits
+
+        self._validate_uniqueness(attrs)
         return attrs
+
+    def _validate_uniqueness(self, attrs):
+        """Impede dois clientes com o mesmo telefone ou documento (quando informado)."""
+        instance = self.instance
+
+        def resolved(field):
+            if field in attrs:
+                return attrs[field]
+            return getattr(instance, field, "") if instance else ""
+
+        conflicts = find_customer_conflicts(
+            phone=resolved("phone"),
+            whatsapp=resolved("whatsapp"),
+            document=resolved("document"),
+            exclude_pk=instance.pk if instance else None,
+        )
+        if not conflicts:
+            return
+        labels = {
+            "phone": "telefone",
+            "whatsapp": "WhatsApp",
+            "document": "documento",
+        }
+        errors = {
+            field: f"Já existe um cliente ({other.name}) com este {labels[field]}."
+            for field, other in conflicts.items()
+        }
+        raise serializers.ValidationError(errors)

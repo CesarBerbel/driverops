@@ -99,14 +99,32 @@ def notify_new_lead(lead):
 
 
 def create_customer_from_lead(lead, *, actor):
+    from rest_framework.exceptions import ValidationError
+
     from apps.customers.models import Customer
+    from apps.customers.utils import find_customer_conflicts
+
+    phone = only_digits(lead.phone)
+    document = only_digits(lead.document)
+    conflicts = find_customer_conflicts(phone=phone, whatsapp=phone, document=document)
+    if conflicts:
+        other = next(iter(conflicts.values()))
+        raise ValidationError(
+            {
+                "detail": (
+                    f"Já existe um cliente ({other.name}) com este telefone ou documento. "
+                    "Use 'Vincular ao existente' em vez de criar um novo cadastro."
+                ),
+                "code": "customer_exists",
+            }
+        )
 
     customer = Customer.objects.create(
         name=lead.name,
-        phone=only_digits(lead.phone),
-        whatsapp=only_digits(lead.phone),
+        phone=phone,
+        whatsapp=phone,
         email=lead.email or "",
-        document=only_digits(lead.document),
+        document=document,
         notes="Criado a partir de pedido vindo do site.",
     )
     lead.linked_customer = customer

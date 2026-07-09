@@ -33,3 +33,23 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        """Bloqueia telefone/documento duplicado (usado pelo admin via full_clean)."""
+        from django.core.exceptions import ValidationError
+
+        from .utils import find_customer_conflicts
+
+        conflicts = find_customer_conflicts(
+            phone=self.phone,
+            whatsapp=self.whatsapp,
+            document=self.document,
+            exclude_pk=self.pk,
+        )
+        labels = {"phone": "telefone", "whatsapp": "WhatsApp", "document": "documento"}
+        errors = {
+            field: f"Já existe um cliente ({other.name}) com este {labels[field]}."
+            for field, other in conflicts.items()
+        }
+        if errors:
+            raise ValidationError(errors)
