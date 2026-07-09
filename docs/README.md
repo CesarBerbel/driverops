@@ -16,6 +16,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Comandos do Makefile](makefile.md) | Todos os alvos do `Makefile` e os comandos Docker equivalentes |
 | [Testes e lint](testing.md) | Como rodar e o que cada suíte cobre |
 | [Build de produção](build.md) | Geração do bundle de produção do frontend |
+| [Implantação em produção](production.md) | Stack `docker-compose.prod.yml` (gunicorn, nginx, WhiteNoise, TLS, backups) e checklist de `.env.prod` |
 | [CI](ci.md) | Como o workflow do GitHub Actions funciona e por que é rápido |
 | [Arquitetura e estrutura do projeto](architecture.md) | Organização de pastas do backend e frontend |
 | [Categorias](categories.md) | Categorias de clientes, peças e serviços, soft delete, filtros |

@@ -21,6 +21,12 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 # --------------------------------------------------------------------------
 FROM base AS build
 
+# Em produção o SPA fala com a API na mesma origem (o nginx faz proxy de /api),
+# então o default é relativo. Sobrescreva com --build-arg VITE_API_URL=... se
+# o backend ficar em outro host.
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm ci
 
 COPY . .

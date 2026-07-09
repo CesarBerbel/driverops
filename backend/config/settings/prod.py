@@ -19,6 +19,14 @@ if os.environ.get("DJANGO_SECRET_KEY", "").strip() in ("", _INSECURE_SECRET):
 AUTH_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# WhiteNoise: comprime e versiona os estáticos (admin/DRF) e os serve pelo
+# backend, sem exigir um web server para /static/. Mídia (uploads) continua
+# servida pelo nginx do docker-compose.prod.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
 # HSTS ligado por padrão (1 ano) -- prod pressupõe HTTPS. Ajuste/preload via env.
 SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", str(60 * 60 * 24 * 365)))

@@ -5,6 +5,9 @@ django-cors-headers>=4.4,<4.7
 psycopg[binary]>=3.2,<3.3
 python-dotenv>=1.0,<1.1
 gunicorn>=23.0,<24.0
+# Serve os estáticos (admin/DRF) direto pelo backend em produção, sem depender
+# de um web server para /static/. Ver config/settings/prod.py.
+whitenoise>=6.6,<7.0
 # Geração de PDF do orçamento (puro Python, sem dependências de sistema).
 xhtml2pdf>=0.2.16,<0.3
 # Assistente de IA para textos da OS (provedor padrão: Anthropic/Claude).
