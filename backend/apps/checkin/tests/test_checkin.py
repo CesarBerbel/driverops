@@ -238,6 +238,25 @@ def test_complete_locks_and_reopen_requires_permission(
     reopened = super_client.post(f"/api/check-ins/{ci['id']}/reopen/")
     assert reopened.status_code == 200
     assert reopened.json()["status"] == "in_progress"
+    # O status precisa estar PERSISTIDO (não só na resposta) -- senão o banco
+    # segue travado e novas avarias são bloqueadas.
+    from apps.checkin.models import VehicleCheckIn
+
+    assert VehicleCheckIn.objects.get(pk=ci["id"]).status == "in_progress"
+
+    # Com o check-in reaberto, cadastrar uma nova avaria deve funcionar.
+    new_damage = atendente_client.post(
+        "/api/check-in-damages/",
+        data={
+            "check_in": ci["id"],
+            "x": "50",
+            "y": "50",
+            "severity": "medium",
+            "description": "Avaria após reabrir",
+        },
+        content_type="application/json",
+    )
+    assert new_damage.status_code == 201
 
 
 def test_complete_empty_requires_confirm(atendente_client, order):

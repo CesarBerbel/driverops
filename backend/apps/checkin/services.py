@@ -50,7 +50,10 @@ def complete(check_in, user):
 
 def reopen(check_in, user):
     check_in.status = CheckInStatus.IN_PROGRESS
-    touch(check_in, user)
+    check_in.updated_by = user if getattr(user, "is_authenticated", False) else None
+    # Precisa incluir "status" no update_fields -- touch() salva só updated_by,
+    # o que deixaria o banco travado (completed) apesar da resposta reaberta.
+    check_in.save(update_fields=["status", "updated_by", "updated_at"])
 
 
 def audit(request, action, check_in, **extra):
