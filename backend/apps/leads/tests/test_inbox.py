@@ -62,6 +62,28 @@ def test_detail_includes_analysis_and_indicators(atendente_client, lead):
     assert "indicators" in body
 
 
+def test_inbox_list_indicators_are_not_n_plus_one(
+    atendente_client, customer, vehicle, django_assert_max_num_queries
+):
+    # Vários leads, alguns batendo em cliente/veículo existentes.
+    for i in range(6):
+        SiteLead.objects.create(
+            name=f"Lead {i}",
+            phone="11988887777" if i % 2 else f"1190000{i:04d}",
+            vehicle_plate="ABC1D23" if i % 2 else f"ZZZ{i:04d}",
+            consent=True,
+        )
+    # Orçamento de queries fixo -> não cresce com o número de leads.
+    with django_assert_max_num_queries(15):
+        resp = atendente_client.get(BASE)
+    assert resp.status_code == 200
+    assert len(resp.json()) == 6
+    # Indicadores continuam corretos com os mapas em lote.
+    matching = next(item for item in resp.json() if item["vehicle_plate"] == "ABC1D23")
+    assert matching["indicators"]["customer_existing"] is True
+    assert matching["indicators"]["vehicle_existing"] is True
+
+
 # --- ações ---
 
 

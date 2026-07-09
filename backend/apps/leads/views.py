@@ -19,6 +19,7 @@ from .serializers import (
     LeadListSerializer,
     LeadSettingsSerializer,
     PublicLeadCreateSerializer,
+    build_indicator_maps,
 )
 from .services import (
     create_customer_from_lead,
@@ -124,6 +125,20 @@ class LeadViewSet(
 
     def get_serializer_class(self):
         return LeadDetailSerializer if self.action == "retrieve" else LeadListSerializer
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        maps = getattr(self, "_indicator_maps", None)
+        if maps is not None:
+            ctx["indicator_maps"] = maps
+        return ctx
+
+    def list(self, request, *args, **kwargs):
+        # Pré-carrega os mapas dos indicadores em lote (evita N+1 por lead).
+        leads = list(self.filter_queryset(self.get_queryset()))
+        self._indicator_maps = build_indicator_maps(leads)
+        serializer = self.get_serializer(leads, many=True)
+        return Response(serializer.data)
 
     def get_queryset(self):
         qs = SiteLead.objects.select_related("assigned_to", "linked_customer", "linked_vehicle")

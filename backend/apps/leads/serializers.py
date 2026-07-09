@@ -108,10 +108,77 @@ class LeadSettingsSerializer(serializers.ModelSerializer):
         return obj.updated_by.full_name or obj.updated_by.email
 
 
+def build_indicator_maps(leads):
+    """Pré-carrega, em poucas consultas, o que os indicadores precisam da lista.
+
+    Evita o N+1 do ``get_indicators`` (que, sem isto, consultaria cliente/veículo/
+    OS por lead). Devolve mapas: telefone->id do cliente e placa->{dono, OS aberta}.
+    """
+    from apps.orders.models import WorkOrder
+
+    phones = {lead.phone for lead in leads if lead.phone}
+    plates = {lead.vehicle_plate for lead in leads if lead.vehicle_plate}
+
+    phone_to_customer = {}
+    if phones:
+        for c in Customer.objects.filter(
+            Q(phone__in=phones) | Q(whatsapp__in=phones)
+        ).values("id", "phone", "whatsapp"):
+            if c["phone"] in phones:
+                phone_to_customer.setdefault(c["phone"], c["id"])
+            if c["whatsapp"] in phones:
+                phone_to_customer.setdefault(c["whatsapp"], c["id"])
+
+    plate_to_vehicle = {}
+    if plates:
+        vehicles = list(
+            Vehicle.objects.filter(license_plate__in=plates).values(
+                "id", "license_plate", "customer_id"
+            )
+        )
+        open_vehicle_ids = set(
+            WorkOrder.objects.filter(
+                vehicle_id__in=[v["id"] for v in vehicles],
+                status__in=OPERATIONAL_STATUSES,
+            ).values_list("vehicle_id", flat=True)
+        )
+        for v in vehicles:
+            plate_to_vehicle.setdefault(
+                v["license_plate"],
+                {"customer_id": v["customer_id"], "has_open_os": v["id"] in open_vehicle_ids},
+            )
+
+    return {"phone_to_customer": phone_to_customer, "plate_to_vehicle": plate_to_vehicle}
+
+
 class LeadIndicatorsMixin(serializers.Serializer):
     indicators = serializers.SerializerMethodField()
 
     def get_indicators(self, obj):
+        maps = self.context.get("indicator_maps")
+        if maps is not None:
+            return self._indicators_from_maps(obj, maps)
+        return self._indicators_by_query(obj)
+
+    @staticmethod
+    def _indicators_from_maps(obj, maps):
+        customer_id = maps["phone_to_customer"].get(obj.phone) if obj.phone else None
+        veh = maps["plate_to_vehicle"].get(obj.vehicle_plate) if obj.vehicle_plate else None
+        vehicle_divergent = False
+        has_open_os = False
+        if veh is not None:
+            ref = obj.linked_customer_id or customer_id
+            vehicle_divergent = ref is not None and veh["customer_id"] != ref
+            has_open_os = veh["has_open_os"]
+        return {
+            "customer_existing": customer_id is not None,
+            "vehicle_existing": veh is not None,
+            "vehicle_divergent": vehicle_divergent,
+            "has_open_os": has_open_os,
+        }
+
+    @staticmethod
+    def _indicators_by_query(obj):
         customer_existing = bool(
             obj.phone
             and Customer.objects.filter(
