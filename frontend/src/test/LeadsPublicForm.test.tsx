@@ -53,6 +53,24 @@ describe("PublicRequestForm", () => {
     expect(await screen.findByText("Pedido recebido!")).toBeInTheDocument();
   });
 
+  it("masks the phone as the visitor types raw digits", async () => {
+    renderForm();
+    const phone = await screen.findByLabelText("Telefone / WhatsApp *");
+    fireEvent.change(phone, { target: { value: "11999998888" } });
+    expect(phone).toHaveValue("(11) 99999-8888");
+  });
+
+  it("normalizes the plate (uppercase, no separators, max 7)", async () => {
+    vi.mocked(api.getLeadPublicConfig).mockResolvedValue({
+      ...CONFIG,
+      allow_without_vehicle: false,
+    });
+    renderForm();
+    const plate = await screen.findByLabelText("Placa");
+    fireEvent.change(plate, { target: { value: "abc-1d23xyz" } });
+    expect(plate).toHaveValue("ABC1D23");
+  });
+
   it("keeps submit disabled without consent when required", async () => {
     renderForm();
     await screen.findByLabelText("Seu nome *");

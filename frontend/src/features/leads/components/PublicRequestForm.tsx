@@ -21,7 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { normalizePlate } from "@/features/vehicles/plate";
 import { extractErrorMessage } from "@/lib/api-client";
+import { formatPhone } from "@/lib/masks";
 
 import { getLeadPublicConfig, submitLeadRequest } from "../api";
 
@@ -156,7 +158,7 @@ export function PublicRequestForm({ open, onOpenChange, defaultType }: PublicReq
                     inputMode="tel"
                     placeholder="(11) 99999-9999"
                     value={form.phone}
-                    onChange={(e) => set("phone", e.target.value)}
+                    onChange={(e) => set("phone", formatPhone(e.target.value))}
                   />
                 </div>
               </div>
@@ -178,8 +180,10 @@ export function PublicRequestForm({ open, onOpenChange, defaultType }: PublicReq
                     <Input
                       id="lead-plate"
                       placeholder="ABC1D23"
+                      autoCapitalize="characters"
+                      maxLength={7}
                       value={form.vehicle_plate}
-                      onChange={(e) => set("vehicle_plate", e.target.value.toUpperCase())}
+                      onChange={(e) => set("vehicle_plate", normalizePlate(e.target.value))}
                     />
                   </div>
                   <div className="space-y-1.5">
