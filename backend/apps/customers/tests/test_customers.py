@@ -254,12 +254,37 @@ def test_update_keeps_own_phone_without_conflict(auth_client):
     assert response.status_code == 200
 
 
-def test_delete_is_not_exposed(auth_client):
+def test_delete_soft_deletes_and_reactivate_restores(auth_client):
     customer = Customer.objects.create(name="Someone")
 
+    # DELETE = soft delete: registro preservado, apenas inativado.
     response = auth_client.delete(f"/api/customers/{customer.id}/")
-    assert response.status_code == 405
+    assert response.status_code == 204
+    customer.refresh_from_db()
+    assert customer.is_active is False
     assert Customer.objects.filter(pk=customer.pk).exists()
+
+    # Inativos somem da listagem padrão, aparecem com status=inactive.
+    active_ids = [c["id"] for c in auth_client.get("/api/customers/").data]
+    assert customer.id not in active_ids
+    inactive_ids = [c["id"] for c in auth_client.get("/api/customers/?status=inactive").data]
+    assert customer.id in inactive_ids
+
+    # Reativar restaura.
+    reactivate = auth_client.post(f"/api/customers/{customer.id}/reactivate/")
+    assert reactivate.status_code == 200
+    customer.refresh_from_db()
+    assert customer.is_active is True
+
+
+def test_db_unique_constraint_blocks_duplicate_phone(auth_client):
+    from django.db import IntegrityError, transaction
+
+    Customer.objects.create(name="Primeiro", phone="11955554444")
+    # Rede de segurança no banco (bypassa a validação de aplicação).
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            Customer.objects.create(name="Segundo", phone="11955554444")
 
 
 def test_list_includes_vehicle_count_of_active_vehicles_only(auth_client):

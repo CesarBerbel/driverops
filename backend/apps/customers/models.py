@@ -25,11 +25,30 @@ class Customer(models.Model):
     state = models.CharField(max_length=2, blank=True)
     country = models.CharField(max_length=60, blank=True, default="Brasil")
     notes = models.TextField(blank=True)
+    # Soft delete -- consistente com os demais cadastros (nunca exclui de fato).
+    is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["name"]
+        # Rede de segurança no banco contra corrida (a validação de aplicação em
+        # find_customer_conflicts cobre o caso cruzado telefone<->WhatsApp).
+        constraints = [
+            models.UniqueConstraint(
+                fields=["phone"], condition=~models.Q(phone=""), name="uniq_customer_phone"
+            ),
+            models.UniqueConstraint(
+                fields=["whatsapp"],
+                condition=~models.Q(whatsapp=""),
+                name="uniq_customer_whatsapp",
+            ),
+            models.UniqueConstraint(
+                fields=["document"],
+                condition=~models.Q(document=""),
+                name="uniq_customer_document",
+            ),
+        ]
 
     def __str__(self):
         return self.name

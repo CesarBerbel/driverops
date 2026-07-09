@@ -48,7 +48,7 @@ class Vehicle(models.Model):
     )
     # license_plate/chassis/renavam are always stored normalized -- see
     # VehicleSerializer's validate_* methods.
-    license_plate = models.CharField(max_length=7)
+    license_plate = models.CharField(max_length=7, db_index=True)
     brand = models.CharField(max_length=100, blank=True)
     model = models.CharField(max_length=100, blank=True)
     version = models.CharField(max_length=100, blank=True)

@@ -39,11 +39,12 @@ class CustomerSerializer(serializers.ModelSerializer):
             "state",
             "country",
             "notes",
+            "is_active",
             "vehicle_count",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "is_active", "created_at", "updated_at"]
 
     def get_vehicle_count(self, obj):
         return getattr(obj, "vehicle_count", 0)

@@ -1,8 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Car, MessageCircle, Search, Users, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,13 +35,21 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { cn } from "@/lib/utils";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
-import { listCustomers } from "../api";
+import {
+  deleteCustomer,
+  listCustomers,
+  reactivateCustomer,
+  type CustomerStatusFilter,
+} from "../api";
 import { CustomerFormSheet } from "../CustomerFormSheet";
 import { CUSTOMER_TYPE_LABELS } from "../constants";
 import type { Customer } from "../types";
 
 export function CustomersPage() {
+  const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
+  const [statusFilter, setStatusFilter] = useState<CustomerStatusFilter>("active");
+  const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   // Bypass the debounce when the box is empty, so "Limpar pesquisa" (and
   // deleting the text manually) restores the full list instantly.
@@ -52,8 +70,31 @@ export function CustomersPage() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["customers", effectiveSearch],
-    queryFn: () => listCustomers(effectiveSearch || undefined),
+    queryKey: ["customers", effectiveSearch, statusFilter],
+    queryFn: () => listCustomers(effectiveSearch || undefined, statusFilter),
+  });
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["customers"] });
+  }
+
+  const removeMut = useMutation({
+    mutationFn: (id: number) => deleteCustomer(id),
+    onSuccess: () => {
+      invalidate();
+      setDeleteTarget(null);
+      toast.success("Cliente inativado.");
+    },
+    onError: () => toast.error("Não foi possível inativar o cliente."),
+  });
+
+  const reactivateMut = useMutation({
+    mutationFn: (id: number) => reactivateCustomer(id),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Cliente reativado.");
+    },
+    onError: () => toast.error("Não foi possível reativar o cliente."),
   });
 
   const isEmpty = (customers?.length ?? 0) === 0;
@@ -119,6 +160,22 @@ export function CustomersPage() {
             Limpar pesquisa
           </Button>
         )}
+        <div className="ml-auto flex gap-1">
+          <Button
+            variant={statusFilter === "active" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("active")}
+          >
+            Ativos
+          </Button>
+          <Button
+            variant={statusFilter === "inactive" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("inactive")}
+          >
+            Inativos
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -226,6 +283,29 @@ export function CustomersPage() {
                     >
                       Editar
                     </Button>
+                    {customer.is_active ? (
+                      <Can code="customers.delete">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(customer)}
+                        >
+                          Excluir
+                        </Button>
+                      </Can>
+                    ) : (
+                      <Can code="customers.reactivate">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={reactivateMut.isPending}
+                          onClick={() => reactivateMut.mutate(customer.id)}
+                        >
+                          Reativar
+                        </Button>
+                      </Can>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -252,6 +332,27 @@ export function CustomersPage() {
         vehicles={selectorVehicles}
         onSelect={handleSelectVehicleFromDialog}
       />
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inativar cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cliente <strong>{deleteTarget?.name}</strong> deixará de aparecer na listagem
+              padrão. O cadastro e o histórico são preservados e podem ser reativados depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && removeMut.mutate(deleteTarget.id)}
+              disabled={removeMut.isPending}
+            >
+              Inativar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

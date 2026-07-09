@@ -63,7 +63,7 @@ class Quote(models.Model):
     # Revisão dentro da mesma OS (1, 2, 3...). Atribuída pela view na criação.
     version = models.PositiveIntegerField(default=1)
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.DRAFT
+        max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True
     )
 
     # --- snapshot do contexto da OS (congelado) ---

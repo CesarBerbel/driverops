@@ -40,7 +40,7 @@ class WorkOrder(models.Model):
         "vehicles.Vehicle", on_delete=models.PROTECT, related_name="work_orders"
     )
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.OPEN
+        max_length=20, choices=Status.choices, default=Status.OPEN, db_index=True
     )
     # Técnico responsável pela OS. Opcional; atribuído/trocado a qualquer momento.
     # SET_NULL para nunca apagar a OS ao desativar/excluir um usuário.
@@ -63,7 +63,7 @@ class WorkOrder(models.Model):
     discount_value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     # Internal soft-delete flag. Never rendered as a field in the UI -- same
     # rule as Vehicle.is_active. "Excluir" na interface apenas desabilita.
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     # Marca se a baixa automática de estoque (peças cadastradas da OS) já foi
     # feita ao finalizar. Garante idempotência: finalizar de novo (ou reabrir e
     # finalizar) não dá baixa em dobro. Ver apps/orders/stock.py.

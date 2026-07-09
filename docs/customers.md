@@ -160,8 +160,17 @@ ativos de cada cliente. Clicar no ícone abre o veículo diretamente (quando há
 
 A rota de clientes (`/customers` no frontend; `/api/customers/...` no backend) exige usuário
 autenticado, seguindo o mesmo [`ProtectedRoute`](../frontend/src/features/auth/ProtectedRoute.tsx) e
-a mesma permissão padrão (`IsAuthenticated`) usados pelo restante do sistema. Não existe rota de
-exclusão (`DELETE` retorna 405) -- excluir clientes nunca foi um requisito deste módulo.
+a mesma permissão padrão (`IsAuthenticated`) usados pelo restante do sistema.
+
+## Exclusão (soft delete) e reativação
+
+Como os demais cadastros, o cliente usa **soft delete**: `DELETE` apenas marca `is_active=False`
+(o registro e o histórico são preservados, inclusive por causa das FKs `PROTECT` de veículos/OS).
+A listagem mostra os ativos por padrão (`?status=inactive` traz os inativos) e há a ação de
+**Reativar**. As ações são protegidas pelas permissões `customers.delete` e `customers.reactivate`.
+Além disso, `phone`, `whatsapp` e `document` têm **restrição de unicidade no banco** (índice único
+parcial, ignorando vazios) como rede de segurança contra corrida, complementando a validação de
+aplicação em `find_customer_conflicts`.
 
 ## Comandos relacionados
 

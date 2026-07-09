@@ -17,9 +17,13 @@ export interface Customer {
   state: string;
   country: string;
   notes: string;
+  is_active: boolean;
   vehicle_count: number;
   created_at: string;
   updated_at: string;
 }
 
-export type CustomerPayload = Omit<Customer, "id" | "created_at" | "updated_at">;
+export type CustomerPayload = Omit<
+  Customer,
+  "id" | "is_active" | "created_at" | "updated_at"
+>;

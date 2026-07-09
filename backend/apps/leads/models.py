@@ -112,7 +112,7 @@ class SiteLead(models.Model):
     consent = models.BooleanField(default=False)
 
     status = models.CharField(
-        max_length=24, choices=LeadStatus.choices, default=LeadStatus.NEW
+        max_length=24, choices=LeadStatus.choices, default=LeadStatus.NEW, db_index=True
     )
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,

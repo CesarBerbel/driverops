@@ -69,6 +69,7 @@ function customer(overrides: Partial<Customer> = {}): Customer {
     state: "SP",
     country: "Brasil",
     notes: "",
+    is_active: true,
     vehicle_count: 0,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -97,7 +98,7 @@ describe("CustomersPage", () => {
     renderPage();
 
     expect(await screen.findByText("Nenhum cliente cadastrado ainda.")).toBeInTheDocument();
-    expect(customersApi.listCustomers).toHaveBeenCalledWith(undefined);
+    expect(customersApi.listCustomers).toHaveBeenCalledWith(undefined, "active");
   });
 
   it("renders customers with formatted phone and city/UF", async () => {
@@ -137,7 +138,7 @@ describe("CustomersPage", () => {
     await screen.findByText("Alice Wonderland");
     await user.type(screen.getByPlaceholderText("Buscar cliente pelo nome..."), "ali");
 
-    await waitFor(() => expect(customersApi.listCustomers).toHaveBeenCalledWith("ali"));
+    await waitFor(() => expect(customersApi.listCustomers).toHaveBeenCalledWith("ali", "active"));
   });
 
   it("shows a distinct empty state and clears back to the full list", async () => {
@@ -154,7 +155,7 @@ describe("CustomersPage", () => {
 
     await user.click(screen.getByRole("button", { name: /limpar pesquisa/i }));
     await screen.findByText("Alice Wonderland");
-    expect(customersApi.listCustomers).toHaveBeenLastCalledWith(undefined);
+    expect(customersApi.listCustomers).toHaveBeenLastCalledWith(undefined, "active");
   });
 
   it("shows an error state with a retry button when the query fails", async () => {
@@ -188,6 +189,35 @@ describe("CustomersPage", () => {
         expect.objectContaining({ name: "New Customer" }),
       ),
     );
+  });
+
+  it("soft-deletes a customer after confirming", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
+    vi.mocked(customersApi.deleteCustomer).mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText("Alice Wonderland");
+    await user.click(screen.getByRole("button", { name: "Excluir" }));
+    await user.click(screen.getByRole("button", { name: "Inativar" }));
+
+    await waitFor(() => expect(customersApi.deleteCustomer).toHaveBeenCalledWith(1));
+  });
+
+  it("filters inactive customers and offers reactivation", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([
+      customer({ is_active: false }),
+    ]);
+    vi.mocked(customersApi.reactivateCustomer).mockResolvedValue(customer());
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Inativos" }));
+    await waitFor(() =>
+      expect(customersApi.listCustomers).toHaveBeenLastCalledWith(undefined, "inactive"),
+    );
+    await user.click(await screen.findByRole("button", { name: "Reativar" }));
+    await waitFor(() => expect(customersApi.reactivateCustomer).toHaveBeenCalledWith(1));
   });
 
   it("opens the edit sheet with the selected customer's data", async () => {
