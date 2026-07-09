@@ -29,6 +29,10 @@ vi.mock("@/features/alerts/api", () => ({
   markRead: vi.fn(),
 }));
 
+vi.mock("@/features/crm/api", () => ({
+  getPendingCount: vi.fn().mockResolvedValue(0),
+}));
+
 function renderTopbar() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(

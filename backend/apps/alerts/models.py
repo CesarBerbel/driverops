@@ -27,6 +27,7 @@ class NotifType(models.TextChoices):
     PAYMENTS_TODAY = "payments_today", "Pagamentos registrados hoje"
     PAYMENTS_PENDING = "payments_pending", "OS com pagamento pendente"
     STOCK_LOW = "stock_low", "Estoque abaixo do mínimo"
+    CRM_SUGGESTION = "crm_suggestion", "Sugestão do CRM inteligente"
     MANUAL = "manual", "Aviso manual"
     ADMIN = "admin", "Aviso administrativo"
 
@@ -37,6 +38,7 @@ class NotifModule(models.TextChoices):
     QUOTES = "quotes", "Orçamentos"
     FINANCIAL = "financial", "Financeiro"
     PARTS = "parts", "Estoque"
+    CRM = "crm", "CRM inteligente"
     SYSTEM = "system", "Sistema"
     ADMIN = "admin", "Administrativo"
 
@@ -84,6 +86,7 @@ TYPE_MODULE = {
     NotifType.PAYMENTS_TODAY: NotifModule.FINANCIAL,
     NotifType.PAYMENTS_PENDING: NotifModule.FINANCIAL,
     NotifType.STOCK_LOW: NotifModule.PARTS,
+    NotifType.CRM_SUGGESTION: NotifModule.CRM,
     NotifType.MANUAL: NotifModule.SYSTEM,
     NotifType.ADMIN: NotifModule.ADMIN,
 }
@@ -101,6 +104,7 @@ DEFAULT_PRIORITY = {
     NotifType.PAYMENTS_TODAY: NotifPriority.INFO,
     NotifType.PAYMENTS_PENDING: NotifPriority.ATTENTION,
     NotifType.STOCK_LOW: NotifPriority.IMPORTANT,
+    NotifType.CRM_SUGGESTION: NotifPriority.IMPORTANT,
     NotifType.MANUAL: NotifPriority.IMPORTANT,
     NotifType.ADMIN: NotifPriority.IMPORTANT,
 }
@@ -113,6 +117,7 @@ MODULE_PERMISSION = {
     NotifModule.QUOTES: "quotes.view",
     NotifModule.FINANCIAL: "alerts.view_financial",
     NotifModule.PARTS: "parts.view",
+    NotifModule.CRM: "crm.view",
     NotifModule.SYSTEM: None,
     NotifModule.ADMIN: "alerts.view_admin",
 }

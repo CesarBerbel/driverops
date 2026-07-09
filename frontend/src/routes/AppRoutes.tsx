@@ -24,6 +24,8 @@ import { LeadInboxPage } from "@/features/leads/pages/LeadInboxPage";
 import { LeadSettingsPage } from "@/features/leads/pages/LeadSettingsPage";
 import { NotificationsPage } from "@/features/alerts/pages/NotificationsPage";
 import { NotificationSettingsPage } from "@/features/alerts/pages/NotificationSettingsPage";
+import { CrmPage } from "@/features/crm/pages/CrmPage";
+import { CrmSettingsPage } from "@/features/crm/pages/CrmSettingsPage";
 import { NotificationTemplatesPage } from "@/features/notifications/pages/NotificationTemplatesPage";
 import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
@@ -83,6 +85,10 @@ export function AppRoutes() {
           <Route element={<RequirePermission code="alerts.view" />}>
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+          </Route>
+          <Route element={<RequirePermission code="crm.view" />}>
+            <Route path="/crm" element={<CrmPage />} />
+            <Route path="/settings/crm" element={<CrmSettingsPage />} />
           </Route>
           <Route path="/settings/categories" element={<ClientCategoriesPage />} />
           <Route path="/settings/categories/parts" element={<PartCategoriesPage />} />

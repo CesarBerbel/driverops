@@ -180,6 +180,20 @@ MODULES = [
         ],
     ),
     (
+        "crm",
+        "CRM Inteligente",
+        [
+            ("view", "Ver sugestões e o CRM", False),
+            ("manage", "Agir nas sugestões (aprovar/status/adiar)", False),
+            ("configure", "Configurar o CRM inteligente", True),
+            ("use_ai", "Gerar mensagens com IA", False),
+            ("create_campaign", "Criar campanhas", False),
+            ("send_message", "Registrar envio de mensagem", False),
+            ("assign_task", "Criar tarefas", False),
+            ("dismiss", "Ignorar sugestões", False),
+        ],
+    ),
+    (
         "checkin",
         "Check-in do Veículo",
         [
@@ -250,6 +264,7 @@ ROLE_DEFS = {
                 "users.manage",
                 "alerts.configure",
                 "checkin.reopen",
+                "crm.configure",
             }
         ),
     },
@@ -279,6 +294,13 @@ ROLE_DEFS = {
             "checkin.view",
             "checkin.edit",
             "checkin.complete",
+            "crm.view",
+            "crm.manage",
+            "crm.use_ai",
+            "crm.assign_task",
+            "crm.dismiss",
+            "crm.send_message",
+            "crm.create_campaign",
         ],
     },
     "tecnico": {
@@ -297,6 +319,7 @@ ROLE_DEFS = {
             "alerts.view",
             "checkin.view",
             "checkin.edit",
+            "crm.view",
         ],
     },
     "estoque": {
@@ -322,6 +345,7 @@ ROLE_DEFS = {
             "quotes.view",
             "alerts.view",
             "alerts.view_financial",
+            "crm.view",
         ],
     },
 }

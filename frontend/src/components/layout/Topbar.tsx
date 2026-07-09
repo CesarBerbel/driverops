@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { Inbox, KanbanSquare, LayoutDashboard, Plus, Truck } from "lucide-react";
+import { Inbox, KanbanSquare, LayoutDashboard, Plus, Sparkles, Truck } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/features/alerts/components/NotificationBell";
 import { usePermissionCheck } from "@/features/auth/usePermission";
+import { getPendingCount as getCrmPending } from "@/features/crm/api";
 import { getLeadsPendingCount } from "@/features/leads/api";
 import { cn } from "@/lib/utils";
 
@@ -21,10 +22,17 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export function Topbar() {
   const can = usePermissionCheck();
   const canLeads = can("leads.view");
+  const canCrm = can("crm.view");
   const { data: leadsPending = 0 } = useQuery({
     queryKey: ["leads-pending-count"],
     queryFn: getLeadsPendingCount,
     enabled: canLeads,
+    refetchInterval: 60_000,
+  });
+  const { data: crmPending = 0 } = useQuery({
+    queryKey: ["crm-pending"],
+    queryFn: getCrmPending,
+    enabled: canCrm,
     refetchInterval: 60_000,
   });
   return (
@@ -57,6 +65,20 @@ export function Topbar() {
             )}
           </span>
           <span className="hidden sm:inline">Pedidos</span>
+        </NavLink>
+      )}
+
+      {canCrm && (
+        <NavLink to="/crm" className={navLinkClass}>
+          <span className="relative">
+            <Sparkles className="size-4" />
+            {crmPending > 0 && (
+              <span className="absolute -right-2 -top-2 inline-flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-4 text-destructive-foreground">
+                {crmPending > 99 ? "99+" : crmPending}
+              </span>
+            )}
+          </span>
+          <span className="hidden sm:inline">CRM</span>
         </NavLink>
       )}
 

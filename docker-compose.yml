@@ -69,6 +69,7 @@ services:
         sleep 20
         while true; do
           python manage.py sync_notifications || true
+          python manage.py sync_crm || true
           sleep "$${NOTIFICATIONS_SYNC_INTERVAL:-3600}"
         done
     restart: unless-stopped

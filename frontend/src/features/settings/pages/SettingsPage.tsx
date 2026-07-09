@@ -75,6 +75,14 @@ const SETTINGS_CARDS = [
     permission: "alerts.view",
   },
   {
+    to: "/settings/crm",
+    icon: Sparkles,
+    title: "CRM Inteligente com IA",
+    description:
+      "Ative as sugestões de relacionamento, ajuste os prazos das regras e o comportamento da IA (mensagens, campanhas sazonais).",
+    permission: "crm.view",
+  },
+  {
     to: "/users",
     icon: Users,
     title: "Usuários",

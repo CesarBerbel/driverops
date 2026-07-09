@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "apps.leads",
     "apps.alerts",
     "apps.checkin",
+    "apps.crm",
 ]
 
 MIDDLEWARE = [

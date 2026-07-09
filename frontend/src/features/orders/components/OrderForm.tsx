@@ -77,6 +77,7 @@ import type { OrderDiscountType, WorkOrder } from "../types";
 import { NotifyCustomerButton } from "./NotifyCustomerButton";
 import { OrderPdfButton } from "./OrderPdfButton";
 import { VehicleCheckInTab } from "@/features/checkin/VehicleCheckInTab";
+import { CrmSuggestionsPanel } from "@/features/crm/CrmSuggestionsPanel";
 import { OrderEventTimeline } from "./OrderEventTimeline";
 import { OrderLineList } from "./OrderLineList";
 import { OrderStatusStepper } from "./OrderStatusStepper";
@@ -687,6 +688,7 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         {/* Aba 2 -- Relato, diagnóstico e observações internas. */}
         {activeTab === "report" && (
           <div className="space-y-6">
+            {orderId !== null && <CrmSuggestionsPanel workOrderId={orderId} />}
             <Card>
               <CardHeader className="flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base">Relato do cliente</CardTitle>

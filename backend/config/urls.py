@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/", include("apps.leads.urls")),
     path("api/", include("apps.alerts.urls")),
     path("api/", include("apps.checkin.urls")),
+    path("api/", include("apps.crm.urls")),
 ]
 
 # Serve uploaded media in development (no-op when DEBUG is False).
