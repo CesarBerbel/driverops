@@ -1,6 +1,5 @@
-import { CalendarClock, LogIn, Menu } from "lucide-react";
+import { CalendarClock, Menu, Phone } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 
 import {
   Sheet,
@@ -12,20 +11,18 @@ import {
 } from "@/components/ui/sheet";
 
 import { NAV_LINKS } from "../constants";
-import { SCHEDULE_MESSAGE, waLink } from "../contact";
+import { waLink } from "../contact";
 import type { PublicWorkshop } from "../types";
 import { BrandMark } from "./BrandMark";
 
 interface PublicHeaderProps {
   workshop: PublicWorkshop;
+  onRequest: () => void;
 }
 
-export function PublicHeader({ workshop }: PublicHeaderProps) {
+export function PublicHeader({ workshop, onRequest }: PublicHeaderProps) {
   const [open, setOpen] = useState(false);
   const name = workshop.trade_name || workshop.legal_name || "Auto Mecânica";
-  const scheduleHref = workshop.whatsapp
-    ? waLink(workshop.whatsapp, SCHEDULE_MESSAGE)
-    : "#contato";
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur supports-[backdrop-filter]:bg-black/60">
@@ -47,22 +44,25 @@ export function PublicHeader({ workshop }: PublicHeaderProps) {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <Link
-            to="/login"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/15 px-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b8bff]"
-          >
-            <LogIn className="size-4" />
-            Entrar
-          </Link>
-          <a
-            href={scheduleHref}
-            target={workshop.whatsapp ? "_blank" : undefined}
-            rel="noopener noreferrer"
+          {workshop.whatsapp && (
+            <a
+              href={waLink(workshop.whatsapp)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/15 px-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10"
+            >
+              <Phone className="size-4" />
+              WhatsApp
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={onRequest}
             className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#2a4fd6] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#2340ba] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b8bff]"
           >
             <CalendarClock className="size-4" />
-            Agendar atendimento
-          </a>
+            Pedir marcação de horário
+          </button>
         </div>
 
         {/* Menu mobile */}
@@ -95,24 +95,17 @@ export function PublicHeader({ workshop }: PublicHeaderProps) {
               ))}
             </nav>
             <div className="mt-4 flex flex-col gap-2 px-4">
-              <a
-                href={scheduleHref}
-                target={workshop.whatsapp ? "_blank" : undefined}
-                rel="noopener noreferrer"
-                onClick={() => setOpen(false)}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onRequest();
+                }}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#2a4fd6] px-4 font-semibold text-white"
               >
                 <CalendarClock className="size-5" />
-                Agendar atendimento
-              </a>
-              <Link
-                to="/login"
-                onClick={() => setOpen(false)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/15 px-4 font-medium text-white/90"
-              >
-                <LogIn className="size-5" />
-                Entrar no sistema
-              </Link>
+                Pedir marcação de horário
+              </button>
             </div>
           </SheetContent>
         </Sheet>

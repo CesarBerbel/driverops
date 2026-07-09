@@ -32,11 +32,14 @@ internas, inscrição estadual, responsável, etc.).
 
 ### CTAs / rotas
 
-- **Agendar atendimento** e **Solicitar orçamento** → link `wa.me` com mensagem
-  pré-preenchida quando há WhatsApp; caso contrário, âncora `#contato`.
+O CTA principal é **comercial** ("Pedir marcação de horário", "Pedir orçamento ou
+diagnóstico", "Solicitar atendimento") e abre o **formulário público de pedido de
+contato** — ver [Pedidos do Site](pedidos-site.md). O visitante não precisa criar
+conta. O botão **"Entrar"** deixou de ser CTA principal; o acesso administrativo
+fica discreto no rodapé (**"Área da oficina"** → `/login`).
+
 - **WhatsApp**, **telefone**, **e-mail**, **endereço** → clicáveis (wa.me, tel,
   mailto, Google Maps).
-- **Entrar no sistema** → `/login`.
 
 ## SEO / acessibilidade / performance
 

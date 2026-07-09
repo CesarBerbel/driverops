@@ -7,6 +7,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 |---|---|
 | [Primeiros passos](getting-started.md) | Pré-requisitos, início rápido, URLs de acesso, credenciais de dev |
 | [Página pública (Landing)](landing.md) | Vitrine institucional pública, seções, dados reais x fallback, SEO, acessibilidade e performance |
+| [Pedidos do Site (leads)](pedidos-site.md) | Formulário público de contato, inbox, matching cliente/veículo, divergências, conversão em OS/orçamento, permissões e auditoria |
 | [Variáveis de ambiente](environment-variables.md) | Tabela completa das variáveis usadas pelo `docker-compose.yml` |
 | [Banco de dados e migrations](database.md) | Como e quando as migrations rodam |
 | [Superusuário](superuser.md) | Criação/atualização idempotente do superusuário de desenvolvimento |

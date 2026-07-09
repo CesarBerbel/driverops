@@ -159,6 +159,16 @@ MODULES = [
         ],
     ),
     (
+        "leads",
+        "Pedidos do Site",
+        [
+            ("view", "Visualizar pedidos do site", False),
+            ("attend", "Atender pedidos (status, notas, contato)", False),
+            ("convert", "Converter em cliente/veículo/OS/orçamento", False),
+            ("config", "Configurar formulário e notificações", True),
+        ],
+    ),
+    (
         "users",
         "Usuários",
         [("view", "Visualizar", False), ("manage", "Gerenciar usuários", True)],
@@ -239,6 +249,9 @@ ROLE_DEFS = {
             "quotes.send",
             "kanban.view",
             "ai.use",
+            "leads.view",
+            "leads.attend",
+            "leads.convert",
         ],
     },
     "tecnico": {

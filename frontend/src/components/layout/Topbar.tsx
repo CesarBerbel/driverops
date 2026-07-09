@@ -1,8 +1,10 @@
-import { KanbanSquare, LayoutDashboard, Plus, Truck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Inbox, KanbanSquare, LayoutDashboard, Plus, Truck } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { usePermissionCheck } from "@/features/auth/usePermission";
+import { getLeadsPendingCount } from "@/features/leads/api";
 import { cn } from "@/lib/utils";
 
 import { UserMenu } from "./UserMenu";
@@ -17,6 +19,13 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function Topbar() {
   const can = usePermissionCheck();
+  const canLeads = can("leads.view");
+  const { data: leadsPending = 0 } = useQuery({
+    queryKey: ["leads-pending-count"],
+    queryFn: getLeadsPendingCount,
+    enabled: canLeads,
+    refetchInterval: 60_000,
+  });
   return (
     <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 md:gap-6 md:px-6">
       <Link to="/dashboard" className="flex items-center gap-2 font-semibold">
@@ -33,6 +42,20 @@ export function Topbar() {
         <NavLink to="/kanban" className={navLinkClass}>
           <KanbanSquare className="size-4" />
           <span className="hidden sm:inline">Kanban OS</span>
+        </NavLink>
+      )}
+
+      {canLeads && (
+        <NavLink to="/leads" className={navLinkClass}>
+          <span className="relative">
+            <Inbox className="size-4" />
+            {leadsPending > 0 && (
+              <span className="absolute -right-2 -top-2 inline-flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-4 text-destructive-foreground">
+                {leadsPending > 99 ? "99+" : leadsPending}
+              </span>
+            )}
+          </span>
+          <span className="hidden sm:inline">Pedidos</span>
         </NavLink>
       )}
 

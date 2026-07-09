@@ -6,7 +6,6 @@ import {
   Clock,
   FileText,
   Loader2,
-  LogIn,
   Mail,
   MapPin,
   MessageCircle,
@@ -14,7 +13,7 @@ import {
   Star,
   Wrench,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
 
 import { formatPhone } from "@/lib/masks";
 
@@ -23,6 +22,7 @@ import { BrandCarousel } from "../components/BrandCarousel";
 import { BrandMark } from "../components/BrandMark";
 import { PublicFooter } from "../components/PublicFooter";
 import { PublicHeader } from "../components/PublicHeader";
+import { PublicRequestForm } from "@/features/leads/components/PublicRequestForm";
 import {
   BRANDS,
   FAQ,
@@ -32,14 +32,7 @@ import {
   TESTIMONIALS,
   WHY_CHOOSE,
 } from "../constants";
-import {
-  QUOTE_MESSAGE,
-  SCHEDULE_MESSAGE,
-  mailHref,
-  mapsUrl,
-  telHref,
-  waLink,
-} from "../contact";
+import { mailHref, mapsUrl, telHref, waLink } from "../contact";
 import type { PublicWorkshop } from "../types";
 import { useLandingSeo } from "../useLandingSeo";
 
@@ -85,15 +78,15 @@ export function LandingPage() {
   const workshop = data?.workshop ?? EMPTY_WORKSHOP;
   useLandingSeo(data?.workshop);
 
+  const [formOpen, setFormOpen] = useState(false);
+  const [formType, setFormType] = useState<string | undefined>(undefined);
+  function openForm(type?: string) {
+    setFormType(type);
+    setFormOpen(true);
+  }
+
   const name = workshop.trade_name || workshop.legal_name || "Auto Mecânica";
-  const scheduleHref = workshop.whatsapp
-    ? waLink(workshop.whatsapp, SCHEDULE_MESSAGE)
-    : "#contato";
-  const quoteHref = workshop.whatsapp
-    ? waLink(workshop.whatsapp, QUOTE_MESSAGE)
-    : "#contato";
   const waHref = workshop.whatsapp ? waLink(workshop.whatsapp) : "#contato";
-  const waExternal = Boolean(workshop.whatsapp);
 
   const services =
     data?.services && data.services.length > 0
@@ -110,7 +103,7 @@ export function LandingPage() {
 
   return (
     <div className="min-h-svh bg-[#0b0d12] text-white">
-      <PublicHeader workshop={workshop} />
+      <PublicHeader workshop={workshop} onRequest={() => openForm()} />
 
       {/* HERO */}
       <Section id="inicio" className="relative overflow-hidden py-20 sm:py-28">
@@ -139,24 +132,22 @@ export function LandingPage() {
             </p>
 
             <div className="flex flex-wrap gap-3">
-              <a
-                href={scheduleHref}
-                target={waExternal ? "_blank" : undefined}
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => openForm()}
                 className="inline-flex h-12 items-center gap-2 rounded-lg bg-[#2a4fd6] px-6 text-base font-semibold text-white shadow-lg shadow-[#2a4fd6]/20 transition-colors hover:bg-[#2340ba] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b8bff]"
               >
                 <CalendarClock className="size-5" />
-                Agendar atendimento
-              </a>
-              <a
-                href={quoteHref}
-                target={waExternal ? "_blank" : undefined}
-                rel="noopener noreferrer"
+                Pedir marcação de horário
+              </button>
+              <button
+                type="button"
+                onClick={() => openForm("quote")}
                 className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/20 px-6 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b8bff]"
               >
                 <FileText className="size-5" />
-                Solicitar orçamento
-              </a>
+                Pedir orçamento ou diagnóstico
+              </button>
               {workshop.whatsapp && (
                 <a
                   href={waHref}
@@ -266,15 +257,14 @@ export function LandingPage() {
           ))}
         </div>
         <div className="mt-8 text-center">
-          <a
-            href={scheduleHref}
-            target={waExternal ? "_blank" : undefined}
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={() => openForm()}
             className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#2a4fd6] px-6 font-semibold text-white hover:bg-[#2340ba]"
           >
             <CalendarClock className="size-5" />
-            Agendar um serviço
-          </a>
+            Solicitar atendimento
+          </button>
         </div>
       </Section>
 
@@ -310,15 +300,14 @@ export function LandingPage() {
             Agende um atendimento e receba orientação da nossa equipe.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <a
-              href={scheduleHref}
-              target={waExternal ? "_blank" : undefined}
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => openForm()}
               className="inline-flex h-12 items-center gap-2 rounded-lg bg-white px-6 font-semibold text-[#1a2a6c] hover:bg-white/90"
             >
               <CalendarClock className="size-5" />
-              Agendar atendimento
-            </a>
+              Pedir marcação de horário
+            </button>
             {workshop.whatsapp && (
               <a
                 href={waHref}
@@ -439,7 +428,7 @@ export function LandingPage() {
               {workshop.whatsapp && (
                 <li>
                   <a
-                    href={waLink(workshop.whatsapp, SCHEDULE_MESSAGE)}
+                    href={waHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-3 hover:text-[#4ade80]"
@@ -486,15 +475,14 @@ export function LandingPage() {
               )}
             </ul>
             <div className="flex flex-wrap gap-2 pt-2">
-              <a
-                href={scheduleHref}
-                target={waExternal ? "_blank" : undefined}
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => openForm()}
                 className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#2a4fd6] px-5 font-semibold text-white hover:bg-[#2340ba]"
               >
                 <CalendarClock className="size-4" />
-                Agendar atendimento
-              </a>
+                Pedir marcação de horário
+              </button>
               {workshop.address_line && (
                 <a
                   href={mapsUrl(workshop.address_line)}
@@ -506,13 +494,6 @@ export function LandingPage() {
                   Abrir no Google Maps
                 </a>
               )}
-              <Link
-                to="/login"
-                className="inline-flex h-11 items-center gap-2 rounded-lg border border-white/20 px-5 font-semibold text-white/90 hover:bg-white/10"
-              >
-                <LogIn className="size-4" />
-                Entrar no sistema
-              </Link>
             </div>
           </div>
 
@@ -536,6 +517,8 @@ export function LandingPage() {
       </Section>
 
       <PublicFooter workshop={workshop} />
+
+      <PublicRequestForm open={formOpen} onOpenChange={setFormOpen} defaultType={formType} />
     </div>
   );
 }

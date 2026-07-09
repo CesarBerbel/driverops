@@ -3,6 +3,7 @@ import {
   Building2,
   ChevronRight,
   ClipboardList,
+  Inbox,
   KanbanSquare,
   Package,
   ScrollText,
@@ -55,6 +56,14 @@ const SETTINGS_CARDS = [
     description:
       "Configure o provedor, o comportamento global e as instruções por campo da IA que ajuda a redigir e revisar textos da OS.",
     permission: "ai.view",
+  },
+  {
+    to: "/settings/leads",
+    icon: Inbox,
+    title: "Pedidos do Site",
+    description:
+      "Controle o formulário público de contato e o comportamento dos pedidos recebidos pelo site.",
+    permission: "leads.view",
   },
   {
     to: "/users",

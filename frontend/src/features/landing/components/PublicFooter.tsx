@@ -1,4 +1,5 @@
 import { Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { formatCNPJ, formatPhone } from "@/lib/masks";
 
@@ -94,6 +95,11 @@ export function PublicFooter({ workshop }: PublicFooterProps) {
             <li>Política de privacidade</li>
             <li>Termos de uso</li>
             {workshop.cnpj && <li>CNPJ: {formatCNPJ(workshop.cnpj)}</li>}
+            <li>
+              <Link to="/login" className="hover:text-white/80">
+                Área da oficina
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

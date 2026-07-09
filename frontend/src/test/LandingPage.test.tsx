@@ -76,13 +76,19 @@ describe("LandingPage", () => {
     expect(screen.getAllByText(/Rua das Oficinas, 100/).length).toBeGreaterThan(0);
   });
 
-  it("wires the schedule CTA to WhatsApp when configured", async () => {
+  it("uses the request form as the primary CTA (no admin login as primary)", async () => {
     renderPage();
     await screen.findByRole("heading", { name: /Cuidamos do seu carro/i });
-    const scheduleLinks = screen
-      .getAllByRole("link", { name: /Agendar atendimento/i })
-      .map((a) => a.getAttribute("href"));
-    expect(scheduleLinks.some((h) => h?.includes("wa.me/5511999998888"))).toBe(true);
+    // CTA comercial principal (abre o formulário), não "Entrar".
+    expect(
+      screen.getAllByRole("button", { name: /Pedir marcação de horário/i }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: /^Entrar$/i })).not.toBeInTheDocument();
+    // WhatsApp continua como link direto.
+    const wa = screen.getAllByRole("link", { name: /WhatsApp/i }).map((a) => a.getAttribute("href"));
+    expect(wa.some((h) => h?.includes("wa.me/5511999998888"))).toBe(true);
+    // Acesso administrativo discreto no rodapé.
+    expect(screen.getByRole("link", { name: "Área da oficina" })).toBeInTheDocument();
   });
 
   it("degrades gracefully when workshop data is missing", async () => {
@@ -106,14 +112,13 @@ describe("LandingPage", () => {
     });
     renderPage();
     await screen.findByRole("heading", { name: /Cuidamos do seu carro/i });
-    // Sem WhatsApp: o CTA aponta para a âncora de contato.
-    const scheduleLinks = screen
-      .getAllByRole("link", { name: /Agendar atendimento/i })
-      .map((a) => a.getAttribute("href"));
-    expect(scheduleLinks.every((h) => h === "#contato")).toBe(true);
     // Serviços caem no catálogo padrão (fallback).
     expect(screen.getByRole("heading", { name: "Sistema de freios" })).toBeInTheDocument();
     // Endereço ausente mostra estado neutro.
     expect(screen.getByText(/Endereço ainda não configurado/)).toBeInTheDocument();
+    // CTA comercial presente mesmo sem dados.
+    expect(
+      screen.getAllByRole("button", { name: /Pedir marcação de horário/i }).length,
+    ).toBeGreaterThan(0);
   });
 });

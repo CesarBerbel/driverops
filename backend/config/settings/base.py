@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.financial",
     "apps.notifications",
     "apps.ai_assistant",
+    "apps.leads",
 ]
 
 MIDDLEWARE = [
@@ -148,6 +149,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "login": "5/min",
         "password_reset": "3/min",
+        # Formulário público de pedidos do site (proteção contra abuso/spam).
+        "public_lead": "10/hour",
     },
 }
 
