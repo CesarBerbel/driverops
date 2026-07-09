@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from apps.core.money import apply_discount
 from apps.customers.models import Customer
 from apps.parts.models import Part
 from apps.services.models import Service, ServicePackage
@@ -317,15 +318,9 @@ class WorkOrderSerializer(serializers.ModelSerializer):
 
     def _final_value(self, obj):
         gross = self._gross_total(obj)
-        discount = Decimal("0")
-        if obj.discount_type == WorkOrder.DiscountType.PERCENT:
-            discount = gross * (obj.discount_value or Decimal("0")) / Decimal("100")
-        elif obj.discount_type == WorkOrder.DiscountType.FIXED:
-            discount = obj.discount_value or Decimal("0")
-        final = gross - discount
-        if final < 0:
-            final = Decimal("0")
-        return money(final)
+        # Fonte única do desconto (compartilhada com o orçamento).
+        discount = apply_discount(gross, obj.discount_type, obj.discount_value)
+        return money(gross - discount)
 
     def get_final_value(self, obj):
         return str(self._final_value(obj))

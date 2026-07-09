@@ -118,20 +118,6 @@ MODULE_PERMISSION = {
 }
 
 
-class SingletonModel(models.Model):
-    class Meta:
-        abstract = True
-
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
-
-    @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
-
-
 class Notification(models.Model):
     """Um aviso interno para um destinatário. Sempre individual (fan-out)."""
 

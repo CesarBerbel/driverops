@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+from apps.core.models import SingletonModel
+
 from .fields import (
     AUDIENCES,
     DEFAULT_GLOBAL_PROMPT,
@@ -11,7 +13,7 @@ from .fields import (
 )
 
 
-class AISettings(models.Model):
+class AISettings(SingletonModel):
     """Configuração global do módulo de IA (registro único, pk=1).
 
     Provedor/modelo/limites e o prompt global aplicado antes das instruções de
@@ -49,15 +51,6 @@ class AISettings(models.Model):
         blank=True,
         related_name="ai_settings_updated",
     )
-
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
-
-    @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
 
     def __str__(self):
         return "Configurações do Assistente de IA"

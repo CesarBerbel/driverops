@@ -1,6 +1,8 @@
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
+from apps.core.models import SingletonModel
+
 # Raster formats only -- SVG is intentionally excluded because it can carry
 # scripts and is served from the backend origin.
 LOGO_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif"]
@@ -28,22 +30,6 @@ DEFAULT_CUSTOMER_ACKNOWLEDGMENT_TERMS = (
     "serviços realizados e das condições de garantia aplicáveis."
 )
 DEFAULT_PDF_FOOTER_TEXT = "Documento gerado eletronicamente pelo sistema DriverOps."
-
-
-class SingletonModel(models.Model):
-    """Base para modelos de configuração com um único registro (pk=1)."""
-
-    class Meta:
-        abstract = True
-
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
-
-    @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
 
 
 class WorkshopProfile(SingletonModel):

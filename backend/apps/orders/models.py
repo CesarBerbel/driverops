@@ -143,9 +143,10 @@ class WorkOrderPackage(models.Model):
 class WorkOrderPart(models.Model):
     """Linha de peça da OS. `part` nulo => peça avulsa.
 
-    A baixa de estoque NÃO é feita nesta fase (limitação conhecida) -- o
-    vínculo com a peça cadastrada já existe para permitir essa evolução futura
-    sem refatoração.
+    Quando a OS é finalizada, as linhas com `part` cadastrada dão baixa no
+    estoque de forma transacional e idempotente (ver `orders/stock.py:
+    deduct_stock_for_order`; o flag `WorkOrder.stock_deducted` evita baixa
+    dupla). Peças avulsas (`part` nulo) não movimentam estoque.
     """
 
     order = models.ForeignKey(

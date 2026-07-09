@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+from apps.core.models import SingletonModel
+
 
 class RequestType(models.TextChoices):
     DIAGNOSTIC = "diagnostic", "Diagnóstico"
@@ -48,7 +50,7 @@ CLOSED_STATUSES = [
 ]
 
 
-class LeadSettings(models.Model):
+class LeadSettings(SingletonModel):
     """Configuração do formulário público e do fluxo de pedidos (registro único)."""
 
     is_active = models.BooleanField(default=True)
@@ -71,15 +73,6 @@ class LeadSettings(models.Model):
         blank=True,
         related_name="lead_settings_updated",
     )
-
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
-
-    @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
 
     def __str__(self):
         return "Configurações de Pedidos do Site"

@@ -1,10 +1,10 @@
 from decimal import Decimal
 
+# Fonte única do cálculo de dinheiro/desconto (compartilhada com a OS).
+from apps.core.money import apply_discount as _apply_discount
+from apps.core.money import money
+
 CENTS = Decimal("0.01")
-
-
-def money(value):
-    return Decimal(value).quantize(CENTS)
 
 
 def item_subtotal(item):
@@ -12,22 +12,6 @@ def item_subtotal(item):
     unit_price = item.unit_price or Decimal("0")
     total = quantity * unit_price
     return money(total if total > 0 else Decimal("0"))
-
-
-def _apply_discount(base, discount_type, discount_value):
-    """Desconto aplicado sobre uma base (nunca deixa a base negativa).
-
-    Regra da aprovação parcial: o desconto incide sobre a base considerada
-    (proposta inteira antes da decisão; apenas os itens aprovados após a
-    decisão). Percentual preserva a proporção; fixo é limitado à base.
-    """
-    if discount_type == "percent":
-        discount = base * (discount_value or Decimal("0")) / Decimal("100")
-    elif discount_type == "fixed":
-        discount = min(discount_value or Decimal("0"), base)
-    else:
-        discount = Decimal("0")
-    return money(discount if discount > 0 else Decimal("0"))
 
 
 def compute_totals(quote):
