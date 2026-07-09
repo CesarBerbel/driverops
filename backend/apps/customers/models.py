@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -74,3 +75,83 @@ class Customer(models.Model):
         }
         if errors:
             raise ValidationError(errors)
+
+
+class CustomerInteraction(models.Model):
+    """Registro de relacionamento com o cliente (Cliente 360°).
+
+    Ligações, WhatsApp, e-mail, atendimento presencial, follow-up, observações
+    internas etc. -- histórico consolidado, opcionalmente vinculado a veículo/
+    OS/orçamento.
+    """
+
+    class Type(models.TextChoices):
+        CALL = "call", "Ligação"
+        WHATSAPP = "whatsapp", "WhatsApp"
+        EMAIL = "email", "E-mail"
+        IN_PERSON = "in_person", "Atendimento presencial"
+        SITE_LEAD = "site_lead", "Pedido do site"
+        FOLLOW_UP = "follow_up", "Follow-up"
+        CAMPAIGN = "campaign", "Campanha"
+        COMPLAINT = "complaint", "Reclamação"
+        PRAISE = "praise", "Elogio"
+        NOTE = "note", "Observação interna"
+        RETURN = "return", "Retorno combinado"
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Aberta"
+        RESOLVED = "resolved", "Resolvida"
+        AWAITING = "awaiting", "Aguardando retorno"
+        NO_SUCCESS = "no_success", "Sem sucesso"
+
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name="interactions"
+    )
+    vehicle = models.ForeignKey(
+        "vehicles.Vehicle",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    work_order = models.ForeignKey(
+        "orders.WorkOrder",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    quote = models.ForeignKey(
+        "quotes.Quote",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    interaction_type = models.CharField(
+        max_length=20, choices=Type.choices, default=Type.NOTE
+    )
+    channel = models.CharField(max_length=20, blank=True)
+    title = models.CharField(max_length=200, blank=True)
+    summary = models.CharField(max_length=300)
+    content = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.OPEN
+    )
+    next_action = models.CharField(max_length=200, blank=True)
+    next_action_date = models.DateField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.get_interaction_type_display()} — {self.customer_id}"

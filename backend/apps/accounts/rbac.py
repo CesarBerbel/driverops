@@ -57,6 +57,7 @@ MODULES = [
             ("edit", "Editar", False),
             ("delete", "Excluir/desativar", False),
             ("reactivate", "Reativar", False),
+            ("interactions", "Ver/registrar interações (Cliente 360°)", False),
         ],
     ),
     (
@@ -276,6 +277,7 @@ ROLE_DEFS = {
             "customers.view",
             "customers.create",
             "customers.edit",
+            "customers.interactions",
             "vehicles.view",
             "vehicles.create",
             "vehicles.edit",
@@ -314,6 +316,7 @@ ROLE_DEFS = {
             "orders.edit",
             "quotes.view",
             "customers.view",
+            "customers.interactions",
             "vehicles.view",
             "ai.use",
             "alerts.view",

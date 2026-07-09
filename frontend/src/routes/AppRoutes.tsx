@@ -26,6 +26,7 @@ import { NotificationsPage } from "@/features/alerts/pages/NotificationsPage";
 import { NotificationSettingsPage } from "@/features/alerts/pages/NotificationSettingsPage";
 import { CrmPage } from "@/features/crm/pages/CrmPage";
 import { CrmSettingsPage } from "@/features/crm/pages/CrmSettingsPage";
+import { Customer360Page } from "@/features/customer360/pages/Customer360Page";
 import { NotificationTemplatesPage } from "@/features/notifications/pages/NotificationTemplatesPage";
 import { OrderEditorPage } from "@/features/orders/pages/OrderEditorPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
@@ -94,6 +95,9 @@ export function AppRoutes() {
           <Route path="/settings/categories/parts" element={<PartCategoriesPage />} />
           <Route path="/settings/categories/services" element={<ServiceCategoriesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route element={<RequirePermission code="customers.view" />}>
+            <Route path="/customers/:id/360" element={<Customer360Page />} />
+          </Route>
           <Route path="/vehicles" element={<VehiclesPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/parts" element={<PartsPage />} />

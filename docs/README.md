@@ -23,6 +23,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Arquitetura e estrutura do projeto](architecture.md) | Organização de pastas do backend e frontend |
 | [Categorias](categories.md) | Categorias de clientes, peças e serviços, soft delete, filtros |
 | [Clientes](customers.md) | Fluxo de cadastro, campos, máscaras e integração com CEP (ViaCEP) |
+| [Central do Cliente 360°](customer360.md) | Tela consolidada do cliente: cabeçalho, ações rápidas, cards, alertas, abas (veículos, OS, orçamentos, interações, financeiro, linha do tempo), permissões e endpoints |
 | [Veículos](vehicles.md) | Cadastro vinculado a clientes, placa (formatos antigo/Mercosul), soft delete |
 | [Fornecedores](suppliers.md) | Cadastro de fornecedores, vínculo com peças, soft delete |
 | [Peças e Estoque](parts.md) | Cadastro de peças vinculado a categorias, estoque mínimo/baixo, formatação brasileira |

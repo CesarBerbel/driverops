@@ -65,7 +65,14 @@ export function SuggestionCard({
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {suggestion.customer_name && (
             <span>
-              <span className="text-muted-foreground">Cliente:</span> {suggestion.customer_name}
+              <span className="text-muted-foreground">Cliente:</span>{" "}
+              {suggestion.customer ? (
+                <Link className="text-primary hover:underline" to={`/customers/${suggestion.customer}/360`}>
+                  {suggestion.customer_name}
+                </Link>
+              ) : (
+                suggestion.customer_name
+              )}
             </span>
           )}
           {suggestion.vehicle_plate && (

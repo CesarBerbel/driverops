@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Car, MessageCircle, Search, Users, X } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import {
@@ -276,6 +277,9 @@ export function CustomersPage() {
                     </button>
                   </TableCell>
                   <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to={`/customers/${customer.id}/360`}>360°</Link>
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
