@@ -7,3 +7,4 @@ export {
   PageLoader,
 } from "./loaders";
 export { CardSkeleton, TableSkeleton } from "./skeletons";
+export { LoaderPlayground } from "./LoaderPlayground";

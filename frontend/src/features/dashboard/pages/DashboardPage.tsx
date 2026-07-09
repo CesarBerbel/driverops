@@ -1,3 +1,4 @@
+import { LoaderPlayground } from "@/components/loading";
 import { useAuth } from "@/features/auth/useAuth";
 
 import { DashboardTabs } from "../components/DashboardTabs";
@@ -13,6 +14,9 @@ export function DashboardPage() {
         </h1>
         <p className="text-muted-foreground">Este é o painel inicial do DriverOps.</p>
       </div>
+
+      {/* Ferramenta de dev para testar os estados de espera (some no build de produção). */}
+      {import.meta.env.DEV && <LoaderPlayground />}
 
       <DashboardTabs />
     </div>
