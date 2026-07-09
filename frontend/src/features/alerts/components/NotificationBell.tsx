@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+import { InlineLoader } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -93,8 +94,8 @@ export function NotificationBell() {
 
         <div className="max-h-[24rem] overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Carregando...
+            <div className="flex items-center justify-center p-6">
+              <InlineLoader label="Carregando..." />
             </div>
           ) : isError ? (
             <p className="p-6 text-center text-sm text-muted-foreground">

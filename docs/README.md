@@ -15,6 +15,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Usuários e Permissões (RBAC)](users-permissions.md) | Perfis, especialidades técnicas, permissões granulares, superuser × Administrador, matriz de permissões, auditoria |
 | [Comandos do Makefile](makefile.md) | Todos os alvos do `Makefile` e os comandos Docker equivalentes |
 | [Testes e lint](testing.md) | Como rodar e o que cada suíte cobre |
+| [Estados de espera (EngineLoader)](loading.md) | Sistema de loading com animação de motor em V, skeletons, overlay e acessibilidade |
 | [Build de produção](build.md) | Geração do bundle de produção do frontend |
 | [Implantação em produção](production.md) | Stack `docker-compose.prod.yml` (gunicorn, nginx, WhiteNoise, TLS, backups) e checklist de `.env.prod` |
 | [CI](ci.md) | Como o workflow do GitHub Actions funciona e por que é rápido |

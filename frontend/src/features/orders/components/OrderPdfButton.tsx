@@ -1,7 +1,8 @@
-import { FileText, Loader2 } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ButtonLoader, EngineLoader } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { extractErrorMessage } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -42,8 +43,6 @@ export function OrderPdfButton({
     }
   }
 
-  const icon = loading ? <Loader2 className="animate-spin" /> : <FileText className="size-4" />;
-
   return (
     <Button
       type="button"
@@ -55,8 +54,18 @@ export function OrderPdfButton({
       title={iconOnly ? "Gerar PDF da OS" : undefined}
       className={cn(className)}
     >
-      {icon}
-      {!iconOnly && "PDF"}
+      {loading ? (
+        iconOnly ? (
+          <EngineLoader size="sm" label="Gerando PDF..." />
+        ) : (
+          <ButtonLoader label="Gerando PDF..." />
+        )
+      ) : (
+        <>
+          <FileText className="size-4" />
+          {!iconOnly && "PDF"}
+        </>
+      )}
     </Button>
   );
 }

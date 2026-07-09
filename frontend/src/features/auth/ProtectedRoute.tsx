@@ -1,5 +1,6 @@
-import { Loader2 } from "lucide-react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+
+import { EngineLoader } from "@/components/loading";
 
 import { useAuth } from "./useAuth";
 
@@ -9,8 +10,9 @@ export function ProtectedRoute() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-svh items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      <div className="flex min-h-svh flex-col items-center justify-center gap-3">
+        <EngineLoader size="xl" />
+        <p className="text-sm text-muted-foreground">Preparando a oficina...</p>
       </div>
     );
   }

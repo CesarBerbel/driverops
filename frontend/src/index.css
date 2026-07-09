@@ -99,3 +99,51 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* -------------------------------------------------------------------------
+   EngineLoader -- animação de pistões de motor em V (CSS puro, sem libs).
+   Respeita prefers-reduced-motion: sem movimento, pistões em posição neutra.
+   As cores vêm de currentColor/tokens do tema (adapta claro/escuro).
+------------------------------------------------------------------------- */
+@keyframes engine-piston {
+  0%,
+  100% {
+    transform: translateY(-3px);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes engine-crank {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.engine-piston {
+  animation: engine-piston 0.9s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* O pistão direito trabalha em oposição ao esquerdo (motor em V). */
+.engine-piston--b {
+  animation-delay: -0.45s;
+}
+
+.engine-crank {
+  animation: engine-crank 0.9s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .engine-piston,
+  .engine-crank {
+    animation: none;
+  }
+}

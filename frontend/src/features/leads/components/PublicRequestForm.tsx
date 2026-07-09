@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ButtonLoader } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -254,8 +255,11 @@ export function PublicRequestForm({ open, onOpenChange, defaultType }: PublicReq
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <Button type="submit" className="w-full" disabled={!canSubmit || mutation.isPending}>
-                {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
-                Enviar pedido
+                {mutation.isPending ? (
+                  <ButtonLoader label="Enviando seu pedido..." />
+                ) : (
+                  "Enviar pedido"
+                )}
               </Button>
             </form>
           </>

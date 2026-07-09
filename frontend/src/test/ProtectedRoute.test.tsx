@@ -27,7 +27,9 @@ describe("ProtectedRoute", () => {
   it("shows a loading state while auth is resolving", () => {
     useAuthMock.mockReturnValue({ isAuthenticated: false, isLoading: true });
     const { container } = renderProtectedRoute();
-    expect(container.querySelector(".animate-spin")).toBeInTheDocument();
+    // EngineLoader: região com role=status e a animação dos pistões.
+    expect(container.querySelector('[role="status"]')).toBeInTheDocument();
+    expect(container.querySelector(".engine-piston")).toBeInTheDocument();
   });
 
   it("redirects to /login when not authenticated", () => {

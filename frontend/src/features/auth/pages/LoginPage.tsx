@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Truck } from "lucide-react";
+import { Truck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
+import { ButtonLoader } from "@/components/loading";
 import { PasswordInput } from "@/components/shared/PasswordInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,8 +93,7 @@ export function LoginPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="animate-spin" />}
-              Entrar
+              {isSubmitting ? <ButtonLoader label="Entrando..." /> : "Entrar"}
             </Button>
           </form>
         </CardContent>
