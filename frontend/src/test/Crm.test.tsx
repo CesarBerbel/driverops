@@ -129,6 +129,21 @@ describe("CRM — Próximas Ações", () => {
     expect(await screen.findByDisplayValue("Mensagem gerada pela IA.")).toBeInTheDocument();
   });
 
+  it("opens the action message from a notification deep link", async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter initialEntries={["/crm?suggestion=1"]}>
+          <CrmPage />
+        </MemoryRouter>
+        <Toaster />
+      </QueryClientProvider>,
+    );
+    // A mensagem sugerida da ação abre automaticamente.
+    expect(await screen.findByText("Mensagem sugerida")).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/Ficou alguma dúvida sobre o orçamento/)).toBeInTheDocument();
+  });
+
   it("hides AI generation without the use_ai permission", async () => {
     perms.codes = new Set(["crm.view"]);
     renderPage();

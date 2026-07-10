@@ -1,12 +1,12 @@
-import { MessageCircle, Phone } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatPhone, onlyDigits } from "@/lib/masks";
+import { formatPhone } from "@/lib/masks";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 interface ContactLinkProps {
-  // Digits-only values as stored by the backend. WhatsApp is preferred; a
-  // phone-only contact falls back to a tel: link.
+  // Digits-only values as stored by the backend. O número do cliente é tratado
+  // como contato de WhatsApp: usa o WhatsApp quando houver, senão o telefone.
   whatsapp?: string | null;
   phone?: string | null;
   emptyText?: string;
@@ -14,8 +14,9 @@ interface ContactLinkProps {
   emptyClassName?: string;
 }
 
-// Shared clickable phone/WhatsApp used in customer/OS surfaces so the behavior
-// (wa.me for WhatsApp, tel: for phone, Brazilian mask) stays consistent.
+// Shared clickable contact used in customer/OS surfaces. O telefone do cliente é
+// considerado WhatsApp, então o número (whatsapp || phone) sempre abre a conversa
+// no WhatsApp (wa.me, com máscara brasileira) para enviar mensagem.
 export function ContactLink({
   whatsapp,
   phone,
@@ -23,35 +24,22 @@ export function ContactLink({
   className,
   emptyClassName,
 }: ContactLinkProps) {
-  const linkClasses = cn(
-    "inline-flex w-fit max-w-full items-center gap-1 truncate hover:underline",
-    className,
-  );
+  const number = whatsapp || phone;
 
-  if (whatsapp) {
+  if (number) {
     return (
       <a
-        href={buildWhatsAppUrl(whatsapp)}
+        href={buildWhatsAppUrl(number)}
         target="_blank"
         rel="noopener noreferrer"
-        className={cn(linkClasses, "text-success")}
+        className={cn(
+          "inline-flex w-fit max-w-full items-center gap-1 truncate text-success hover:underline",
+          className,
+        )}
         onClick={(event) => event.stopPropagation()}
       >
         <MessageCircle className="size-3.5 shrink-0" />
-        <span className="truncate">{formatPhone(whatsapp)}</span>
-      </a>
-    );
-  }
-
-  if (phone) {
-    return (
-      <a
-        href={`tel:+55${onlyDigits(phone)}`}
-        className={linkClasses}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <Phone className="size-3.5 shrink-0" />
-        <span className="truncate">{formatPhone(phone)}</span>
+        <span className="truncate">{formatPhone(number)}</span>
       </a>
     );
   }

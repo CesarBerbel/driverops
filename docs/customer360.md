@@ -37,9 +37,12 @@ há um `id` de cliente em contexto:
 ### Cabeçalho e ações rápidas
 
 Mostra o avatar (iniciais), nome, tipo (Pessoa Física/Jurídica), documento e
-contatos. As ações rápidas aparecem conforme os dados disponíveis:
+contatos. O número do cliente (WhatsApp, ou o telefone quando não há um WhatsApp
+separado) é exibido como link que abre a conversa no WhatsApp — o telefone é
+sempre tratado como contato de WhatsApp. As ações rápidas aparecem conforme os
+dados disponíveis:
 
-- **WhatsApp** — abre a conversa (usa `buildWhatsAppUrl`), quando há WhatsApp.
+- **WhatsApp** — abre a conversa (usa `buildWhatsAppUrl`), com `whatsapp || phone`.
 - **Ligar** — `tel:` do telefone.
 - **E-mail** — `mailto:` do e-mail.
 - **Nova OS** — atalho para abrir uma ordem de serviço já com o cliente.
@@ -53,7 +56,10 @@ para quem tem `financial.view`), última visita e última interação.
 ### Alertas
 
 Avisos contextuais por severidade (`info`/`warning`/`danger`), por exemplo
-"OS em aberto", "orçamento aguardando decisão" ou "saldo em aberto".
+"OS em aberto", "orçamento aguardando decisão" ou "saldo em aberto". Cada aviso
+pode ser **dispensado** (botão ×) para limpar a tela; a dispensa vale só para a
+visita atual — ao reentrar na tela do cliente os avisos aparecem de novo (o
+estado é local, não persiste no backend).
 
 ### Abas (carregadas sob demanda)
 

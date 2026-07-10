@@ -1,5 +1,5 @@
 import { Check, Clock, MessageSquare, ThumbsDown, ListTodo, Megaphone } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -25,12 +25,19 @@ import type { Suggestion } from "./types";
 export function SuggestionCard({
   suggestion,
   onChanged,
+  autoOpenMessage = false,
 }: {
   suggestion: Suggestion;
   onChanged: (s: Suggestion) => void;
+  autoOpenMessage?: boolean;
 }) {
   const can = usePermissionCheck();
   const [msgOpen, setMsgOpen] = useState(false);
+
+  // Abre a mensagem automaticamente quando chega via deep link da notificação.
+  useEffect(() => {
+    if (autoOpenMessage) setMsgOpen(true);
+  }, [autoOpenMessage]);
   const prio = PRIORITY[suggestion.priority];
   const open = ["new", "in_analysis", "scheduled", "in_progress", "snoozed"].includes(
     suggestion.status,

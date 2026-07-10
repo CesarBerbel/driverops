@@ -147,6 +147,14 @@ describe("Cliente 360°", () => {
     );
   });
 
+  it("dismisses an alert (it stays hidden during the visit)", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: "Maria Silva" });
+    expect(screen.getByText("1 OS em aberto.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Dispensar aviso" }));
+    expect(screen.queryByText("1 OS em aberto.")).not.toBeInTheDocument();
+  });
+
   it("shows an error state", async () => {
     vi.mocked(api.getCustomer360).mockRejectedValue(new Error("fail"));
     renderPage();

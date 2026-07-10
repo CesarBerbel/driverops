@@ -246,6 +246,7 @@ export function PartsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Movimentar estoque"
                           aria-label="Movimentar estoque"
                           onClick={() => setMovementTarget(part)}
                         >
@@ -255,6 +256,7 @@ export function PartsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar peça"
                         aria-label="Editar peça"
                         onClick={() => openEditSheet(part.id)}
                       >
@@ -264,6 +266,7 @@ export function PartsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Excluir peça"
                           aria-label="Excluir peça"
                           onClick={() => setDeleteTarget(part)}
                         >
@@ -273,6 +276,7 @@ export function PartsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Reativar peça"
                           aria-label="Reativar peça"
                           disabled={reactivateMutation.isPending}
                           onClick={() => reactivateMutation.mutate(part.id)}

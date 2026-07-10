@@ -234,8 +234,7 @@ export function CustomersPage() {
                 <TableHead>Nome</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>E-mail</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>WhatsApp</TableHead>
+                <TableHead>Telefone / WhatsApp</TableHead>
                 <TableHead>Cidade/UF</TableHead>
                 <TableHead>Veículos</TableHead>
                 <TableHead className="w-0 text-right">Ações</TableHead>
@@ -257,18 +256,15 @@ export function CustomersPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{customer.email || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {customer.phone ? formatPhone(customer.phone) : "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {customer.whatsapp ? (
+                    {customer.whatsapp || customer.phone ? (
                       <a
-                        href={buildWhatsAppUrl(customer.whatsapp)}
+                        href={buildWhatsAppUrl(customer.whatsapp || customer.phone)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-success hover:underline"
                       >
                         <MessageCircle className="size-4" />
-                        {formatPhone(customer.whatsapp)}
+                        {formatPhone(customer.whatsapp || customer.phone)}
                       </a>
                     ) : (
                       "—"

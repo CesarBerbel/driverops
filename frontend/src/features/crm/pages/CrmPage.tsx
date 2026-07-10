@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { PageLoader } from "@/components/loading";
 import { Button } from "@/components/ui/button";
@@ -24,10 +25,27 @@ const ALL = "all";
 export function CrmPage() {
   const can = usePermissionCheck();
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState("open");
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Deep link vindo da notificação (/crm?suggestion=<id>): abre direto a
+  // mensagem daquela ação. Capturamos o id na montagem e limpamos a URL.
+  const [autoOpenId] = useState(() => {
+    const raw = searchParams.get("suggestion");
+    return raw ? Number(raw) : null;
+  });
+  const [status, setStatus] = useState(autoOpenId ? "" : "open");
   const [priority, setPriority] = useState(ALL);
   const [category, setCategory] = useState(ALL);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (searchParams.has("suggestion")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("suggestion");
+      setSearchParams(next, { replace: true });
+    }
+    // Só na montagem: consome o parâmetro de deep link uma vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filters = {
     open: status === "open" ? "1" : undefined,
@@ -128,7 +146,12 @@ export function CrmPage() {
       ) : (
         <div className="space-y-3">
           {data.map((s) => (
-            <SuggestionCard key={s.id} suggestion={s} onChanged={onChanged} />
+            <SuggestionCard
+              key={s.id}
+              suggestion={s}
+              onChanged={onChanged}
+              autoOpenMessage={s.id === autoOpenId}
+            />
           ))}
         </div>
       )}

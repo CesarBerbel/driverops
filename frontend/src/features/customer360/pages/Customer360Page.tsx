@@ -9,12 +9,14 @@ import {
   MessageCircle,
   Phone,
   Plus,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PageLoader } from "@/components/loading";
+import { ContactLink } from "@/components/shared/ContactLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { extractErrorMessage } from "@/lib/api-client";
-import { formatPhone, onlyDigits } from "@/lib/masks";
+import { onlyDigits } from "@/lib/masks";
 import { cn } from "@/lib/utils";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
@@ -62,6 +64,9 @@ export function Customer360Page() {
   const { id: idParam } = useParams();
   const id = Number(idParam);
   const [tab, setTab] = useState<TabKey>("overview");
+  // Avisos dispensados só nesta visita: o estado zera ao (re)entrar na tela do
+  // cliente, então os avisos voltam a aparecer na próxima vez.
+  const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["c360", id],
@@ -112,8 +117,8 @@ export function Customer360Page() {
                 {c.customer_type_display}
                 {!c.is_active && " · Inativo"}
               </p>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
-                {phone && <span>{formatPhone(phone)}</span>}
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
+                {phone && <ContactLink whatsapp={c.whatsapp} phone={c.phone} />}
                 {c.email && <span>{c.email}</span>}
                 {c.address_line && <span>{c.address_line}</span>}
               </div>
@@ -164,20 +169,31 @@ export function Customer360Page() {
         )}
       </div>
 
-      {/* Alertas */}
-      {data.alerts.length > 0 && (
+      {/* Alertas (dispensáveis; reaparecem ao reentrar na tela) */}
+      {data.alerts.some((_, i) => !dismissedAlerts.includes(i)) && (
         <div className="space-y-2">
-          {data.alerts.map((a, i) => (
-            <div key={i} className={cn("flex items-center gap-2 rounded-md border px-3 py-2 text-sm", ALERT_STYLE[a.severity])}>
-              <AlertTriangle className="size-4 shrink-0" />
-              <span className="flex-1">{a.message}</span>
-              {a.link && (
-                <Link to={a.link} className="font-medium underline">
-                  Ver
-                </Link>
-              )}
-            </div>
-          ))}
+          {data.alerts.map((a, i) =>
+            dismissedAlerts.includes(i) ? null : (
+              <div key={i} className={cn("flex items-center gap-2 rounded-md border px-3 py-2 text-sm", ALERT_STYLE[a.severity])}>
+                <AlertTriangle className="size-4 shrink-0" />
+                <span className="flex-1">{a.message}</span>
+                {a.link && (
+                  <Link to={a.link} className="font-medium underline">
+                    Ver
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDismissedAlerts((prev) => [...prev, i])}
+                  className="shrink-0 rounded p-0.5 opacity-70 hover:opacity-100"
+                  aria-label="Dispensar aviso"
+                  title="Dispensar aviso"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ),
+          )}
         </div>
       )}
 

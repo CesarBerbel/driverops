@@ -106,7 +106,10 @@ def test_high_priority_suggestion_notifies_team(order):
     _user("recv@example.com", "atendente")
     make_quote(order, status="sent", sent_days_ago=3)
     run_rules()
-    assert Notification.objects.filter(notif_type="crm_suggestion").exists()
+    notif = Notification.objects.filter(notif_type="crm_suggestion").first()
+    assert notif is not None
+    # O link leva direto para a mensagem da sugestão (deep link com o id).
+    assert notif.url == f"/crm?suggestion={notif.related_id}"
 
 
 # --- API / permissões / ações ---

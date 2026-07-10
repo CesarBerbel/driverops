@@ -548,8 +548,8 @@ def _notify(suggestions):
                 message=s.reason,
                 related_type="CrmSuggestion",
                 related_id=s.id,
-                url="/crm",
-                action_label="Ver sugestão",
+                url=f"/crm?suggestion={s.id}",
+                action_label="Ver ação",
                 dedup_key=f"crm_suggestion:{s.id}",
             )
     except Exception:  # pragma: no cover

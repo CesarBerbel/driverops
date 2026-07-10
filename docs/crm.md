@@ -67,7 +67,8 @@ Baixa/Média/Alta/Urgente — a lista ordena por prioridade e recência.
 
 - **OS:** a aba de relato mostra as sugestões contextuais da OS (`CrmSuggestionsPanel`).
 - **Central de Notificações:** sugestões de alta prioridade viram um aviso interno
-  (`crm_suggestion`) para quem tem `crm.view`, com link para a sugestão.
+  (`crm_suggestion`) para quem tem `crm.view`. O link é um deep link
+  (`/crm?suggestion=<id>`) que abre direto a **mensagem** daquela ação.
 - **Tarefas:** a tela [`/crm/tasks`](#tarefas-crmtasks) lista e gerencia as tarefas geradas.
 - **Tarefas/Campanhas:** sugestões viram tarefa (`crm.assign_task`) ou campanha em
   rascunho (`crm.create_campaign`) — a campanha exige aprovação para "envio".

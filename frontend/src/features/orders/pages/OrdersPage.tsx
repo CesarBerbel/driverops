@@ -261,15 +261,15 @@ export function OrdersPage() {
                   <TableCell>
                     <div className="flex flex-col">
                       <CustomerLink id={order.customer} name={order.customer_name} />
-                      {order.customer_whatsapp ? (
+                      {order.customer_whatsapp || order.customer_phone ? (
                         <a
-                          href={buildWhatsAppUrl(order.customer_whatsapp)}
+                          href={buildWhatsAppUrl(order.customer_whatsapp || order.customer_phone)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex w-fit items-center gap-1 text-xs text-success hover:underline"
                         >
                           <MessageCircle className="size-3" />
-                          {formatPhone(order.customer_whatsapp)}
+                          {formatPhone(order.customer_whatsapp || order.customer_phone)}
                         </a>
                       ) : (
                         <span className="text-xs text-muted-foreground">

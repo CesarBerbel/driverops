@@ -125,8 +125,21 @@ describe("CustomersPage", () => {
     expect(link).toHaveAttribute("target", "_blank");
   });
 
-  it("shows a dash instead of a link when there is no WhatsApp number", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ whatsapp: "" })]);
+  it("uses the phone as a WhatsApp link when there is no separate WhatsApp", async () => {
+    // O telefone do cliente é considerado WhatsApp.
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([
+      customer({ whatsapp: "", phone: "11987654321" }),
+    ]);
+    renderPage();
+
+    const link = await screen.findByRole("link", { name: /\(11\) 98765-4321/ });
+    expect(link).toHaveAttribute("href", "https://wa.me/5511987654321");
+  });
+
+  it("shows a dash when the customer has no phone or WhatsApp", async () => {
+    vi.mocked(customersApi.listCustomers).mockResolvedValue([
+      customer({ whatsapp: "", phone: "" }),
+    ]);
     const { container } = renderPage();
 
     await screen.findByText("Alice Wonderland");
