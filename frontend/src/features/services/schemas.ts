@@ -9,6 +9,8 @@ const standardPartSchema = z.object({
     const parsed = parseQuantityBRL(value);
     return parsed !== null && parsed >= 0;
   }, "Informe uma quantidade válida (não negativa)."),
+  is_required: z.boolean(),
+  notes: z.string().optional(),
 });
 
 export const serviceSchema = z

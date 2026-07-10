@@ -55,6 +55,8 @@ function toFormValues(service: Service): ServiceFormValues {
       part_id: sp.part,
       part_name: sp.part_name,
       suggested_quantity: sp.suggested_quantity.replace(".", ","),
+      is_required: sp.is_required,
+      notes: sp.notes ?? "",
     })),
   };
 }
@@ -70,6 +72,8 @@ function toPayload(values: ServiceFormValues): Partial<ServicePayload> {
     standard_parts: values.standard_parts.map((sp) => ({
       part: sp.part_id,
       suggested_quantity: String(parseQuantityBRL(sp.suggested_quantity) ?? 0),
+      is_required: sp.is_required,
+      notes: sp.notes ?? "",
     })),
   };
 }
@@ -141,8 +145,30 @@ export function ServiceForm({
   }
 
   function addPart(part: Part) {
-    append({ part_id: part.id, part_name: part.name, suggested_quantity: "1" });
+    append({
+      part_id: part.id,
+      part_name: part.name,
+      suggested_quantity: "1",
+      is_required: true,
+      notes: "",
+    });
   }
+
+  // Proteção defensiva: nunca renderiza a mesma categoria duas vezes, mesmo que
+  // a API devolva registros repetidos (dedup por id e por nome normalizado).
+  const uniqueCategories = (() => {
+    const seenId = new Set<number>();
+    const seenName = new Set<string>();
+    const result: Category[] = [];
+    for (const c of categories ?? []) {
+      const key = c.name.trim().toLowerCase();
+      if (seenId.has(c.id) || seenName.has(key)) continue;
+      seenId.add(c.id);
+      seenName.add(key);
+      result.push(c);
+    }
+    return result;
+  })();
 
   const linkedPartIds = fields.map((f) => f.part_id);
 
@@ -195,7 +221,7 @@ export function ServiceForm({
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories?.map((category) => (
+                      {uniqueCategories.map((category) => (
                         <SelectItem key={category.id} value={String(category.id)}>
                           {category.name}
                         </SelectItem>
@@ -294,49 +320,87 @@ export function ServiceForm({
             ) : (
               <ul className="space-y-2">
                 {fields.map((item, index) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center gap-3 rounded-md border px-3 py-2"
-                  >
-                    <span className="flex-1 text-sm font-medium">{item.part_name}</span>
-                    <div className="flex items-center gap-1">
-                      <Label
-                        htmlFor={`sp-qty-${index}`}
-                        className="text-xs text-muted-foreground"
-                      >
-                        Qtd.
-                      </Label>
+                  <li key={item.id} className="space-y-2 rounded-md border px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      <span className="flex-1 text-sm font-medium">{item.part_name}</span>
+                      <div className="flex items-center gap-1">
+                        <Label
+                          htmlFor={`sp-qty-${index}`}
+                          className="text-xs text-muted-foreground"
+                        >
+                          Qtd.
+                        </Label>
+                        <Controller
+                          control={control}
+                          name={`standard_parts.${index}.suggested_quantity`}
+                          render={({ field }) => (
+                            <Input
+                              id={`sp-qty-${index}`}
+                              inputMode="decimal"
+                              className="h-8 w-20"
+                              value={field.value}
+                              onChange={(event) =>
+                                field.onChange(sanitizeQuantityInput(event.target.value))
+                              }
+                              aria-invalid={Boolean(errors.standard_parts?.[index]?.suggested_quantity)}
+                            />
+                          )}
+                        />
+                      </div>
                       <Controller
                         control={control}
-                        name={`standard_parts.${index}.suggested_quantity`}
+                        name={`standard_parts.${index}.is_required`}
                         render={({ field }) => (
-                          <Input
-                            id={`sp-qty-${index}`}
-                            inputMode="decimal"
-                            className="h-8 w-24"
-                            value={field.value}
-                            onChange={(event) =>
-                              field.onChange(sanitizeQuantityInput(event.target.value))
-                            }
-                            aria-invalid={Boolean(errors.standard_parts?.[index]?.suggested_quantity)}
-                          />
+                          <Select
+                            value={field.value ? "required" : "optional"}
+                            onValueChange={(v) => field.onChange(v === "required")}
+                          >
+                            <SelectTrigger
+                              className="h-8 w-36"
+                              aria-label="Obrigatoriedade da peça"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="required">Obrigatória</SelectItem>
+                              <SelectItem value="optional">Opcional</SelectItem>
+                            </SelectContent>
+                          </Select>
                         )}
                       />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        title="Remover peça"
+                        aria-label="Remover peça"
+                        onClick={() => remove(index)}
+                      >
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      aria-label="Remover peça"
-                      onClick={() => remove(index)}
-                    >
-                      <Trash2 className="size-4 text-destructive" />
-                    </Button>
+                    <Controller
+                      control={control}
+                      name={`standard_parts.${index}.notes`}
+                      render={({ field }) => (
+                        <Input
+                          className="h-8"
+                          placeholder="Observação (opcional)"
+                          value={field.value ?? ""}
+                          onChange={(event) => field.onChange(event.target.value)}
+                        />
+                      )}
+                    />
                   </li>
                 ))}
               </ul>
             )}
+            <p className="text-xs text-muted-foreground">
+              Peças obrigatórias fazem parte essencial do serviço e não podem ser
+              recusadas separadamente quando o serviço for aprovado. Peças opcionais
+              podem ser sugeridas ao cliente e recusadas na aprovação parcial.
+            </p>
           </CardContent>
         </Card>
 

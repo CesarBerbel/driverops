@@ -165,6 +165,12 @@ class QuoteItem(models.Model):
         APPROVED = "approved", "Aprovado"
         REJECTED = "rejected", "Recusado"
 
+    class PartSource(models.TextChoices):
+        # Origem/associação de uma peça no orçamento (para badges e regras).
+        STANDARD = "standard", "Padrão do serviço"
+        MANUAL = "manual", "Avulsa associada"
+        INDEPENDENT = "independent", "Avulsa independente"
+
     quote = models.ForeignKey(Quote, on_delete=models.CASCADE, related_name="items")
     kind = models.CharField(max_length=10, choices=Kind.choices)
     description = models.CharField(max_length=200)
@@ -185,6 +191,15 @@ class QuoteItem(models.Model):
         null=True,
         blank=True,
         related_name="linked_parts",
+    )
+    # Obrigatoriedade da peça em relação ao serviço vinculado. Peça obrigatória
+    # de serviço aprovado não pode ser recusada separadamente. Só faz sentido
+    # com linked_service preenchido. Default True (preserva o comportamento
+    # anterior, em que toda peça vinculada seguia o serviço).
+    is_required = models.BooleanField(default=True)
+    # Origem da peça: padrão do serviço, avulsa associada ou avulsa independente.
+    part_source = models.CharField(
+        max_length=12, choices=PartSource.choices, blank=True, default=""
     )
 
     class Meta:

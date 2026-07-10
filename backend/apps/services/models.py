@@ -34,6 +34,12 @@ class ServicePart(models.Model):
         "parts.Part", on_delete=models.PROTECT, related_name="service_links"
     )
     suggested_quantity = models.DecimalField(max_digits=12, decimal_places=2, default=1)
+    # Obrigatoriedade da peça DENTRO deste serviço (pertence ao vínculo, não ao
+    # cadastro global da peça). Peça obrigatória não pode ser recusada
+    # separadamente quando o serviço for aprovado; opcional pode. Default True
+    # preserva o comportamento das peças padrão já existentes.
+    is_required = models.BooleanField(default=True)
+    notes = models.CharField(max_length=200, blank=True)
 
     class Meta:
         unique_together = [("service", "part")]

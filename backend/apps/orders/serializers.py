@@ -163,6 +163,7 @@ class WorkOrderPartSerializer(_WorkOrderLineSerializer):
             "line_total",
             "is_custom",
             "linked_service_index",
+            "is_required",
         ]
 
     def to_representation(self, instance):

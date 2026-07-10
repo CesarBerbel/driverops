@@ -20,12 +20,23 @@ function item(overrides: Partial<QuoteItem>): QuoteItem {
     status: "pending",
     status_display: "Pendente",
     linked_service: null,
+    is_required: true,
+    part_source: "independent",
+    part_source_display: "Avulsa independente",
+    requirement_display: "",
     ...overrides,
   };
 }
 
 const SERVICE = item({ id: 1, kind: "service", description: "Troca de pastilhas", subtotal: "100.00" });
-const LINKED_PART = item({ id: 2, description: "Pastilha", linked_service: 1 });
+const LINKED_PART = item({
+  id: 2,
+  description: "Pastilha",
+  linked_service: 1,
+  part_source: "standard",
+  part_source_display: "Padrão do serviço",
+  requirement_display: "Obrigatória",
+});
 const FREE_PART = item({ id: 3, description: "Fluido de freio" });
 
 function Harness() {
@@ -66,5 +77,39 @@ describe("QuoteItemDecisionList linked items", () => {
       .map(Number)
       .sort();
     expect(ids).toEqual([1, 2, 3]);
+  });
+});
+
+const OPTIONAL_PART = item({
+  id: 2,
+  description: "Filtro de ar",
+  linked_service: 1,
+  is_required: false,
+  part_source: "standard",
+  part_source_display: "Padrão do serviço",
+  requirement_display: "Opcional",
+});
+
+function OptionalHarness() {
+  const [ids, setIds] = useState<number[]>([1, 2]);
+  return (
+    <>
+      <QuoteItemDecisionList items={[SERVICE, OPTIONAL_PART]} approvedIds={ids} onChange={setIds} />
+      <span data-testid="ids">{ids.join(",")}</span>
+    </>
+  );
+}
+
+describe("QuoteItemDecisionList optional linked parts", () => {
+  it("lets an optional part be rejected while the service stays approved", async () => {
+    const user = userEvent.setup();
+    render(<OptionalHarness />);
+    // A peça opcional tem um checkbox individual (serviço aprovado).
+    const checkbox = screen.getByRole("checkbox", { name: "Aprovar Filtro de ar" });
+    expect(checkbox).toBeChecked();
+    await user.click(checkbox);
+    // Só a peça opcional (2) sai; o serviço (1) permanece aprovado.
+    expect(screen.getByTestId("ids")).toHaveTextContent(/^1$/);
+    expect(screen.getByText("Opcional")).toBeInTheDocument();
   });
 });

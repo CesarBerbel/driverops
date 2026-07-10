@@ -26,9 +26,13 @@ export interface QuoteItem {
   notes: string;
   status: QuoteItemStatus;
   status_display: string;
-  // Peça vinculada a um serviço (peça padrão): aprovada/recusada junto com ele.
-  // Nulo para serviços, pacotes e peças independentes.
+  // Peça vinculada a um serviço: aprovada/recusada junto com ele (obrigatória)
+  // ou individualmente (opcional). Nulo para serviços, pacotes e independentes.
   linked_service: number | null;
+  is_required: boolean;
+  part_source: "standard" | "manual" | "independent" | "";
+  part_source_display: string;
+  requirement_display: string;
 }
 
 export interface QuoteTotals {

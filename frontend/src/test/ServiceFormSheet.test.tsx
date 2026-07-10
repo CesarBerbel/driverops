@@ -165,7 +165,9 @@ describe("ServiceFormSheet", () => {
     await waitFor(() =>
       expect(servicesApi.createService).toHaveBeenCalledWith(
         expect.objectContaining({
-          standard_parts: [{ part: 1, suggested_quantity: "1" }],
+          standard_parts: [
+            { part: 1, suggested_quantity: "1", is_required: true, notes: "" },
+          ],
         }),
       ),
     );
@@ -245,7 +247,9 @@ describe("ServiceFormSheet", () => {
       expect(servicesApi.createService).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Troca de velas",
-          standard_parts: [{ part: 7, suggested_quantity: "1" }],
+          standard_parts: [
+            { part: 7, suggested_quantity: "1", is_required: true, notes: "" },
+          ],
         }),
       ),
     );

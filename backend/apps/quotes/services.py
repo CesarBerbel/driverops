@@ -14,15 +14,16 @@ def _line_description(item, linked):
 
 
 def _part_to_service_map(order):
-    """Mapa {id da peça de catálogo -> id do serviço de catálogo} das peças padrão
-    dos serviços presentes na OS. Usado para vincular a peça ao serviço no snapshot.
+    """Mapa {id da peça de catálogo -> (id do serviço, is_required)} das peças
+    padrão dos serviços presentes na OS. Usado para vincular a peça ao serviço no
+    snapshot e carregar a obrigatoriedade configurada no cadastro do serviço.
     """
     service_ids = [si.service_id for si in order.service_items.all() if si.service_id]
     mapping = {}
     if service_ids:
         for sp in ServicePart.objects.filter(service_id__in=service_ids):
             # Primeira ocorrência vence (ordem determinística por serviço/linha).
-            mapping.setdefault(sp.part_id, sp.service_id)
+            mapping.setdefault(sp.part_id, (sp.service_id, sp.is_required))
     return mapping
 
 
@@ -96,12 +97,21 @@ def _create_quote_items_from_order(quote, order):
     part_items = []
     for pi in order.part_items.all():
         # Associação manual na OS tem precedência (funciona também para avulsas);
-        # senão, cai na associação automática por peça padrão do catálogo.
+        # senão, cai na associação automática por peça padrão do catálogo. A
+        # obrigatoriedade e a origem (avulsa associada x padrão) acompanham.
         linked = None
+        is_required = True
+        source = QuoteItem.PartSource.INDEPENDENT
         if pi.linked_service_id and pi.linked_service_id in service_item_by_wo:
             linked = service_item_by_wo[pi.linked_service_id]
+            is_required = pi.is_required
+            source = QuoteItem.PartSource.MANUAL
         elif pi.part_id and pi.part_id in part_to_service:
-            linked = service_item_by_catalog.get(part_to_service[pi.part_id])
+            service_id, catalog_required = part_to_service[pi.part_id]
+            linked = service_item_by_catalog.get(service_id)
+            if linked is not None:
+                is_required = catalog_required
+                source = QuoteItem.PartSource.STANDARD
         part_items.append(
             QuoteItem(
                 quote=quote,
@@ -111,10 +121,35 @@ def _create_quote_items_from_order(quote, order):
                 unit_price=pi.unit_price,
                 is_custom=pi.part_id is None,
                 linked_service=linked,
+                is_required=is_required if linked is not None else True,
+                part_source=source,
             )
         )
     QuoteItem.objects.bulk_create(part_items)
     return quote
+
+
+def _decision_violation(detail, code, offending, service_by_id):
+    """Monta o corpo de erro estruturado de uma decisão inconsistente."""
+    return {
+        "detail": detail,
+        "code": code,
+        "items": [
+            {
+                "service_item_id": item.linked_service_id,
+                "service_name": (
+                    service_by_id[item.linked_service_id].description
+                    if item.linked_service_id in service_by_id
+                    else ""
+                ),
+                "part_item_id": item.id,
+                "part_name": item.description,
+                "association_type": item.part_source or "",
+                "requirement": "required" if item.is_required else "optional",
+            }
+            for item in offending
+        ],
+    }
 
 
 def apply_item_decisions(quote, approved_ids):
@@ -122,33 +157,66 @@ def apply_item_decisions(quote, approved_ids):
 
     ``approved_ids`` = ids dos itens aprovados; os demais são recusados. Se for
     ``None``, aprova todos (aprovação integral -- mantém o comportamento anterior).
-    Regra do status geral:
-    - todos aprovados  -> "approved" (aprovado integralmente)
-    - todos recusados  -> "rejected"
-    - misto            -> "partially_approved"
-    Um orçamento sem itens é tratado como recusado (nada a executar).
+    Status geral: todos aprovados -> "approved"; todos recusados -> "rejected";
+    misto -> "partially_approved". Sem itens => recusado.
 
-    Peças vinculadas a um serviço (``linked_service``) **seguem a decisão do
-    serviço** -- não se pode recusar a peça sem recusar o serviço nem vice-versa.
+    Regras de peças vinculadas a um serviço (``linked_service``):
+    - Serviço recusado -> a peça acompanha a recusa (obrigatória ou opcional).
+    - Serviço aprovado + peça **obrigatória** -> a peça deve ser aprovada; recusá-la
+      separadamente é bloqueado (400 estruturado).
+    - Serviço aprovado + peça **opcional** -> pode ser aprovada ou recusada.
+    - Peça sem vínculo (avulsa independente) -> decidida por conta própria.
+    O backend é a fonte da verdade: payloads manipulados são rejeitados.
     """
+    from rest_framework.exceptions import ValidationError
+
     items = list(quote.items.all())
     approve_all = approved_ids is None
     approved_set = set(approved_ids or [])
 
-    # Decisão dos serviços primeiro (mestres do grupo).
-    service_decision = {
-        item.id: (approve_all or item.id in approved_set)
-        for item in items
-        if item.kind == QuoteItem.Kind.SERVICE
+    service_by_id = {
+        item.id: item for item in items if item.kind == QuoteItem.Kind.SERVICE
     }
+    service_decision = {
+        sid: (approve_all or sid in approved_set) for sid in service_by_id
+    }
+
+    final = {}
+    rejected_required = []  # obrigatória de serviço aprovado marcada p/ recusa
+    for item in items:
+        if item.linked_service_id in service_decision:
+            svc_approved = service_decision[item.linked_service_id]
+            wants_approve = approve_all or item.id in approved_set
+            if not svc_approved:
+                # Serviço recusado -> a peça acompanha a recusa (cascata),
+                # ainda que o payload a tenha marcado (nunca fica aprovada).
+                final[item.id] = False
+            elif item.is_required:
+                # Serviço aprovado + obrigatória -> não pode ser recusada.
+                final[item.id] = True
+                if not wants_approve:
+                    rejected_required.append(item)
+            else:
+                # Serviço aprovado + opcional -> respeita a decisão.
+                final[item.id] = wants_approve
+        else:
+            final[item.id] = approve_all or item.id in approved_set
+
+    if rejected_required:
+        raise ValidationError(
+            _decision_violation(
+                "Peças obrigatórias vinculadas a serviços aprovados não podem ser "
+                "recusadas separadamente. Para não aprovar a peça, recuse também o "
+                "serviço relacionado.",
+                "required_service_part_cannot_be_rejected",
+                rejected_required,
+                service_by_id,
+            )
+        )
 
     n_approved = 0
     for item in items:
-        if item.linked_service_id in service_decision:
-            # Peça vinculada: segue o serviço.
-            approved = service_decision[item.linked_service_id]
-        else:
-            approved = approve_all or item.id in approved_set
+        approved = final[item.id]
         item.status = item.ItemStatus.APPROVED if approved else item.ItemStatus.REJECTED
         if approved:
             n_approved += 1

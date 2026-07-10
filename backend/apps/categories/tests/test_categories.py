@@ -10,6 +10,31 @@ def test_list_requires_authentication(client):
     assert response.status_code == 401
 
 
+def test_unique_active_category_constraint_is_declared():
+    """Regressão: existe a constraint de banco que impede categorias ATIVAS
+    duplicadas (tipo + nome, case-insensitive) -- a correção da duplicidade no
+    cadastro/edição de serviços passa a ser garantida também no banco."""
+    names = {c.name for c in Category._meta.constraints}
+    assert "uniq_active_category_type_name" in names
+
+
+def test_api_blocks_duplicate_active_service_category_regression(auth_client):
+    """Regressão de ponta a ponta: a API recusa criar uma segunda categoria de
+    serviço ativa com o mesmo nome (mesmo com diferença de caixa)."""
+    first = auth_client.post(
+        "/api/categories/",
+        data={"category_type": "service", "name": "Freios"},
+        content_type="application/json",
+    )
+    assert first.status_code == 201
+    dup = auth_client.post(
+        "/api/categories/",
+        data={"category_type": "service", "name": "freios"},
+        content_type="application/json",
+    )
+    assert dup.status_code == 400
+
+
 def test_create_requires_authentication(client):
     response = client.post(
         "/api/categories/",

@@ -10,6 +10,10 @@ class QuoteItemSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
     kind_display = serializers.CharField(source="get_kind_display", read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    part_source_display = serializers.CharField(
+        source="get_part_source_display", read_only=True
+    )
+    requirement_display = serializers.SerializerMethodField()
 
     class Meta:
         model = QuoteItem
@@ -26,7 +30,17 @@ class QuoteItemSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "linked_service",
+            "is_required",
+            "part_source",
+            "part_source_display",
+            "requirement_display",
         ]
+
+    def get_requirement_display(self, obj):
+        # Só faz sentido para peças vinculadas a um serviço.
+        if obj.kind != QuoteItem.Kind.PART or obj.linked_service_id is None:
+            return ""
+        return "Obrigatória" if obj.is_required else "Opcional"
 
     def get_subtotal(self, obj):
         return str(item_subtotal(obj))

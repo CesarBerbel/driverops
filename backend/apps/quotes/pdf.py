@@ -84,6 +84,15 @@ PARTIAL_APPROVAL_TERM = (
 )
 
 
+def _requirement_label(item):
+    """Rótulo de peça vinculada a serviço: origem + obrigatoriedade."""
+    if item.kind != item.Kind.PART or item.linked_service_id is None:
+        return ""
+    source = item.get_part_source_display()
+    requirement = "obrigatória" if item.is_required else "opcional"
+    return f"{source} · {requirement}" if source else requirement
+
+
 def _fmt_item(item):
     return {
         "description": item.description,
@@ -95,6 +104,7 @@ def _fmt_item(item):
         "notes": item.notes,
         "status": item.status,
         "status_display": item.get_status_display(),
+        "requirement_label": _requirement_label(item),
     }
 
 

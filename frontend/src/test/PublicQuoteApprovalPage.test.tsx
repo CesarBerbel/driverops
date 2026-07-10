@@ -39,6 +39,10 @@ function publicQuote(overrides: Partial<PublicQuote> = {}): PublicQuote {
         status: "pending",
         status_display: "Pendente",
         linked_service: null,
+        is_required: true,
+        part_source: "independent",
+        part_source_display: "",
+        requirement_display: "",
       },
       {
         id: 2,
@@ -53,6 +57,10 @@ function publicQuote(overrides: Partial<PublicQuote> = {}): PublicQuote {
         status: "pending",
         status_display: "Pendente",
         linked_service: null,
+        is_required: true,
+        part_source: "independent",
+        part_source_display: "",
+        requirement_display: "",
       },
     ],
     totals: {

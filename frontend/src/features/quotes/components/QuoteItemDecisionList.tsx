@@ -1,17 +1,15 @@
-import { Check, Link2, X } from "lucide-react";
+import { Check, Link2, Lock, X } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrencyBRL } from "@/lib/masks";
 import { cn } from "@/lib/utils";
 
 import type { QuoteItem } from "../types";
 
-export function approvedTotal(items: QuoteItem[], approvedIds: number[]): number {
-  const set = new Set(approvedIds);
-  return items
-    .filter((item) => set.has(item.id))
-    .reduce((sum, item) => sum + Number(item.subtotal), 0);
-}
+const REQUIRED_TOOLTIP =
+  "Peça obrigatória vinculada ao serviço aprovado. Para recusá-la, recuse também o serviço.";
 
 interface QuoteItemDecisionListProps {
   items: QuoteItem[];
@@ -20,9 +18,13 @@ interface QuoteItemDecisionListProps {
 }
 
 // Seleção item a item (aprovado/recusado) para a aprovação parcial. Reutilizado
-// no fluxo presencial (física/tablet) e na página pública. Peças vinculadas a um
-// serviço (peça padrão) aparecem aninhadas e seguem a decisão do serviço -- não
-// podem ser recusadas sem o serviço nem vice-versa. Botões grandes p/ tablet.
+// no fluxo presencial (física/tablet) e na página pública.
+//
+// Regras das peças vinculadas a um serviço:
+// - Serviço recusado -> todas as peças acompanham a recusa.
+// - Serviço aprovado + peça OBRIGATÓRIA -> travada, aprovada junto (cadeado).
+// - Serviço aprovado + peça OPCIONAL -> pode ser aprovada/recusada individualmente.
+// O backend é a fonte da verdade; a UI apenas espelha as regras.
 export function QuoteItemDecisionList({
   items,
   approvedIds,
@@ -43,7 +45,8 @@ export function QuoteItemDecisionList({
   }
   const independentParts = parts.filter((p) => p.linked_service == null);
 
-  // Serviço + peças vinculadas são aprovados/recusados em conjunto.
+  // Aprovar o serviço traz junto suas peças (obrigatórias e opcionais);
+  // recusar remove o serviço e todas as peças vinculadas.
   function setGroupApproved(service: QuoteItem, value: boolean) {
     const groupIds = [
       service.id,
@@ -77,12 +80,7 @@ export function QuoteItemDecisionList({
           >
             Aprovar todos
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => onChange([])}
-          >
+          <Button type="button" size="sm" variant="outline" onClick={() => onChange([])}>
             Recusar todos
           </Button>
         </div>
@@ -103,36 +101,13 @@ export function QuoteItemDecisionList({
                   onReject={() => setGroupApproved(service, false)}
                 />
                 {linked.map((part) => (
-                  <div
+                  <LinkedPartRow
                     key={part.id}
-                    className="flex items-center justify-between gap-3 border-t bg-muted/30 px-2.5 py-2 pl-6"
-                  >
-                    <div className="min-w-0">
-                      <p
-                        className={cn(
-                          "flex items-center gap-1 truncate text-sm",
-                          !isApproved && "text-muted-foreground line-through",
-                        )}
-                      >
-                        <Link2 className="size-3 shrink-0 text-muted-foreground no-underline" />
-                        {part.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Peça do serviço · {part.quantity}× ·{" "}
-                        {formatCurrencyBRL(Number(part.subtotal))}
-                      </p>
-                    </div>
-                    <span
-                      className={cn(
-                        "shrink-0 text-xs font-medium",
-                        isApproved
-                          ? "text-emerald-700 dark:text-emerald-400"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {isApproved ? "Aprovado" : "Recusado"}
-                    </span>
-                  </div>
+                    part={part}
+                    serviceApproved={isApproved}
+                    partApproved={isApproved && approved.has(part.id)}
+                    onToggle={(value) => setApproved(part.id, value)}
+                  />
                 ))}
               </div>
             );
@@ -141,21 +116,101 @@ export function QuoteItemDecisionList({
       )}
 
       {packages.length > 0 && (
-        <ItemGroup
-          title="Pacotes"
-          items={packages}
-          approved={approved}
-          onSet={setApproved}
-        />
+        <ItemGroup title="Pacotes" items={packages} approved={approved} onSet={setApproved} />
       )}
 
       {independentParts.length > 0 && (
         <ItemGroup
-          title="Peças"
+          title="Peças avulsas"
           items={independentParts}
           approved={approved}
           onSet={setApproved}
         />
+      )}
+    </div>
+  );
+}
+
+function PartBadges({ part }: { part: QuoteItem }) {
+  return (
+    <span className="flex flex-wrap items-center gap-1">
+      {part.part_source_display && (
+        <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
+          {part.part_source_display}
+        </Badge>
+      )}
+      {part.requirement_display && (
+        <Badge
+          variant="outline"
+          className={cn(
+            "px-1.5 py-0 text-[10px] font-normal",
+            part.is_required
+              ? "border-amber-400 text-amber-700 dark:text-amber-400"
+              : "border-slate-300 text-muted-foreground",
+          )}
+        >
+          {part.requirement_display}
+        </Badge>
+      )}
+    </span>
+  );
+}
+
+function LinkedPartRow({
+  part,
+  serviceApproved,
+  partApproved,
+  onToggle,
+}: {
+  part: QuoteItem;
+  serviceApproved: boolean;
+  partApproved: boolean;
+  onToggle: (value: boolean) => void;
+}) {
+  // Peça obrigatória de serviço aprovado é travada; opcional é decidível.
+  const locked = !serviceApproved || part.is_required;
+  return (
+    <div className="flex items-center justify-between gap-3 border-t bg-muted/30 px-2.5 py-2 pl-6">
+      <div className="min-w-0 space-y-0.5">
+        <p
+          className={cn(
+            "flex items-center gap-1 truncate text-sm",
+            !partApproved && "text-muted-foreground line-through",
+          )}
+        >
+          {part.is_required ? (
+            <Lock className="size-3 shrink-0 text-muted-foreground" />
+          ) : (
+            <Link2 className="size-3 shrink-0 text-muted-foreground" />
+          )}
+          {part.description}
+        </p>
+        <PartBadges part={part} />
+        <p className="text-xs text-muted-foreground">
+          {part.quantity}× · {formatCurrencyBRL(Number(part.subtotal))}
+        </p>
+      </div>
+      {serviceApproved && !part.is_required ? (
+        // Opcional de serviço aprovado: checkbox individual.
+        <label className="flex shrink-0 items-center gap-1.5 text-xs">
+          <Checkbox
+            checked={partApproved}
+            onCheckedChange={(v) => onToggle(v === true)}
+            aria-label={`Aprovar ${part.description}`}
+          />
+          {partApproved ? "Aprovada" : "Recusada"}
+        </label>
+      ) : (
+        <span
+          className={cn(
+            "flex shrink-0 items-center gap-1 text-xs font-medium",
+            partApproved ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground",
+          )}
+          title={locked && part.is_required ? REQUIRED_TOOLTIP : undefined}
+        >
+          {locked && part.is_required && serviceApproved && <Lock className="size-3" />}
+          {partApproved ? "Aprovada" : "Recusada"}
+        </span>
       )}
     </div>
   );

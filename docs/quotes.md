@@ -58,6 +58,28 @@ vira aprovado ou recusado. O status geral do orçamento é derivado dos itens:
 - alguns aprovados e outros recusados → **Aprovado parcialmente**;
 - todos recusados → **Recusado**.
 
+### Peças obrigatórias e opcionais
+
+Uma peça pode estar **vinculada a um serviço** do orçamento — como **peça padrão** do serviço
+(`Padrão do serviço`) ou como **peça avulsa associada** manualmente ao serviço na OS
+(`Avulsa associada`). Peças sem vínculo são **avulsas independentes**. Cada peça vinculada é
+**obrigatória** ou **opcional** (definido no cadastro do serviço ou ao associar a peça na OS).
+
+Regras da aprovação parcial (validadas no **backend**, fonte da verdade — `apply_item_decisions`):
+
+- **Serviço recusado** → todas as peças vinculadas (obrigatórias e opcionais) **acompanham a
+  recusa**.
+- **Serviço aprovado + peça obrigatória** → a peça é aprovada junto e **não pode ser recusada
+  separadamente**. Um payload que tente recusá-la é bloqueado com HTTP 400
+  (`code: required_service_part_cannot_be_rejected`, com a lista dos itens).
+- **Serviço aprovado + peça opcional** → pode ser aprovada ou recusada individualmente.
+- **Peça avulsa independente** → aprovada/recusada por conta própria.
+
+Na interface de aprovação (interna e no portal público), a peça obrigatória de um serviço aprovado
+aparece **travada** (cadeado, com tooltip explicativo); a opcional tem um **checkbox** próprio.
+Badges indicam a origem (`Padrão do serviço`/`Avulsa associada`) e a obrigatoriedade
+(`Obrigatória`/`Opcional`). O PDF traz o mesmo rótulo por peça.
+
 ## Itens e valores
 
 O orçamento exibe, separadamente: serviços, pacotes e peças (cadastrados e avulsos, com a marca

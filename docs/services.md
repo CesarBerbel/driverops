@@ -39,8 +39,15 @@ a mão de obra pode começar em `R$ 0,00`.
 | Valor de mão de obra | **Sim** | Moeda (Real), aceita `R$ 0,00`, não aceita negativo |
 | Tempo estimado | Não | Em minutos (inteiro), opcional |
 | Descrição | Não | Texto livre |
-| Peças padrão | Não | Vínculo com peças do estoque + quantidade sugerida |
+| Peças padrão | Não | Vínculo com peças do estoque + quantidade sugerida + **obrigatoriedade** + observação |
 | Observações internas | Não | Texto livre |
+
+Cada **peça padrão** do serviço pode ser marcada como **Obrigatória** ou **Opcional**
+(o padrão é *obrigatória*). A obrigatoriedade pertence ao **vínculo** serviço↔peça (não ao
+cadastro global da peça): a mesma peça pode ser obrigatória num serviço e opcional em outro.
+Isso governa a [aprovação parcial do orçamento](quotes.md#peças-obrigatórias-e-opcionais):
+peça obrigatória de um serviço aprovado **não pode ser recusada separadamente**; peça opcional
+pode. Veja [Máquina de peças por serviço](quotes.md#peças-obrigatórias-e-opcionais).
 
 ## Valor do serviço
 
@@ -60,6 +67,12 @@ O campo **Categoria do serviço** lista apenas categorias de serviço **habilita
 (`listCategories("service", "active")`). Categorias desabilitadas nunca aparecem para novos
 cadastros, mas o vínculo de um serviço já existente com uma categoria posteriormente desabilitada é
 preservado (mesma regra "só a *nova* atribuição precisa estar habilitada" usada em Peças).
+
+**Sem duplicidade:** o banco tem uma constraint única parcial
+(`uniq_active_category_type_name`) que impede duas categorias **ativas** do mesmo tipo com o mesmo
+nome (case-insensitive) — fechando a corrida do check aplicacional que podia gerar duplicatas. O
+frontend ainda faz uma dedup defensiva (por id e por nome normalizado) para nunca renderizar a
+mesma opção duas vezes, mesmo que a API devolva repetidos.
 
 ### Adicionar categoria inline
 

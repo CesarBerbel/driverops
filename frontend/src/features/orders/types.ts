@@ -51,6 +51,8 @@ export interface WorkOrderPartItem {
   is_custom: boolean;
   // Índice do serviço vinculado na lista de serviços da OS (ou null).
   linked_service_index: number | null;
+  // Obrigatoriedade da peça em relação ao serviço vinculado.
+  is_required: boolean;
 }
 
 export interface WorkOrder {
@@ -116,6 +118,7 @@ export interface WorkOrderPayload {
   part_items: (WorkOrderLinePayload & {
     part: number | null;
     linked_service_index: number | null;
+    is_required: boolean;
   })[];
 }
 

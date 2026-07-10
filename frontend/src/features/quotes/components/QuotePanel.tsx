@@ -43,7 +43,8 @@ import {
 } from "../api";
 import { formatDateTimeBr, quoteStatusClass } from "../quoteStatus";
 import type { Quote } from "../types";
-import { QuoteItemDecisionList, approvedTotal } from "./QuoteItemDecisionList";
+import { QuoteItemDecisionList } from "./QuoteItemDecisionList";
+import { approvedTotal } from "./quoteTotals";
 import { TabletSignatureDialog } from "./TabletSignatureDialog";
 
 interface QuotePanelProps {

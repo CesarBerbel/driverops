@@ -173,6 +173,10 @@ class WorkOrderPart(models.Model):
         null=True,
         blank=True,
     )
+    # Obrigatoriedade da peça em relação ao serviço vinculado (só relevante
+    # quando linked_service está preenchido). Peça obrigatória de serviço
+    # aprovado não pode ser recusada separadamente no orçamento. Default True.
+    is_required = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["id"]

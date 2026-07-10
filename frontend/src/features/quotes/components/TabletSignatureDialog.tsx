@@ -14,7 +14,8 @@ import { Label } from "@/components/ui/label";
 import { formatCurrencyBRL } from "@/lib/masks";
 
 import type { Quote } from "../types";
-import { QuoteItemDecisionList, approvedTotal } from "./QuoteItemDecisionList";
+import { QuoteItemDecisionList } from "./QuoteItemDecisionList";
+import { approvedTotal } from "./quoteTotals";
 import { SignaturePad } from "./SignaturePad";
 
 interface TabletSignatureDialogProps {

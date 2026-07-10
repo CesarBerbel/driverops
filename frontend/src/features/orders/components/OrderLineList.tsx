@@ -179,12 +179,12 @@ export function OrderLineList({
                 </div>
 
                 {serviceOptions && serviceOptions.length > 0 && (
-                  <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-                    <Link2 className="size-3 shrink-0" />
-                    <Controller
-                      control={control}
-                      name={`${namePrefix}.${index}.linked_service_index`}
-                      render={({ field: linkField }) => (
+                  <Controller
+                    control={control}
+                    name={`${namePrefix}.${index}.linked_service_index`}
+                    render={({ field: linkField }) => (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                        <Link2 className="size-3 shrink-0" />
                         <Select
                           value={
                             linkField.value == null ? NO_SERVICE : String(linkField.value)
@@ -208,9 +208,32 @@ export function OrderLineList({
                             ))}
                           </SelectContent>
                         </Select>
-                      )}
-                    />
-                  </div>
+                        {linkField.value != null && (
+                          <Controller
+                            control={control}
+                            name={`${namePrefix}.${index}.is_required`}
+                            render={({ field: reqField }) => (
+                              <Select
+                                value={reqField.value === false ? "optional" : "required"}
+                                onValueChange={(v) => reqField.onChange(v === "required")}
+                              >
+                                <SelectTrigger
+                                  aria-label="Obrigatoriedade da peça"
+                                  className="h-6 gap-1 border-0 bg-transparent px-1 py-0 text-xs text-muted-foreground shadow-none hover:text-foreground focus-visible:ring-0"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="required">Obrigatória</SelectItem>
+                                  <SelectItem value="optional">Opcional</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        )}
+                      </div>
+                    )}
+                  />
                 )}
               </li>
             );

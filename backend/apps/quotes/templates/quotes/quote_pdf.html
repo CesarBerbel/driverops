@@ -177,6 +177,7 @@
           {% for item in group.items %}
           <tr class="{% if item.status == 'rejected' %}rejected{% endif %}">
             <td>{{ item.description }}
+              {% if item.requirement_label %}<br /><span class="muted small">{{ item.requirement_label }}</span>{% endif %}
               {% if item.notes %}<br /><span class="muted small">{{ item.notes }}</span>{% endif %}
             </td>
             {% if decided %}

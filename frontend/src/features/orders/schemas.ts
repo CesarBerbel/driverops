@@ -19,6 +19,8 @@ export const orderLineSchema = z.object({
   }, "Informe um valor não negativo."),
   // Só usado por peças: índice do serviço vinculado na lista de serviços da OS.
   linked_service_index: z.number().nullable().optional(),
+  // Obrigatoriedade da peça em relação ao serviço vinculado (só quando vinculada).
+  is_required: z.boolean().optional(),
 });
 
 export type OrderLineValues = z.infer<typeof orderLineSchema>;

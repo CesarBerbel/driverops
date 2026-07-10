@@ -25,7 +25,8 @@ import { formatCurrencyBRL } from "@/lib/masks";
 
 import { approvePublicQuote, getPublicQuote, rejectPublicQuote } from "../api";
 import type { PublicQuote, QuoteItem } from "../types";
-import { QuoteItemDecisionList, approvedTotal } from "../components/QuoteItemDecisionList";
+import { QuoteItemDecisionList } from "../components/QuoteItemDecisionList";
+import { approvedTotal } from "../components/quoteTotals";
 
 function money(value: string) {
   return formatCurrencyBRL(Number(value));

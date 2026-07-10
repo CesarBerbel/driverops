@@ -7,6 +7,9 @@ export interface ServicePart {
   part_name: string;
   // DRF DecimalField serializes as a JSON string.
   suggested_quantity: string;
+  // Obrigatoriedade da peça dentro do serviço (pertence ao vínculo).
+  is_required: boolean;
+  notes: string;
 }
 
 export interface Service {
@@ -51,7 +54,12 @@ export interface ServicePayload {
   labor_cost: string;
   estimated_minutes: number | null;
   notes: string;
-  standard_parts: { part: number; suggested_quantity: string }[];
+  standard_parts: {
+    part: number;
+    suggested_quantity: string;
+    is_required: boolean;
+    notes: string;
+  }[];
 }
 
 export interface ServicePackagePayload {

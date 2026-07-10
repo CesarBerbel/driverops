@@ -37,7 +37,7 @@ class ServicePartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServicePart
-        fields = ["part", "part_name", "suggested_quantity"]
+        fields = ["part", "part_name", "suggested_quantity", "is_required", "notes"]
 
     def validate_suggested_quantity(self, value):
         if value < 0:
