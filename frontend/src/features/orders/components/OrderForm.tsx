@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { CurrencyInput } from "@/components/shared/CurrencyInput";
@@ -448,26 +448,25 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                       Adicionar veículo
                     </Button>
                   ) : (
-                    <Button
-                      type="button"
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
-                      onClick={() => setVehicleSheetOpen(true)}
-                    >
-                      <ExternalLink className="size-3" />
-                      Ver detalhes
-                    </Button>
+                    customerId != null && (
+                      <Button
+                        asChild
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                      >
+                        <Link to={`/customers/${customerId}/360`}>
+                          <ExternalLink className="size-3" />
+                          Ver detalhes
+                        </Link>
+                      </Button>
+                    )
                   )}
                 </div>
                 {isEditMode ? (
-                  <button
-                    type="button"
-                    onClick={() => setVehicleSheetOpen(true)}
-                    className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm font-medium hover:bg-accent"
-                  >
-                    {vehicleLabel || "Ver veículo"}
-                  </button>
+                  <div className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm font-medium">
+                    {vehicleLabel || "—"}
+                  </div>
                 ) : (
                 <VehicleCombobox
                   selectedLabel={vehicleLabel}
@@ -480,8 +479,7 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                 )}
                 {isEditMode && (
                   <p className="text-xs text-muted-foreground">
-                    O veículo não pode ser alterado após a abertura da OS. Clique para ver os
-                    detalhes.
+                    O veículo não pode ser alterado após a abertura da OS.
                   </p>
                 )}
                 {errors.vehicle_id && (
@@ -516,26 +514,25 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                       Adicionar cliente
                     </Button>
                   ) : (
-                    <Button
-                      type="button"
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
-                      onClick={() => setCustomerSheetOpen(true)}
-                    >
-                      <ExternalLink className="size-3" />
-                      Ver detalhes
-                    </Button>
+                    customerId != null && (
+                      <Button
+                        asChild
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                      >
+                        <Link to={`/customers/${customerId}/360`}>
+                          <ExternalLink className="size-3" />
+                          Ver detalhes
+                        </Link>
+                      </Button>
+                    )
                   )}
                 </div>
                 {isEditMode ? (
-                  <button
-                    type="button"
-                    onClick={() => setCustomerSheetOpen(true)}
-                    className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm font-medium hover:bg-accent"
-                  >
-                    {customerName || "Ver cliente"}
-                  </button>
+                  <div className="w-full rounded-md border bg-muted/30 px-3 py-2 text-left text-sm font-medium">
+                    {customerName || "—"}
+                  </div>
                 ) : (
                   <CustomerCombobox
                     selectedName={customerName}
@@ -547,8 +544,7 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                 )}
                 {isEditMode && (
                   <p className="text-xs text-muted-foreground">
-                    O cliente não pode ser alterado após a abertura da OS. Clique para ver os
-                    detalhes.
+                    O cliente não pode ser alterado após a abertura da OS.
                   </p>
                 )}
                 {errors.customer_id && (
