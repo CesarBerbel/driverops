@@ -84,6 +84,10 @@ configuráveis.
 
 Ações bloqueadas por guard aparecem no `GET /transitions/` com
 `available: false` e um `block_reason`, que o frontend exibe como impedimento.
+Ações válidas para o status atual mas para as quais o usuário **não tem
+permissão** também aparecem, com `permitted: false` — o frontend as mostra
+**desabilitadas** (com o motivo no tooltip), em vez de sumir com o botão. Quando
+não há **nenhuma** ação para o status atual, o painel de ações não é exibido.
 
 ## Justificativa e histórico
 
@@ -127,8 +131,8 @@ Controlados e transacionais (em `state_machine`), nunca no frontend:
 ## API
 
 `GET /transitions/` → `{ status, status_display, transitions: [{ action, label,
-target_status, permission, reason_required, critical, available, block_reason,
-reopen_targets? }] }`
+target_status, permission, reason_required, critical, permitted, available,
+block_reason, reopen_targets? }] }`
 
 `POST /transition/` → corpo `{ action, reason?, notes?, target_status? }`;
 retorna a OS atualizada, ou 400/403 com `detail` amigável.

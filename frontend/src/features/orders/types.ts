@@ -155,6 +155,9 @@ export interface OrderTransition {
   permission: string;
   reason_required: boolean;
   critical: boolean;
+  // O usuário tem a permissão para executar esta ação. Quando false, o botão
+  // aparece desabilitado (não some) para deixar claro que a ação existe.
+  permitted: boolean;
   available: boolean;
   block_reason: string;
   reopen_targets?: { value: OrderStatus; label: string }[];

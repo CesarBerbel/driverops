@@ -58,17 +58,28 @@ def test_transitions_endpoint_lists_available_actions(auth_client, customer, veh
     assert "finish" not in actions  # sem orders.finish
 
 
-def test_finish_action_appears_only_with_permission(
+def test_finish_action_is_shown_disabled_without_permission(
     auth_client, user, customer, vehicle
 ):
     order = _order(customer, vehicle, status="ready")
-    assert "finish" not in {
-        t["action"] for t in _transitions(auth_client, order).json()["transitions"]
-    }
+
+    def _finish_entry():
+        return next(
+            (
+                t
+                for t in _transitions(auth_client, order).json()["transitions"]
+                if t["action"] == "finish"
+            ),
+            None,
+        )
+
+    # Sem permissão: a ação aparece, mas marcada como não permitida (o frontend
+    # a exibe desabilitada, em vez de sumir com o botão).
+    entry = _finish_entry()
+    assert entry is not None and entry["permitted"] is False
     _grant(user, "orders.finish")
-    assert "finish" in {
-        t["action"] for t in _transitions(auth_client, order).json()["transitions"]
-    }
+    entry = _finish_entry()
+    assert entry is not None and entry["permitted"] is True
 
 
 # --- transições válidas / inválidas -------------------------------------------

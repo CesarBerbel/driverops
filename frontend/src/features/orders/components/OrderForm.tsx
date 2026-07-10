@@ -416,7 +416,12 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         {isEditMode && orderId !== null && can("orders.edit") && (
           <NotifyCustomerButton orderId={orderId} />
         )}
-        <OrderStatusStepper status={statusValue} orderId={orderId} />
+        {/* No mobile a linha do tempo desce para a própria linha (w-full +
+            order-last) e vira um carrossel horizontal; no desktop volta a
+            dividir a linha entre os botões (flex-1, ordem natural). */}
+        <div className="order-last w-full min-w-0 md:order-none md:w-auto md:flex-1">
+          <OrderStatusStepper status={statusValue} orderId={orderId} />
+        </div>
         <div className="ml-auto flex gap-2">
           <Button type="submit" disabled={saving}>
             {saving ? <Loader2 className="animate-spin" /> : <Save className="size-4" />}
@@ -425,15 +430,9 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         </div>
       </div>
 
-      {/* Ações de status da OS (máquina de estados; fonte da verdade no backend) */}
-      {isEditMode && orderId !== null && (
-        <div className="rounded-md border bg-muted/20 p-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Ações da OS
-          </p>
-          <OrderStatusActions orderId={orderId} />
-        </div>
-      )}
+      {/* Ações de status da OS (máquina de estados; fonte da verdade no backend).
+          O próprio componente some quando não há nenhuma ação disponível. */}
+      {isEditMode && orderId !== null && <OrderStatusActions orderId={orderId} />}
 
       <ServiceOrderTabs tabs={tabs} active={activeTab} onChange={setActiveTab}>
         {/* Aba 1 -- Veículo (primeiro), Cliente e dados principais da OS. */}

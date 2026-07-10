@@ -27,9 +27,11 @@ import { getOrderTransitions, transitionOrder } from "../api";
 import type { OrderStatus, OrderTransition } from "../types";
 
 /**
- * Ações de status da OS dirigidas pelo backend (máquina de estados). Só mostra
- * o que o backend liberou; ações bloqueadas por pré-condição aparecem
- * desabilitadas com o motivo. Transições que exigem justificativa (ou a
+ * Ações de status da OS dirigidas pelo backend (máquina de estados). Renderiza o
+ * próprio painel ("Ações da OS"); quando não há nenhuma ação para o status atual
+ * o componente não renderiza nada (some com o painel). Ações bloqueadas por
+ * pré-condição aparecem desabilitadas com o motivo, e ações sem permissão
+ * aparecem desabilitadas (não somem). Transições que exigem justificativa (ou a
  * reabertura) abrem um diálogo antes de executar.
  */
 export function OrderStatusActions({ orderId }: { orderId: number }) {
@@ -92,30 +94,39 @@ export function OrderStatusActions({ orderId }: { orderId: number }) {
   const reopenNeedsTarget = pending?.action === "reopen";
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {transitions.map((t) => (
-        <Button
-          key={t.action}
-          type="button"
-          size="sm"
-          variant={t.critical ? "outline" : "secondary"}
-          disabled={!t.available || mutation.isPending}
-          title={t.available ? undefined : t.block_reason}
-          className={
-            t.action === "cancel" || t.action === "reject"
-              ? "text-destructive hover:text-destructive"
-              : undefined
-          }
-          onClick={() => run(t)}
-        >
-          {t.label}
-        </Button>
-      ))}
-      {transitions.some((t) => !t.available) && (
-        <p className="w-full text-xs text-muted-foreground">
-          {transitions.find((t) => !t.available)?.block_reason}
-        </p>
-      )}
+    <div className="rounded-md border bg-muted/20 p-3">
+      <p className="mb-2 text-xs font-medium text-muted-foreground">Ações da OS</p>
+      <div className="flex flex-wrap items-center gap-2">
+        {transitions.map((t) => (
+          <Button
+            key={t.action}
+            type="button"
+            size="sm"
+            variant={t.critical ? "outline" : "secondary"}
+            disabled={!t.permitted || !t.available || mutation.isPending}
+            title={
+              !t.permitted
+                ? "Você não tem permissão para esta ação."
+                : t.available
+                  ? undefined
+                  : t.block_reason
+            }
+            className={
+              t.action === "cancel" || t.action === "reject"
+                ? "text-destructive hover:text-destructive"
+                : undefined
+            }
+            onClick={() => run(t)}
+          >
+            {t.label}
+          </Button>
+        ))}
+        {transitions.some((t) => t.permitted && !t.available) && (
+          <p className="w-full text-xs text-muted-foreground">
+            {transitions.find((t) => t.permitted && !t.available)?.block_reason}
+          </p>
+        )}
+      </div>
 
       <Dialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
         <DialogContent className="sm:max-w-md">

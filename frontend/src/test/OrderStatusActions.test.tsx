@@ -22,6 +22,7 @@ function transition(over: Partial<OrderTransition> = {}): OrderTransition {
     permission: "kanban.move",
     reason_required: false,
     critical: false,
+    permitted: true,
     available: true,
     block_reason: "",
     ...over,
@@ -93,6 +94,44 @@ describe("OrderStatusActions", () => {
     expect(
       screen.getByText("Não é possível iniciar a execução sem um orçamento aprovado."),
     ).toBeInTheDocument();
+  });
+
+  it("disables an action the user lacks permission for", async () => {
+    vi.mocked(api.getOrderTransitions).mockResolvedValue({
+      status: "ready",
+      status_display: "Pronta",
+      transitions: [
+        transition({
+          action: "finish",
+          label: "Finalizar",
+          target_status: "finished",
+          permission: "orders.finish",
+          permitted: false,
+        }),
+      ],
+    });
+    renderActions();
+    const button = await screen.findByRole("button", { name: "Finalizar" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("title", "Você não tem permissão para esta ação.");
+  });
+
+  it("hides the whole panel when there are no actions", async () => {
+    vi.mocked(api.getOrderTransitions).mockResolvedValue({
+      status: "finished",
+      status_display: "Finalizada",
+      transitions: [],
+    });
+    const { container } = render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <OrderStatusActions orderId={1} />
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(api.getOrderTransitions).toHaveBeenCalled());
+    expect(screen.queryByText("Ações da OS")).not.toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("requires a justification for critical actions", async () => {

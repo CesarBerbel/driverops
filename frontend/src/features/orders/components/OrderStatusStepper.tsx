@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { XCircle } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -48,6 +49,19 @@ export function OrderStatusStepper({ status, orderId }: OrderStatusStepperProps)
     reachedAt[entry.to_status as OrderStatus] = entry.created_at;
   }
 
+  const currentIndex = STATUS_FLOW.indexOf(status);
+
+  // No carrossel do mobile, centraliza a etapa atual assim que ela é conhecida --
+  // senão numa OS avançada só a primeira etapa ("Aberta") ficaria visível. No
+  // desktop a lista não rola, então isto é inofensivo.
+  const currentRef = useRef<HTMLLIElement | null>(null);
+  useEffect(() => {
+    currentRef.current?.scrollIntoView({
+      inline: "center",
+      block: "nearest",
+    });
+  }, [currentIndex]);
+
   if (status === "canceled" || status === "rejected") {
     return (
       <span
@@ -60,11 +74,14 @@ export function OrderStatusStepper({ status, orderId }: OrderStatusStepperProps)
     );
   }
 
-  const currentIndex = STATUS_FLOW.indexOf(status);
-
   return (
     <ol
-      className="flex min-w-0 flex-1 items-start"
+      className={cn(
+        "flex w-full items-start",
+        // Mobile: carrossel horizontal (as etapas não cabem lado a lado, então
+        // rolam/deslizam). Desktop: distribuídas igualmente na largura toda.
+        "snap-x overflow-x-auto pb-1 md:snap-none md:overflow-visible md:pb-0",
+      )}
       aria-label={`Linha do tempo de status da OS -- atual: ${statusLabel(status)}`}
     >
       {STATUS_FLOW.map((step, index) => {
@@ -72,7 +89,16 @@ export function OrderStatusStepper({ status, orderId }: OrderStatusStepperProps)
         const current = index === currentIndex;
         const date = reachedAt[step];
         return (
-          <li key={step} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+          <li
+            key={step}
+            ref={current ? currentRef : undefined}
+            className={cn(
+              "flex flex-col items-center gap-1 snap-start",
+              // Mobile: largura mínima fixa (não encolhe) -> transborda e rola.
+              // Desktop: divide a largura disponível igualmente.
+              "min-w-[4.5rem] flex-none md:min-w-0 md:flex-1",
+            )}
+          >
             {/* Marcador + conectores (linha contínua entre as etapas). */}
             <div className="flex w-full items-center">
               <span

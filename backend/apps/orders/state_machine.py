@@ -287,18 +287,19 @@ def _block_reason(order, action: Action) -> str | None:
 
 
 def get_available_transitions(order, user) -> list[dict]:
-    """Ações que o usuário pode ver/executar a partir do status atual.
+    """Ações que o usuário pode ver a partir do status atual.
 
-    Inclui ações bloqueadas por pré-condição (``available=False`` + motivo) para
-    o frontend exibir a mensagem de impedimento. Só entram ações cuja origem
-    casa com o status atual e para as quais o usuário tem permissão.
+    Inclui ações bloqueadas por pré-condição (``available=False`` + motivo) e
+    ações para as quais o usuário não tem permissão (``permitted=False``), para o
+    frontend exibi-las **desabilitadas** -- deixando claro o que existe e por que
+    está indisponível, em vez de simplesmente sumir com o botão. Só entram ações
+    cuja origem casa com o status atual.
     """
     result = []
     for action in ACTIONS.values():
         if order.status not in action.sources:
             continue
-        if not _has_perm(user, action.permission):
-            continue
+        permitted = _has_perm(user, action.permission)
         block = _block_reason(order, action)
         entry = {
             "action": action.key,
@@ -310,6 +311,7 @@ def get_available_transitions(order, user) -> list[dict]:
             "permission": action.permission,
             "reason_required": action.reason_required,
             "critical": action.critical,
+            "permitted": permitted,
             "available": block is None,
             "block_reason": block or "",
         }
