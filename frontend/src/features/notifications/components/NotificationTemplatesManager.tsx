@@ -289,6 +289,7 @@ export function NotificationTemplatesManager() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      title="Editar template"
                       aria-label={`Editar template ${template.event_display} ${template.channel_display}`}
                       onClick={() => setSelectedTemplate(template)}
                     >

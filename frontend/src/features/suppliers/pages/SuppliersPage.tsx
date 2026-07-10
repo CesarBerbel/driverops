@@ -229,6 +229,7 @@ export function SuppliersPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar fornecedor"
                         aria-label="Editar fornecedor"
                         onClick={() => openEditSheet(supplier.id)}
                       >
@@ -238,6 +239,7 @@ export function SuppliersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Excluir fornecedor"
                           aria-label="Excluir fornecedor"
                           onClick={() => setDeleteTarget(supplier)}
                         >
@@ -247,6 +249,7 @@ export function SuppliersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Reativar fornecedor"
                           aria-label="Reativar fornecedor"
                           disabled={reactivateMutation.isPending}
                           onClick={() => reactivateMutation.mutate(supplier.id)}

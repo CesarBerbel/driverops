@@ -195,8 +195,14 @@ export function FinancialPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => openPayment(order)}>
-                      Pagamentos
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Pagamentos"
+                      aria-label="Pagamentos"
+                      onClick={() => openPayment(order)}
+                    >
+                      <Wallet className="size-4" />
                     </Button>
                   </TableCell>
                 </TableRow>

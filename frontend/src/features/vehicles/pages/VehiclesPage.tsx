@@ -251,6 +251,7 @@ export function VehiclesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar veículo"
                         aria-label="Editar veículo"
                         onClick={() => openEditSheet(vehicle.id)}
                       >
@@ -260,6 +261,7 @@ export function VehiclesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Excluir veículo"
                           aria-label="Excluir veículo"
                           onClick={() => setDeleteTarget(vehicle)}
                         >
@@ -269,6 +271,7 @@ export function VehiclesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Reativar veículo"
                           aria-label="Reativar veículo"
                           disabled={reactivateMutation.isPending}
                           onClick={() => reactivateMutation.mutate(vehicle.id)}

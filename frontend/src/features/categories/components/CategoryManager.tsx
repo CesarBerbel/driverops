@@ -189,6 +189,7 @@ export function CategoryManager({ categoryType, title, description }: CategoryMa
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar categoria"
                         aria-label="Editar categoria"
                         onClick={() => openEditDialog(category)}
                       >
@@ -198,6 +199,7 @@ export function CategoryManager({ categoryType, title, description }: CategoryMa
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Excluir categoria"
                           aria-label="Excluir categoria"
                           onClick={() => setDeleteTarget(category)}
                         >
@@ -207,6 +209,7 @@ export function CategoryManager({ categoryType, title, description }: CategoryMa
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Reativar categoria"
                           aria-label="Reativar categoria"
                           disabled={reactivateMutation.isPending}
                           onClick={() => reactivateMutation.mutate(category.id)}

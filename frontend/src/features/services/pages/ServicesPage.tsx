@@ -243,6 +243,7 @@ export function ServicesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar serviço"
                         aria-label="Editar serviço"
                         onClick={() => openEditSheet(service.id)}
                       >
@@ -252,6 +253,7 @@ export function ServicesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Excluir serviço"
                           aria-label="Excluir serviço"
                           onClick={() => setDeleteTarget(service)}
                         >
@@ -261,6 +263,7 @@ export function ServicesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Reativar serviço"
                           aria-label="Reativar serviço"
                           disabled={reactivateMutation.isPending}
                           onClick={() => reactivateMutation.mutate(service.id)}

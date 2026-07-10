@@ -294,6 +294,7 @@ export function OrdersPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar OS"
                         aria-label="Editar OS"
                         onClick={() => navigate(`/orders/${order.id}`)}
                       >
@@ -304,6 +305,7 @@ export function OrdersPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            title="Reativar OS"
                             aria-label="Reativar OS"
                             disabled={reactivateMutation.isPending}
                             onClick={() => reactivateMutation.mutate(order.id)}
@@ -316,6 +318,7 @@ export function OrdersPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            title="Excluir OS"
                             aria-label="Excluir OS"
                             onClick={() => setDeleteTarget(order)}
                           >

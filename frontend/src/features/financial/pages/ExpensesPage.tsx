@@ -233,6 +233,7 @@ export function ExpensesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Editar despesa"
                           aria-label="Editar despesa"
                           onClick={() => openEdit(expense)}
                         >
@@ -241,6 +242,7 @@ export function ExpensesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Excluir despesa"
                           aria-label="Excluir despesa"
                           disabled={deleteMutation.isPending}
                           onClick={() => deleteMutation.mutate(expense.id)}

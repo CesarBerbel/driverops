@@ -228,6 +228,7 @@ export function ServicePackagesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Editar pacote"
                         aria-label="Editar pacote"
                         onClick={() => openEditSheet(pkg.id)}
                       >
@@ -237,6 +238,7 @@ export function ServicePackagesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Excluir pacote"
                           aria-label="Excluir pacote"
                           onClick={() => setDeleteTarget(pkg)}
                         >
@@ -246,6 +248,7 @@ export function ServicePackagesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Reativar pacote"
                           aria-label="Reativar pacote"
                           disabled={reactivateMutation.isPending}
                           onClick={() => reactivateMutation.mutate(pkg.id)}
