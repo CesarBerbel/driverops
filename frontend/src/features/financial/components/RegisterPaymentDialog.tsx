@@ -1,3 +1,4 @@
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +28,8 @@ export function RegisterPaymentDialog({
         <DialogHeader className="shrink-0 border-b p-5">
           <DialogTitle>{formatOrderNumber(order.number)}</DialogTitle>
           <DialogDescription>
-            {order.customer_name} · {order.vehicle_plate}
+            <CustomerLink id={order.customer} name={order.customer_name} /> ·{" "}
+            {order.vehicle_plate}
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-5">

@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -259,7 +260,7 @@ export function OrdersPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span>{order.customer_name}</span>
+                      <CustomerLink id={order.customer} name={order.customer_name} />
                       {order.customer_whatsapp ? (
                         <a
                           href={buildWhatsAppUrl(order.customer_whatsapp)}

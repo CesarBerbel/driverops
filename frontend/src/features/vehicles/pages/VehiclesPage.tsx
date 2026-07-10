@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
@@ -225,7 +226,7 @@ export function VehiclesPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <span>{vehicle.customer_name}</span>
+                      <CustomerLink id={vehicle.customer} name={vehicle.customer_name} />
                       {vehicle.customer_whatsapp && (
                         <a
                           href={buildWhatsAppUrl(vehicle.customer_whatsapp)}

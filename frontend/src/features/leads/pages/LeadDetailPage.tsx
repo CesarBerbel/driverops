@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,9 +157,14 @@ export function LeadDetailPage() {
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
           <span>
             Atenção: este veículo já está cadastrado para outro cliente
-            {a.vehicle_match.owner ? ` (${a.vehicle_match.owner.name})` : ""}. Confirme se houve
-            troca de proprietário, erro de digitação ou pedido de terceiro autorizado antes de
-            converter.
+            {a.vehicle_match.owner ? (
+              <>
+                {" "}
+                (<CustomerLink id={a.vehicle_match.owner.id} name={a.vehicle_match.owner.name} />)
+              </>
+            ) : null}
+            . Confirme se houve troca de proprietário, erro de digitação ou pedido de terceiro
+            autorizado antes de converter.
           </span>
         </div>
       )}
@@ -214,11 +220,19 @@ export function LeadDetailPage() {
             <div className="mt-2 rounded-md border p-2">
               {a.customer_match.confidence === "high" && suggestedCustomer ? (
                 <p className="text-sm text-emerald-700">
-                  Cliente encontrado: <strong>{suggestedCustomer.name}</strong>.
+                  Cliente encontrado:{" "}
+                  <CustomerLink
+                    id={suggestedCustomer.id}
+                    name={suggestedCustomer.name}
+                    className="font-semibold"
+                  />
+                  .
                 </p>
               ) : a.customer_match.confidence === "possible" && suggestedCustomer ? (
                 <p className="text-sm text-amber-700">
-                  Possível cliente: {suggestedCustomer.name}. Revise antes de criar novo cadastro.
+                  Possível cliente:{" "}
+                  <CustomerLink id={suggestedCustomer.id} name={suggestedCustomer.name} />. Revise
+                  antes de criar novo cadastro.
                 </p>
               ) : a.customer_match.confidence === "conflict" ? (
                 <p className="text-sm text-amber-700">
@@ -264,7 +278,8 @@ export function LeadDetailPage() {
               {lead.linked_customer && (
                 <p className="mt-2 text-sm">
                   <CheckCircle2 className="mr-1 inline size-4 text-emerald-600" />
-                  Vinculado: {lead.linked_customer.name}
+                  Vinculado:{" "}
+                  <CustomerLink id={lead.linked_customer.id} name={lead.linked_customer.name} />
                 </p>
               )}
             </div>
@@ -288,7 +303,16 @@ export function LeadDetailPage() {
               {a.vehicle_match.found ? (
                 <p className="text-sm">
                   Veículo encontrado
-                  {a.vehicle_match.owner ? ` — dono atual: ${a.vehicle_match.owner.name}` : ""}.
+                  {a.vehicle_match.owner ? (
+                    <>
+                      {" — dono atual: "}
+                      <CustomerLink
+                        id={a.vehicle_match.owner.id}
+                        name={a.vehicle_match.owner.name}
+                      />
+                    </>
+                  ) : null}
+                  .
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">

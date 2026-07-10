@@ -1,6 +1,7 @@
 import { AlertTriangle, MoveRight, Wrench } from "lucide-react";
 
 import { ContactLink } from "@/components/shared/ContactLink";
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -121,7 +122,9 @@ export function ServiceOrderPlateCard({
         )}
       </div>
 
-      <p className="mt-1 truncate text-sm font-medium">{order.customer_name}</p>
+      <p className="mt-1 truncate text-sm font-medium">
+        <CustomerLink id={order.customer} name={order.customer_name} />
+      </p>
       <ContactLink
         whatsapp={order.customer_whatsapp}
         phone={order.customer_phone}

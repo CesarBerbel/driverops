@@ -9,14 +9,28 @@ sem obrigar o usuário a navegar por várias telas.
 ## Como acessar
 
 A tela vive em `/customers/:id/360` e está protegida pela permissão
-`customers.view`. Há vários pontos de entrada para ela:
+`customers.view`. O nome do cliente é clicável em praticamente toda a
+aplicação, sempre levando à Central 360° — via o componente compartilhado
+`CustomerLink` (`components/shared/CustomerLink.tsx`), que só vira link quando
+há um `id` de cliente em contexto:
 
-- **Lista de Clientes** — botão `360°` em cada linha.
-- **CRM Inteligente** — o nome do cliente em cada sugestão é um link para a
-  Central 360° daquele cliente.
+- **Lista de Clientes** — o nome é um link e há o ícone de ação "Cliente 360°".
+- **Ordens de Serviço** — nome do cliente na listagem e no resumo da OS.
+- **Kanban** — nome do cliente no card da OS.
+- **Dashboard** — nome do cliente no card da OS e no modal de visão rápida.
+- **Financeiro** — nome do cliente nas contas a receber e no diálogo de
+  pagamento.
+- **Veículos** — nome do proprietário na listagem.
+- **Pedidos do Site (leads)** — cliente correspondente/vinculado e dono do
+  veículo na tela de detalhe do lead.
+- **CRM Inteligente** — nome do cliente em cada sugestão.
 
 > A rota também aceita ser aberta diretamente (ex.: colada no navegador); o
 > `RequirePermission` redireciona quem não tiver `customers.view`.
+
+> Orçamentos (`Quote`/`PublicQuote`) não expõem o `id` do cliente no payload,
+> então o nome ali permanece como texto — e a página pública de aprovação, por
+> ser sem login, nunca deve apontar para uma rota interna.
 
 ## Layout
 

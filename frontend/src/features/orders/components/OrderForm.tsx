@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { CurrencyInput } from "@/components/shared/CurrencyInput";
 import { CustomerCombobox } from "@/components/shared/CustomerCombobox";
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import { PackageCombobox } from "@/components/shared/PackageCombobox";
 import { PartCombobox } from "@/components/shared/PartCombobox";
 import { ServiceCombobox } from "@/components/shared/ServiceCombobox";
@@ -904,7 +905,9 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Cliente</p>
-                  <p className="font-medium">{customerName || "—"}</p>
+                  <p className="font-medium">
+                    <CustomerLink id={customerId} name={customerName} />
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Status</p>

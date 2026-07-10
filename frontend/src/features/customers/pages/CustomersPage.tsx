@@ -1,5 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Car, MessageCircle, Search, Users, X } from "lucide-react";
+import {
+  AlertCircle,
+  Car,
+  IdCard,
+  MessageCircle,
+  Pencil,
+  RotateCcw,
+  Search,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -233,7 +244,14 @@ export function CustomersPage() {
             <TableBody>
               {customers?.map((customer) => (
                 <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      to={`/customers/${customer.id}/360`}
+                      className="text-primary hover:underline"
+                    >
+                      {customer.name}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {CUSTOMER_TYPE_LABELS[customer.customer_type]}
                   </TableCell>
@@ -277,39 +295,49 @@ export function CustomersPage() {
                     </button>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/customers/${customer.id}/360`}>360°</Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditSheet(customer.id)}
-                    >
-                      Editar
-                    </Button>
-                    {customer.is_active ? (
-                      <Can code="customers.delete">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(customer)}
-                        >
-                          Excluir
-                        </Button>
-                      </Can>
-                    ) : (
-                      <Can code="customers.reactivate">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={reactivateMut.isPending}
-                          onClick={() => reactivateMut.mutate(customer.id)}
-                        >
-                          Reativar
-                        </Button>
-                      </Can>
-                    )}
+                    <div className="flex justify-end gap-0.5">
+                      <Button variant="ghost" size="icon" asChild title="Cliente 360°">
+                        <Link to={`/customers/${customer.id}/360`} aria-label="Cliente 360°">
+                          <IdCard />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Editar"
+                        aria-label="Editar"
+                        onClick={() => openEditSheet(customer.id)}
+                      >
+                        <Pencil />
+                      </Button>
+                      {customer.is_active ? (
+                        <Can code="customers.delete">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            title="Excluir"
+                            aria-label="Excluir"
+                            onClick={() => setDeleteTarget(customer)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </Can>
+                      ) : (
+                        <Can code="customers.reactivate">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Reativar"
+                            aria-label="Reativar"
+                            disabled={reactivateMut.isPending}
+                            onClick={() => reactivateMut.mutate(customer.id)}
+                          >
+                            <RotateCcw />
+                          </Button>
+                        </Can>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -2,6 +2,7 @@ import { ArrowRight, Car } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { ContactLink } from "@/components/shared/ContactLink";
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -110,7 +111,9 @@ export function OSQuickViewModal({ order, open, onOpenChange }: OSQuickViewModal
                 <div className="space-y-5">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Cliente</p>
-                    <p className="text-sm font-medium">{order.customer_name}</p>
+                    <p className="text-sm font-medium">
+                      <CustomerLink id={order.customer} name={order.customer_name} />
+                    </p>
                     <ContactLink
                       whatsapp={order.customer_whatsapp}
                       phone={order.customer_phone}

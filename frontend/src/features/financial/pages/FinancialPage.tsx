@@ -3,6 +3,7 @@ import { AlertCircle, Search, Wallet, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CustomerLink } from "@/components/shared/CustomerLink";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -168,7 +169,9 @@ export function FinancialPage() {
                   <TableCell className="font-medium">
                     {formatOrderNumber(order.number)}
                   </TableCell>
-                  <TableCell>{order.customer_name}</TableCell>
+                  <TableCell>
+                    <CustomerLink id={order.customer} name={order.customer_name} />
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {order.vehicle_plate}
                   </TableCell>
