@@ -62,6 +62,10 @@ export const orderSettingsSchema = z.object({
   notify_statuses: z.array(z.string()),
   notify_on_creation: z.boolean(),
   notify_on_payment: z.boolean(),
+  require_diagnosis_before_approval: z.boolean(),
+  require_approved_quote_for_execution: z.boolean(),
+  require_checkin_before_execution: z.boolean(),
+  require_payment_to_finish: z.boolean(),
 });
 
 export type OrderSettingsFormValues = z.infer<typeof orderSettingsSchema>;

@@ -8,7 +8,8 @@ export type OrderStatus =
   | "testing"
   | "ready"
   | "finished"
-  | "canceled";
+  | "canceled"
+  | "rejected";
 
 export type OrderDiscountType = "none" | "percent" | "fixed";
 
@@ -133,9 +134,40 @@ export interface OrderStatusHistoryEntry {
   from_status_display: string;
   to_status: string;
   to_status_display: string;
+  action: string;
   changed_by_name: string | null;
+  reason: string;
   note: string;
+  source: string;
+  source_display: string;
   created_at: string;
+}
+
+// Uma ação de transição disponível (vinda do backend, fonte da verdade).
+export interface OrderTransition {
+  action: string;
+  label: string;
+  target_status: OrderStatus | null;
+  target_status_display: string | null;
+  permission: string;
+  reason_required: boolean;
+  critical: boolean;
+  available: boolean;
+  block_reason: string;
+  reopen_targets?: { value: OrderStatus; label: string }[];
+}
+
+export interface OrderTransitionsResponse {
+  status: OrderStatus;
+  status_display: string;
+  transitions: OrderTransition[];
+}
+
+export interface TransitionPayload {
+  action: string;
+  reason?: string;
+  notes?: string;
+  target_status?: OrderStatus;
 }
 
 export type AttachmentCategory =

@@ -175,9 +175,14 @@ antes** do de cliente.
 Os status seguem o ciclo de atendimento:
 
 `Aberta` · `Em diagnóstico` · `Aguardando aprovação` · `Aprovada` · `Em execução` ·
-`Aguardando peças` · `Em teste` · `Pronta para entrega` · `Finalizada` · `Cancelada`.
+`Aguardando peças` · `Em teste` · `Pronta para entrega` · `Finalizada` · `Cancelada` · `Recusada`.
 
-Toda OS nova inicia como **Aberta**. O status é alterado por ação explícita no bloco "Status da OS".
+Toda OS nova inicia como **Aberta**. O `status` **não é um campo editável comum**: no editor ele é
+**somente leitura** e só muda por uma **ação** da barra **"Ações da OS"** (iniciar diagnóstico,
+enviar para aprovação, aprovar, iniciar execução, finalizar, cancelar, reabrir, ...). Toda mudança
+passa pela **[Máquina de Estados da OS](os-state-machine.md)** — que valida transição, permissão,
+pré-condições configuráveis e justificativa (obrigatória em cancelar/recusar/reabrir), registra o
+histórico e dispara os efeitos colaterais. O frontend só mostra as ações liberadas pelo backend.
 Uma OS **cancelada** ou **desabilitada** nunca é apagada fisicamente (ver
 [Soft delete](#soft-delete-e-histórico)).
 

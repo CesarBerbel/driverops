@@ -25,10 +25,10 @@ def _order(customer, vehicle, status="open"):
     )
 
 
-def _move(client, order, status):
+def _move(client, order, status, reason=""):
     return client.post(
         f"/api/work-orders/{order.id}/move/",
-        data={"status": status},
+        data={"status": status, "reason": reason},
         content_type="application/json",
     )
 
@@ -79,7 +79,9 @@ def test_cancel_requires_critical_permission(auth_client, customer, vehicle):
 def test_cancel_with_critical_permission(auth_client, user, customer, vehicle):
     _grant(user, "orders.cancel")
     order = _order(customer, vehicle, status="open")
-    response = _move(auth_client, order, "canceled")
+    # Cancelar exige justificativa (transição crítica).
+    assert _move(auth_client, order, "canceled").status_code == 400
+    response = _move(auth_client, order, "canceled", reason="Cliente desistiu.")
     assert response.status_code == 200
     order.refresh_from_db()
     assert order.status == "canceled"

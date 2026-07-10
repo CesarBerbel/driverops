@@ -214,7 +214,9 @@ class QuoteViewSet(viewsets.ModelViewSet):
         quote.terms_accepted = True
         quote.save()
         if result != Quote.Status.REJECTED:
-            advance_order_after_approval(quote.work_order)
+            advance_order_after_approval(
+                quote.work_order, actor=getattr(request, "user", None)
+            )
         _record_quote_decision(quote, "Presencial", actor=request.user)
         return Response(self.get_serializer(quote).data)
 
@@ -248,7 +250,9 @@ class QuoteViewSet(viewsets.ModelViewSet):
         quote.terms_accepted = True
         quote.save()
         if result != Quote.Status.REJECTED:
-            advance_order_after_approval(quote.work_order)
+            advance_order_after_approval(
+                quote.work_order, actor=getattr(request, "user", None)
+            )
         _record_quote_decision(quote, "Assinatura no tablet", actor=request.user)
         return Response(self.get_serializer(quote).data)
 
@@ -364,7 +368,9 @@ class PublicQuoteApproveView(_PublicQuoteBase):
         quote.decision_user_agent = request.META.get("HTTP_USER_AGENT", "")[:500]
         quote.save()
         if result != Quote.Status.REJECTED:
-            advance_order_after_approval(quote.work_order)
+            advance_order_after_approval(
+                quote.work_order, actor=getattr(request, "user", None)
+            )
         _record_quote_decision(quote, "Link por e-mail")
         return Response(PublicQuoteSerializer(quote, context={"request": request}).data)
 

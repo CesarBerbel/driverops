@@ -153,6 +153,15 @@ class OrderSettings(SingletonModel):
     # Enviar e-mail ao abrir a OS e ao registrar um pagamento (recibo).
     notify_on_creation = models.BooleanField(default=False)
     notify_on_payment = models.BooleanField(default=False)
+    # --- Políticas da máquina de estados da OS -------------------------------
+    # Regras de negócio configuráveis das transições. Defaults preservam o
+    # comportamento atual (relaxado); a oficina endurece conforme sua política.
+    # Regras críticas de segurança (permissões, transições válidas) NÃO são
+    # configuráveis: ficam sempre protegidas no backend.
+    require_diagnosis_before_approval = models.BooleanField(default=False)
+    require_approved_quote_for_execution = models.BooleanField(default=False)
+    require_checkin_before_execution = models.BooleanField(default=False)
+    require_payment_to_finish = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

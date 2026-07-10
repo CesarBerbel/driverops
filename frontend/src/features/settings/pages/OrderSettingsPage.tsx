@@ -69,6 +69,25 @@ const TERM_FIELDS: {
   },
 ];
 
+const POLICY_FIELDS: { name: keyof OrderSettingsFormValues; label: string }[] = [
+  {
+    name: "require_diagnosis_before_approval",
+    label: "Exigir diagnóstico/itens antes de enviar para aprovação",
+  },
+  {
+    name: "require_approved_quote_for_execution",
+    label: "Exigir orçamento aprovado para aprovar e iniciar a execução",
+  },
+  {
+    name: "require_checkin_before_execution",
+    label: "Exigir check-in concluído antes de iniciar a execução",
+  },
+  {
+    name: "require_payment_to_finish",
+    label: "Exigir financeiro quitado para finalizar a OS",
+  },
+];
+
 function toFormValues(settings: OrderSettings): OrderSettingsFormValues {
   return {
     default_delivery_days: String(settings.default_delivery_days),
@@ -84,6 +103,10 @@ function toFormValues(settings: OrderSettings): OrderSettingsFormValues {
     notify_statuses: settings.notify_statuses,
     notify_on_creation: settings.notify_on_creation,
     notify_on_payment: settings.notify_on_payment,
+    require_diagnosis_before_approval: settings.require_diagnosis_before_approval,
+    require_approved_quote_for_execution: settings.require_approved_quote_for_execution,
+    require_checkin_before_execution: settings.require_checkin_before_execution,
+    require_payment_to_finish: settings.require_payment_to_finish,
   };
 }
 
@@ -332,6 +355,42 @@ function OrderSettingsForm({
                 )}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Políticas do fluxo da OS</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Regras de negócio da máquina de estados da OS. Endureça o fluxo
+              conforme a política da oficina — as validações de permissão e as
+              transições válidas continuam sempre protegidas no backend.
+            </p>
+            {POLICY_FIELDS.map((policy) => (
+              <div
+                key={policy.name}
+                className="flex items-center justify-between gap-4"
+              >
+                <Label htmlFor={policy.name} className="font-normal">
+                  {policy.label}
+                </Label>
+                <Controller
+                  control={control}
+                  name={policy.name}
+                  render={({ field }) => (
+                    <Switch
+                      id={policy.name}
+                      checked={Boolean(field.value)}
+                      onCheckedChange={field.onChange}
+                      disabled={!canEdit}
+                      aria-label={policy.label}
+                    />
+                  )}
+                />
+              </div>
+            ))}
           </CardContent>
         </Card>
 

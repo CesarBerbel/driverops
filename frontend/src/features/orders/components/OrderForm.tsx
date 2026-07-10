@@ -65,7 +65,7 @@ import { OrderPaymentsPanel } from "@/features/financial/components/OrderPayment
 import { usePermissionCheck } from "@/features/auth/usePermission";
 
 import { createWorkOrder, listTechnicians, updateWorkOrder } from "../api";
-import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS } from "../constants";
+import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS, statusLabel } from "../constants";
 import {
   addDaysISO,
   EMPTY_ORDER_VALUES,
@@ -81,6 +81,7 @@ import { VehicleCheckInTab } from "@/features/checkin/VehicleCheckInTab";
 import { CrmSuggestionsPanel } from "@/features/crm/CrmSuggestionsPanel";
 import { OrderEventTimeline } from "./OrderEventTimeline";
 import { OrderLineList } from "./OrderLineList";
+import { OrderStatusActions } from "./OrderStatusActions";
 import { OrderStatusStepper } from "./OrderStatusStepper";
 import { ServiceOrderTabs, type ServiceOrderTabDef } from "./ServiceOrderTabs";
 import { QuotePanel } from "@/features/quotes/components/QuotePanel";
@@ -422,6 +423,16 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         </div>
       </div>
 
+      {/* Ações de status da OS (máquina de estados; fonte da verdade no backend) */}
+      {isEditMode && orderId !== null && (
+        <div className="rounded-md border bg-muted/20 p-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Ações da OS
+          </p>
+          <OrderStatusActions orderId={orderId} />
+        </div>
+      )}
+
       <ServiceOrderTabs tabs={tabs} active={activeTab} onChange={setActiveTab}>
         {/* Aba 1 -- Veículo (primeiro), Cliente e dados principais da OS. */}
         {activeTab === "main" && (
@@ -626,25 +637,21 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status da OS</Label>
-                  <Controller
-                    control={control}
-                    name="status"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger id="status" className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ORDER_STATUS_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
+                  <Label>Status da OS</Label>
+                  {/* Somente leitura: o status é consequência de uma ação da
+                      máquina de estados (barra "Ações da OS"), nunca editado
+                      diretamente. Em OS nova começa sempre em "Aberta". */}
+                  <div
+                    aria-label="Status da OS"
+                    className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm font-medium"
+                  >
+                    {statusLabel(statusValue)}
+                  </div>
+                  {isEditMode && (
+                    <p className="text-xs text-muted-foreground">
+                      Para mudar o status, use as "Ações da OS" no topo.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="assigned_technician">Técnico responsável</Label>

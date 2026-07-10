@@ -1,7 +1,6 @@
 from django.db import transaction
 from django.db.models import Max
 
-from apps.orders.status_groups import OPEN_STATUSES
 from apps.services.models import ServicePart
 
 from .models import Quote, QuoteItem
@@ -163,12 +162,13 @@ def apply_item_decisions(quote, approved_ids):
     return Quote.Status.PARTIALLY_APPROVED
 
 
-def advance_order_after_approval(order):
+def advance_order_after_approval(order, actor=None):
     """Avança a OS para 'Aprovada' quando o orçamento é aprovado.
 
-    Só avança a partir de estágios iniciais (aberta/diagnóstico/aguardando
-    aprovação) -- nunca regride uma OS que já esteja além disso.
+    Delega à máquina de estados da OS (origem = aprovação), que valida, registra
+    histórico/timeline e dispara efeitos colaterais. Só avança a partir dos
+    estágios iniciais -- nunca regride uma OS que já esteja além disso.
     """
-    if order.status in OPEN_STATUSES:
-        order.status = "approved"
-        order.save(update_fields=["status", "updated_at"])
+    from apps.orders.state_machine import system_advance_to_approved
+
+    system_advance_to_approved(order, actor=actor)

@@ -49,6 +49,11 @@ export interface OrderSettings {
   notify_statuses: string[];
   notify_on_creation: boolean;
   notify_on_payment: boolean;
+  // Políticas da máquina de estados da OS (regras de negócio configuráveis).
+  require_diagnosis_before_approval: boolean;
+  require_approved_quote_for_execution: boolean;
+  require_checkin_before_execution: boolean;
+  require_payment_to_finish: boolean;
   updated_at: string;
 }
 

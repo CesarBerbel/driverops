@@ -29,6 +29,7 @@ Documentação organizada por assunto. Para subir o ambiente rapidamente, comece
 | [Peças e Estoque](parts.md) | Cadastro de peças vinculado a categorias, estoque mínimo/baixo, formatação brasileira |
 | [Serviços](services.md) | Cadastro de serviços, peças padrão, pacotes de serviços, cálculo de valores, soft delete |
 | [Ordens de Serviço](orders.md) | OS com veículo/cliente, itens cadastrados e avulsos, cálculo de valores, status, soft delete |
+| [Máquina de Estados da OS](os-state-machine.md) | Status, ações de transição, permissões, pré-condições configuráveis, justificativa, histórico, concorrência e integrações (orçamento/estoque/check-in/financeiro/notificações/CRM) |
 | [Orçamento da OS](quotes.md) | Orçamento a partir da OS, snapshot/versões, PDF, aprovação física/tablet/link por e-mail, página pública e auditoria |
 | [Check-in do Veículo](checkin.md) | Aba de check-in de entrada: mapa de avarias, severidade, fotos, checklist, objetos, conclusão/reabertura, permissões e auditoria |
 | [Kanban OS](kanban.md) | Tela própria full width, colunas por status, drag and drop, transições, filtros, modal rápido e configuração de colunas |

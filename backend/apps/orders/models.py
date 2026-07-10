@@ -24,6 +24,7 @@ class WorkOrder(models.Model):
         READY = "ready", "Pronta para entrega"
         FINISHED = "finished", "Finalizada"
         CANCELED = "canceled", "Cancelada"
+        REJECTED = "rejected", "Recusada"
 
     class DiscountType(models.TextChoices):
         NONE = "none", "Nenhum"
@@ -189,12 +190,23 @@ class OrderStatusHistory(models.Model):
     sistema não faz: OS usa soft delete).
     """
 
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        SYSTEM = "system", "Sistema"
+        APPROVAL = "approval", "Aprovação de orçamento"
+        STOCK = "stock", "Estoque"
+        FINANCIAL = "financial", "Financeiro"
+        INTEGRATION = "integration", "Integração"
+
     order = models.ForeignKey(
         WorkOrder, on_delete=models.CASCADE, related_name="status_history"
     )
     # Vazio = criação da OS (não havia status anterior).
     from_status = models.CharField(max_length=20, blank=True)
     to_status = models.CharField(max_length=20)
+    # Ação de negócio da máquina de estados que produziu a transição
+    # (ex.: send_to_approval, finish, cancel). Vazio na criação da OS.
+    action = models.CharField(max_length=40, blank=True)
     changed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -202,7 +214,13 @@ class OrderStatusHistory(models.Model):
         null=True,
         blank=True,
     )
+    # Justificativa (obrigatória em transições críticas: cancelar/recusar/reabrir).
+    reason = models.CharField(max_length=300, blank=True)
     note = models.CharField(max_length=200, blank=True)
+    source = models.CharField(
+        max_length=20, choices=Source.choices, default=Source.MANUAL
+    )
+    metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

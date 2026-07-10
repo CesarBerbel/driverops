@@ -78,8 +78,8 @@ def test_administrador_manages_users_but_not_permissions(
 
 def test_seed_created_permissions_and_roles():
     # 65 base + 3 notifications + 5 ai + 4 leads + 5 alerts + 4 checkin + 8 crm
-    # + 1 customers.interactions.
-    assert Permission.objects.count() == 95
+    # + 1 customers.interactions + 2 orders (reopen, force_transition).
+    assert Permission.objects.count() == 97
     assert set(Role.objects.values_list("key", flat=True)) == {
         "administrador",
         "atendente",

@@ -15,8 +15,12 @@ function historyEntry(to_status: string, created_at: string): OrderStatusHistory
     from_status_display: "",
     to_status,
     to_status_display: to_status,
+    action: "",
     changed_by_name: "Admin",
+    reason: "",
     note: "",
+    source: "manual",
+    source_display: "Manual",
     created_at,
   };
 }

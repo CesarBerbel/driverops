@@ -30,6 +30,8 @@ MODULES = [
             ("edit", "Editar", False),
             ("cancel", "Cancelar", True),
             ("finish", "Finalizar", True),
+            ("reopen", "Reabrir OS finalizada/cancelada", True),
+            ("force_transition", "Forçar transição de status", True),
             ("delete", "Excluir/desativar", True),
             ("reactivate", "Reativar", False),
         ],

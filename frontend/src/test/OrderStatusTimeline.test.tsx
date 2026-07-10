@@ -15,8 +15,12 @@ function entry(overrides: Partial<OrderStatusHistoryEntry> = {}): OrderStatusHis
     from_status_display: "Aberta",
     to_status: "diagnosing",
     to_status_display: "Em diagnóstico",
+    action: "start_diagnosis",
     changed_by_name: "Admin",
+    reason: "",
     note: "",
+    source: "manual",
+    source_display: "Manual",
     created_at: "2026-07-05T12:00:00Z",
     ...overrides,
   };

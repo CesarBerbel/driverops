@@ -214,16 +214,16 @@ class WorkOrderSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # O status nunca é editável pelo endpoint comum da OS (criação ou edição):
+        # é sempre consequência de uma ação da máquina de estados. Uma OS nova
+        # começa em "Aberta" (default do modelo).
+        self.fields["status"].read_only = True
         # Once an OS exists, its vehicle and customer are fixed -- they can only
         # be chosen on creation. Locking them read-only on update also keeps the
         # vehicle/customer consistency guaranteed at creation time.
         if self.instance is not None:
             self.fields["customer"].read_only = True
             self.fields["vehicle"].read_only = True
-            # Status changes must go through the controlled ``move`` action so
-            # workflow validation, audit trail and critical permissions cannot
-            # be bypassed via PATCH/PUT on the regular OS endpoint.
-            self.fields["status"].read_only = True
 
     class Meta:
         model = WorkOrder
@@ -520,6 +520,7 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
     from_status_display = serializers.SerializerMethodField()
     to_status_display = serializers.SerializerMethodField()
     changed_by_name = serializers.SerializerMethodField()
+    source_display = serializers.CharField(source="get_source_display", read_only=True)
 
     class Meta:
         model = OrderStatusHistory
@@ -529,8 +530,12 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
             "from_status_display",
             "to_status",
             "to_status_display",
+            "action",
             "changed_by_name",
+            "reason",
             "note",
+            "source",
+            "source_display",
             "created_at",
         ]
 

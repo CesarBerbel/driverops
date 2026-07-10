@@ -51,8 +51,16 @@ export function OrderStatusTimeline({ orderId }: { orderId: number }) {
                   <p className="text-xs text-muted-foreground">
                     {formatDateTime(entry.created_at)}
                     {entry.changed_by_name ? ` · ${entry.changed_by_name}` : ""}
+                    {entry.source_display && entry.source !== "manual"
+                      ? ` · ${entry.source_display}`
+                      : ""}
                     {entry.note ? ` · ${entry.note}` : ""}
                   </p>
+                  {entry.reason && (
+                    <p className="mt-0.5 text-xs italic text-muted-foreground">
+                      Motivo: {entry.reason}
+                    </p>
+                  )}
                 </div>
               </li>
             ))}

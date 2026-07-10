@@ -43,6 +43,10 @@ function orderSettings(days: number): OrderSettings {
     notify_statuses: ["ready", "finished"],
     notify_on_creation: false,
     notify_on_payment: false,
+    require_diagnosis_before_approval: false,
+    require_approved_quote_for_execution: false,
+    require_checkin_before_execution: false,
+    require_payment_to_finish: false,
     updated_at: "2026-01-01T00:00:00Z",
   };
 }

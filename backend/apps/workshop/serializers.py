@@ -132,6 +132,10 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
             "notify_statuses",
             "notify_on_creation",
             "notify_on_payment",
+            "require_diagnosis_before_approval",
+            "require_approved_quote_for_execution",
+            "require_checkin_before_execution",
+            "require_payment_to_finish",
             "updated_at",
         ]
         read_only_fields = ["updated_at"]

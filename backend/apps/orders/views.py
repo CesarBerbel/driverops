@@ -10,13 +10,10 @@ from rest_framework.response import Response
 from apps.accounts.permissions import HasModulePermission
 from apps.core.periods import period_start_date
 
+from . import state_machine
 from .history import record_event, record_status_change
 from .models import OrderAttachment, OrderEvent, WorkOrder
-from .notifications import (
-    maybe_notify_created,
-    maybe_notify_status_change,
-    notify_status,
-)
+from .notifications import maybe_notify_created, notify_status
 from .pdf import render_order_pdf
 from .serializers import (
     OrderAttachmentSerializer,
@@ -25,9 +22,8 @@ from .serializers import (
     TechnicianSerializer,
     WorkOrderSerializer,
 )
+from .state_machine import TransitionError
 from .status_groups import OPERATIONAL_STATUSES
-from .status_transitions import can_transition
-from .stock import deduct_stock_for_order
 
 User = get_user_model()
 
@@ -45,7 +41,12 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
     # específica (kanban.move) e as permissões críticas (orders.cancel/finish)
     # são validadas dentro da action.
     permission_action_map = {
+        # Mudar status exige ver a OS; a permissão específica de cada transição
+        # (kanban.move / orders.finish / orders.cancel / orders.reopen ...) é
+        # validada dentro da máquina de estados.
         "move": "view",
+        "transitions": "view",
+        "transition": "view",
         "status_history": "view",
         "events": "view",
         "technicians": "view",
@@ -147,69 +148,9 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         maybe_notify_created(order, actor=self.request.user)
 
     def perform_update(self, serializer):
-        # Status changes are rejected by the serializer and must go through
-        # `move`; this still keeps side effects correct if that rule evolves.
-        old_status = serializer.instance.status
-        order = serializer.save()
-        self._on_status_change(order, old_status)
-
-    def _on_status_change(self, order, old_status):
-        """Histórico, baixa de estoque e notificação ao cliente quando o status muda."""
-        if order.status != old_status:
-            labels = dict(WorkOrder.Status.choices)
-            record_status_change(order, old_status, order.status, self.request.user)
-            record_event(
-                order,
-                OrderEvent.Type.STATUS_CHANGED,
-                f"{labels.get(old_status, old_status)} → "
-                f"{labels.get(order.status, order.status)}",
-                actor=self.request.user,
-            )
-            # E-mail automático ao cliente nos marcos (pronta/finalizada).
-            maybe_notify_status_change(order, actor=self.request.user)
-        self._maybe_deduct_stock(order, old_status)
-
-    def _maybe_deduct_stock(self, order, old_status):
-        """Dá baixa das peças ao entrar em 'Finalizada' (idempotente)."""
-        if (
-            order.status == WorkOrder.Status.FINISHED
-            and old_status != WorkOrder.Status.FINISHED
-        ):
-            deduct_stock_for_order(order, self.request.user)
-
-    def _user_has_permission(self, codename):
-        user = self.request.user
-        return bool(
-            user
-            and user.is_authenticated
-            and (user.is_superuser or user.has_perm_code(codename))
-        )
-
-    def _validate_move_permissions(self, current_status, new_status):
-        if not self._user_has_permission("kanban.move"):
-            return Response(
-                {"detail": "Você não tem permissão para mover cards no Kanban."},
-                status=http_status.HTTP_403_FORBIDDEN,
-            )
-        if current_status == new_status or not can_transition(
-            current_status, new_status
-        ):
-            return None
-        if new_status == WorkOrder.Status.CANCELED and not self._user_has_permission(
-            "orders.cancel"
-        ):
-            return Response(
-                {"detail": "Você não tem permissão crítica para cancelar OS."},
-                status=http_status.HTTP_403_FORBIDDEN,
-            )
-        if new_status == WorkOrder.Status.FINISHED and not self._user_has_permission(
-            "orders.finish"
-        ):
-            return Response(
-                {"detail": "Você não tem permissão crítica para finalizar OS."},
-                status=http_status.HTTP_403_FORBIDDEN,
-            )
-        return None
+        # O status é read-only no update (só muda pela máquina de estados). O
+        # save aqui nunca altera status; mantido simples e sem efeitos de status.
+        serializer.save()
 
     def destroy(self, request, *args, **kwargs):
         order = self.get_object()
@@ -224,13 +165,16 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         order.save(update_fields=["is_active", "updated_at"])
         return Response(WorkOrderSerializer(order).data)
 
+    def _serialized(self, order):
+        return WorkOrderSerializer(order, context=self.get_serializer_context()).data
+
     @action(detail=True, methods=["post"])
     def move(self, request, pk=None):
-        """Muda o status da OS respeitando o fluxo do Kanban.
+        """Muda o status da OS pelo Kanban (arrastar card).
 
-        Chamada quando um card é arrastado para outra coluna. O backend valida a
-        transição (fonte da verdade); transições inválidas retornam 400 com
-        mensagem clara e o frontend faz rollback do card para a coluna anterior.
+        Compatibilidade: recebe o status de destino e resolve a ação de negócio
+        correspondente, delegando à máquina de estados (fonte da verdade). Aceita
+        ``reason``/``notes`` para transições que exigem justificativa.
         """
         order = self.get_object()
         new_status = request.data.get("status")
@@ -240,10 +184,10 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 {"status": ["Status inválido."]},
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
-        permission_error = self._validate_move_permissions(order.status, new_status)
-        if permission_error is not None:
-            return permission_error
-        if not can_transition(order.status, new_status):
+        if new_status == order.status:
+            return Response(self._serialized(order))  # no-op de reordenação
+        action_key = state_machine.resolve_action(order.status, new_status)
+        if action_key is None:
             return Response(
                 {
                     "status": [
@@ -253,13 +197,61 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 },
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
-        if new_status != order.status:
-            old_status = order.status
-            order.status = new_status
-            order.save(update_fields=["status", "updated_at"])
-            self._on_status_change(order, old_status)
-        serializer = WorkOrderSerializer(order, context=self.get_serializer_context())
-        return Response(serializer.data)
+        return self._do_transition(
+            order,
+            action_key,
+            reason=request.data.get("reason", ""),
+            notes=request.data.get("notes", ""),
+        )
+
+    @action(detail=True, methods=["get"])
+    def transitions(self, request, pk=None):
+        """Ações de status disponíveis para o usuário a partir do status atual."""
+        order = self.get_object()
+        return Response(
+            {
+                "status": order.status,
+                "status_display": order.get_status_display(),
+                "transitions": state_machine.get_available_transitions(
+                    order, request.user
+                ),
+            }
+        )
+
+    @action(detail=True, methods=["post"])
+    def transition(self, request, pk=None):
+        """Executa uma ação de transição de status da OS (fonte da verdade)."""
+        order = self.get_object()
+        action_key = request.data.get("action")
+        if not action_key:
+            return Response(
+                {"detail": "Informe a ação de transição."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+        return self._do_transition(
+            order,
+            action_key,
+            reason=request.data.get("reason", ""),
+            notes=request.data.get("notes", ""),
+            target_status=request.data.get("target_status"),
+        )
+
+    def _do_transition(
+        self, order, action_key, *, reason="", notes="", target_status=None
+    ):
+        try:
+            updated = state_machine.transition(
+                order.id,
+                action_key,
+                self.request.user,
+                reason=reason,
+                notes=notes,
+                target_status=target_status,
+                request=self.request,
+            )
+        except TransitionError as exc:
+            return Response({"detail": exc.message}, status=exc.http_status)
+        return Response(self._serialized(updated))
 
     @action(detail=True, methods=["get"])
     def pdf(self, request, pk=None):

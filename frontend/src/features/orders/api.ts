@@ -8,7 +8,9 @@ import type {
   OrderEventType,
   OrderStatus,
   OrderStatusHistoryEntry,
+  OrderTransitionsResponse,
   Technician,
+  TransitionPayload,
   WorkOrder,
   WorkOrderPayload,
 } from "./types";
@@ -69,6 +71,28 @@ export async function moveWorkOrder(
   const { data } = await apiClient.post<WorkOrder>(`/work-orders/${id}/move/`, {
     status,
   });
+  return data;
+}
+
+// Máquina de estados da OS: ações de status disponíveis (fonte da verdade) e
+// execução de uma transição (com justificativa quando exigida).
+export async function getOrderTransitions(
+  id: number,
+): Promise<OrderTransitionsResponse> {
+  const { data } = await apiClient.get<OrderTransitionsResponse>(
+    `/work-orders/${id}/transitions/`,
+  );
+  return data;
+}
+
+export async function transitionOrder(
+  id: number,
+  payload: TransitionPayload,
+): Promise<WorkOrder> {
+  const { data } = await apiClient.post<WorkOrder>(
+    `/work-orders/${id}/transition/`,
+    payload,
+  );
   return data;
 }
 

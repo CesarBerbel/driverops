@@ -48,14 +48,14 @@ export function OrderStatusStepper({ status, orderId }: OrderStatusStepperProps)
     reachedAt[entry.to_status as OrderStatus] = entry.created_at;
   }
 
-  if (status === "canceled") {
+  if (status === "canceled" || status === "rejected") {
     return (
       <span
         className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive"
-        aria-label="Ordem de serviço cancelada"
+        aria-label={`Ordem de serviço ${statusLabel(status).toLowerCase()}`}
       >
         <XCircle className="size-3.5" />
-        OS cancelada
+        OS {statusLabel(status).toLowerCase()}
       </span>
     );
   }

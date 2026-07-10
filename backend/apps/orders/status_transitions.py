@@ -1,38 +1,28 @@
-"""Regras mínimas de transição de status da OS (fluxo operacional do Kanban).
+"""Compatibilidade: regras de transição de status da OS.
 
-Usadas pela ação ``move`` do WorkOrderViewSet quando uma OS é arrastada entre
-colunas no Kanban. A edição completa da OS (formulário) não altera status: toda
-mudança de etapa passa por esta regra, com o backend como fonte da verdade.
-
-"Finalizada" e "Cancelada" são estados terminais no Kanban: não se sai deles por
-arrastar sem action específica/permissão crítica. A arquitetura já está preparada
-para regras mais avançadas (por perfil/permissão) sem refatoração.
+A fonte única passou a ser :mod:`apps.orders.state_machine` (máquina de estados
+formal, com ações, permissões, pré-condições e efeitos colaterais). Este módulo
+apenas reexporta os helpers de transição para não quebrar imports existentes
+(Kanban, listagens). Toda mudança de status deve passar por
+``state_machine.transition``.
 """
 
-ALLOWED_TRANSITIONS = {
-    "open": ["diagnosing", "awaiting_approval", "canceled"],
-    "diagnosing": ["awaiting_approval", "canceled"],
-    "awaiting_approval": ["approved", "canceled"],
-    "approved": ["in_progress", "canceled"],
-    "in_progress": ["awaiting_parts", "testing", "ready"],
-    "awaiting_parts": ["in_progress"],
-    "testing": ["ready", "in_progress"],
-    "ready": ["finished"],
-    "finished": [],
-    "canceled": [],
-}
+from .state_machine import ACTIONS, allowed_targets, can_transition, resolve_action
 
 
-def can_transition(current, target):
-    """True se a OS pode mover de ``current`` para ``target`` via Kanban.
+def _allowed_map():
+    """Mapa ``status -> [destinos]`` derivado das ações (para compatibilidade)."""
+    result: dict[str, list[str]] = {}
+    for action in ACTIONS.values():
+        if not action.target:
+            continue
+        for src in action.sources:
+            result.setdefault(src, [])
+            if action.target not in result[src]:
+                result[src].append(action.target)
+    return result
 
-    Mover para o mesmo status é sempre válido (no-op de reordenação na coluna).
-    """
-    if current == target:
-        return True
-    return target in ALLOWED_TRANSITIONS.get(current, [])
 
+ALLOWED_TRANSITIONS = _allowed_map()
 
-def allowed_targets(current):
-    """Lista de status de destino permitidos a partir de ``current``."""
-    return list(ALLOWED_TRANSITIONS.get(current, []))
+__all__ = ["ALLOWED_TRANSITIONS", "allowed_targets", "can_transition", "resolve_action"]
