@@ -42,6 +42,7 @@ class NotificationTemplateViewSet(
     permission_action_map = {
         "preview": "view",
         "metadata": "view",
+        "history": "view",
         "restore": "edit",
         "test_send": "test",
         "bulk_status": "edit",

@@ -72,13 +72,16 @@ os grupos de período -- ver [Dashboard](dashboard.md)). A listagem de OS també
 Dashboard. Ver também [Segurança](security.md) para as decisões por trás do
 esquema de autenticação.
 
-**Paginação (opt-in).** As listagens do DRF usam `OptionalPageNumberPagination`
-(`apps/core/pagination.py`): sem o parâmetro `?page` a resposta é a lista completa
-(comportamento histórico, consumido pelo frontend como array); com `?page=N`
-(e opcional `?page_size=`, máx. 200) a resposta vira o envelope paginado
-`{count, next, previous, results}`. Assim qualquer endpoint é paginável sob
-demanda sem exigir mudança simultânea no frontend, que pode adotar página a
-página. Observabilidade e logging estruturado ficam em `LOGGING` (nível por
+**Paginação (sempre limitada, *fail-safe*).** As listagens do DRF usam
+`OptionalPageNumberPagination` (`apps/core/pagination.py`): **nenhuma** resposta é
+ilimitada. Com `?page=N` (e opcional `?page_size=`, máx. 200) a resposta é o
+envelope paginado `{count, next, previous, results}`; **sem** `?page` a resposta
+é a lista **cortada em 200** e devolvida como array cru (compatível com o
+frontend, que lê arrays), acompanhada do cabeçalho `X-Result-Limit` avisando o
+teto -- para ir além, o cliente pagina com `?page`. As poucas *views* com
+`list()` próprio (CRM, leads) também impõem esse teto (`[:200]`). Isso protege o
+servidor de varreduras/respostas gigantes sem exigir mudança simultânea no
+frontend. Observabilidade e logging estruturado ficam em `LOGGING` (nível por
 `LOG_LEVEL`), com captura de erros opcional via Sentry em produção.
 
 `apps.vehicles` depende de `apps.customers` (FK `Vehicle.customer`), nunca o contrário -- o

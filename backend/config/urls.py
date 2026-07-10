@@ -1,7 +1,7 @@
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+
+from apps.core.media import ProtectedMediaView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -23,7 +23,7 @@ urlpatterns = [
     path("api/", include("apps.alerts.urls")),
     path("api/", include("apps.checkin.urls")),
     path("api/", include("apps.crm.urls")),
+    # Mídia (uploads) servida de forma PRIVADA -- exige autenticação, exceto o
+    # branding público (logo). Nunca exposta diretamente pelo nginx.
+    re_path(r"^media/(?P<path>.+)$", ProtectedMediaView.as_view(), name="media"),
 ]
-
-# Serve uploaded media in development (no-op when DEBUG is False).
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

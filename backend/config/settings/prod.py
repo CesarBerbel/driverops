@@ -3,9 +3,13 @@ import os
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401,F403
-from .base import env_bool
+from .base import ALLOWED_HOSTS, env_bool
 
 DEBUG = False
+
+# Permite o healthcheck interno do container (127.0.0.1/localhost) sem
+# enfraquecer a proteção de Host externa (o nginx encaminha o Host real).
+ALLOWED_HOSTS = list(dict.fromkeys([*ALLOWED_HOSTS, "localhost", "127.0.0.1"]))
 
 # Falha cedo em produção se a chave não for definida (ou for o default de dev).
 # Evita subir assinando tokens/sessões com uma chave pública conhecida.

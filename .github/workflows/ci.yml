@@ -78,6 +78,11 @@ jobs:
 
       - run: pip install -r requirements-dev.txt
 
+      - name: Dependency audit (pip-audit)
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --strict
+
       - name: Lint (ruff)
         run: ruff check .
 
@@ -123,15 +128,25 @@ jobs:
   # Single required-status-check target: green regardless of which of the
   # two jobs above actually ran, so branch protection doesn't need to know
   # about path-filtering skips.
+  #
+  # Fail-closed: só passa se cada job dependente terminou em "success" ou
+  # "skipped" (pulo legítimo do path-filter). Qualquer outro resultado --
+  # failure, cancelled ou vazio -- reprova o gate.
   ci:
     needs: [changes, backend, frontend]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Verify no failures
+      - name: Verify all jobs passed (fail-closed)
         run: |
-          if [ "${{ needs.backend.result }}" = "failure" ] || [ "${{ needs.frontend.result }}" = "failure" ]; then
-            echo "One or more jobs failed."
-            exit 1
-          fi
-          echo "OK"
+          fail=0
+          for job in changes:${{ needs.changes.result }} \
+                     backend:${{ needs.backend.result }} \
+                     frontend:${{ needs.frontend.result }}; do
+            name="${job%%:*}"; result="${job##*:}"
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "job '$name' did not pass (result: '$result')"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] && echo "OK" || exit 1

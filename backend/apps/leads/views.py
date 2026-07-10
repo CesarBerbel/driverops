@@ -143,7 +143,7 @@ class LeadViewSet(
 
     def list(self, request, *args, **kwargs):
         # Pré-carrega os mapas dos indicadores em lote (evita N+1 por lead).
-        leads = list(self.filter_queryset(self.get_queryset()))
+        leads = list(self.filter_queryset(self.get_queryset()))[:200]  # nunca ilimitado
         self._indicator_maps = build_indicator_maps(leads)
         serializer = self.get_serializer(leads, many=True)
         return Response(serializer.data)

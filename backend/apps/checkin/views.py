@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import HasModulePermission, require_permission
+from apps.core.uploads import sanitize_filename, validate_upload
 from apps.orders.models import WorkOrder
 
 from . import services
@@ -29,14 +30,11 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 def _validate_upload(upload):
-    if upload is None:
-        raise ValidationError({"file": ["Envie um arquivo."]})
-    if upload.size > MAX_UPLOAD_BYTES:
-        raise ValidationError({"file": ["O arquivo excede o limite de 10 MB."]})
-    ct = upload.content_type or ""
-    if not (ct.startswith("image/") or ct == "application/pdf"):
-        raise ValidationError({"file": ["Tipo inválido. Envie uma imagem."]})
-    return ct
+    # Valida tamanho e tipo REAL (magic bytes), não o content_type do cliente,
+    # e saneia o nome do arquivo (sem path traversal).
+    validate_upload(upload, max_bytes=MAX_UPLOAD_BYTES, field="file")
+    upload.name = sanitize_filename(upload.name, fallback="foto")
+    return upload.content_type or ""
 
 
 def _guard_editable(check_in):

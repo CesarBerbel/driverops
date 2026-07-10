@@ -42,8 +42,13 @@ class HasModulePermission(BasePermission):
 
     O viewset define ``permission_module`` (ex.: "customers") e, opcionalmente,
     ``permission_action_map`` para mapear actions customizadas (ex.: {"send":
-    "send"}). Superuser sempre passa. Actions não mapeadas são liberadas (o
-    controle fino fica a cargo de mapeamentos explícitos).
+    "send"}). Superuser sempre passa.
+
+    **Fail-closed:** se o viewset não define ``permission_module`` ou se a action
+    (customizada) não está mapeada em ``DEFAULT_ACTION_MAP``/
+    ``permission_action_map``, o acesso é **negado**. Cada action precisa ter uma
+    permissão explícita -- uma action nova sem mapeamento não fica liberada por
+    esquecimento.
     """
 
     message = "Você não tem permissão para esta ação."
@@ -56,7 +61,8 @@ class HasModulePermission(BasePermission):
             return True
         module = getattr(view, "permission_module", None)
         if not module:
-            return True
+            # Misconfiguração: usar esta classe sem módulo -> nega (fail-closed).
+            return False
         action_map = {
             **DEFAULT_ACTION_MAP,
             **getattr(view, "permission_action_map", {}),
@@ -64,5 +70,6 @@ class HasModulePermission(BasePermission):
         action = getattr(view, "action", None)
         perm_action = action_map.get(action)
         if not perm_action:
-            return True
+            # Action não mapeada -> nega (fail-closed).
+            return False
         return user.has_perm_code(f"{module}.{perm_action}")

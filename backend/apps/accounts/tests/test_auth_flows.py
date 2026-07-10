@@ -52,26 +52,26 @@ def test_refresh_without_cookie_returns_401(client):
     assert response.status_code == 401
 
 
-def test_concurrent_refresh_reuse_does_not_kill_the_session(auth_client):
-    """Regression: two refreshes racing on the same (pre-rotation) refresh cookie
-    -- e.g. several tabs or a request burst after the access token expired -- must
-    both succeed. Blacklisting on rotation used to make the second one 401, clear
-    the auth cookies and bounce the user to the login screen."""
+def test_rotated_refresh_token_is_revoked(auth_client):
+    """Regressão de segurança: com BLACKLIST_AFTER_ROTATION, o refresh token
+    antigo é invalidado a cada rotação. Reutilizar o token pré-rotação falha
+    (401) -- é isto que faz o logout realmente encerrar a sessão (nenhum token
+    rotacionado sobrevive para gerar novos access tokens)."""
     original_refresh = auth_client.cookies["refresh_token"].value
 
     first = auth_client.post("/api/auth/refresh/")
     assert first.status_code == 204
+    assert auth_client.cookies["refresh_token"].value != original_refresh
 
-    # Second, concurrent refresh still carrying the original refresh cookie.
+    # Reusar o refresh token antigo (rotacionado) -> revogado -> 401.
     auth_client.cookies["refresh_token"] = original_refresh
     second = auth_client.post("/api/auth/refresh/")
-
-    assert second.status_code == 204
-    # The session survives: the reused refresh cookie was not cleared.
-    assert second.cookies["refresh_token"].value != ""
+    assert second.status_code == 401
 
 
-def test_logout_clears_cookies_and_blacklists_refresh(auth_client):
+def test_logout_clears_cookies_and_revokes_refresh(auth_client):
+    refresh_at_logout = auth_client.cookies["refresh_token"].value
+
     response = auth_client.post("/api/auth/logout/")
     assert response.status_code == 204
     assert response.cookies["access_token"].value == ""
@@ -79,6 +79,11 @@ def test_logout_clears_cookies_and_blacklists_refresh(auth_client):
 
     me_response = auth_client.get("/api/users/me/")
     assert me_response.status_code == 401
+
+    # O refresh token do logout foi para a blacklist: não gera novo access.
+    auth_client.cookies["refresh_token"] = refresh_at_logout
+    reuse = auth_client.post("/api/auth/refresh/")
+    assert reuse.status_code == 401
 
 
 def test_login_is_throttled_after_repeated_failures(client, user):

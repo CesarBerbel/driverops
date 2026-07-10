@@ -12,6 +12,34 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Separa as libs grandes de terceiros em chunks próprios (cache longo,
+        // não invalidados a cada mudança de código da aplicação). As telas já
+        // viram chunks separados via React.lazy nas rotas.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('@tanstack')) return 'query-vendor'
+          if (
+            id.includes('react-hook-form') ||
+            id.includes('@hookform') ||
+            id.includes('/zod/')
+          ) {
+            return 'form-vendor'
+          }
+          if (
+            id.includes('react-router') ||
+            id.includes('react-dom') ||
+            /node_modules\/react\//.test(id) ||
+            id.includes('scheduler')
+          ) {
+            return 'react-vendor'
+          }
+        },
+      },
+    },
+  },
   server: {
     host: true,
     port: 5173,

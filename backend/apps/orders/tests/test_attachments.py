@@ -117,6 +117,20 @@ def test_missing_file_is_rejected(auth_client, order):
     assert response.status_code == 400
 
 
+def test_disguised_file_is_rejected_by_magic_bytes(auth_client, order):
+    # Nome .png e content_type de imagem, mas conteúdo arbitrário -> rejeitado.
+    # A validação é por magic bytes, não pelo tipo declarado pelo cliente.
+    evil = SimpleUploadedFile(
+        "payload.png",
+        b"<html><script>alert(1)</script></html>",
+        content_type="image/png",
+    )
+    response = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": evil}
+    )
+    assert response.status_code == 400
+
+
 def test_list_attachments(auth_client, order):
     auth_client.post(
         f"/api/work-orders/{order.id}/attachments/", data={"file": _png("a.png")}

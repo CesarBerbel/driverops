@@ -1,14 +1,18 @@
-"""Paginação opt-in para as listagens do DRF.
+"""Paginação limitada (fail-safe) para as listagens do DRF.
 
-O frontend atual consome listas como arrays crus. Para não quebrar isso num
-big-bang, esta paginação é **sob demanda**: sem o parâmetro ``page`` a resposta
-continua sendo a lista completa (comportamento histórico); com ``?page=N`` (e,
-opcionalmente, ``?page_size=``) a resposta vira o envelope paginado
-``{count, next, previous, results}``. Assim cada endpoint fica paginável quando
-o cliente quiser, e o frontend pode adotar página a página sem rupturas.
+Toda listagem é **sempre limitada** -- nenhum endpoint devolve uma resposta
+ilimitada, protegendo o servidor de varreduras/DoS e de respostas gigantes.
+
+- Com ``?page=N`` (e opcionalmente ``?page_size=``, até ``max_page_size``): o
+  envelope paginado padrão ``{count, next, previous, results}``.
+- Sem ``?page``: a resposta é a lista, mas **cortada em ``max_page_size``** e
+  devolvida como array cru (mantém a compatibilidade com o frontend, que lê
+  arrays), com o cabeçalho ``X-Result-Limit`` avisando o teto aplicado. Para ver
+  além do teto, o cliente pagina com ``?page``.
 """
 
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 
 
 class OptionalPageNumberPagination(PageNumberPagination):
@@ -17,7 +21,15 @@ class OptionalPageNumberPagination(PageNumberPagination):
     max_page_size = 200
 
     def paginate_queryset(self, queryset, request, view=None):
-        # Sem ?page -> não pagina (DRF devolve a lista inteira, como hoje).
-        if self.page_query_param not in request.query_params:
-            return None
-        return super().paginate_queryset(queryset, request, view)
+        self._bounded = self.page_query_param not in request.query_params
+        if not self._bounded:
+            return super().paginate_queryset(queryset, request, view)
+        # Sem ?page: nunca ilimitado -- corta no teto e devolve como array.
+        return list(queryset[: self.max_page_size])
+
+    def get_paginated_response(self, data):
+        if getattr(self, "_bounded", False):
+            response = Response(data)
+            response["X-Result-Limit"] = str(self.max_page_size)
+            return response
+        return super().get_paginated_response(data)

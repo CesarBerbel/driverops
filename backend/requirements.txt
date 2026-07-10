@@ -1,17 +1,23 @@
-Django>=5.1,<5.3
-djangorestframework>=3.15,<3.16
-djangorestframework-simplejwt>=5.3,<5.4
-django-cors-headers>=4.4,<4.7
-psycopg[binary]>=3.2,<3.3
-python-dotenv>=1.0,<1.1
-gunicorn>=23.0,<24.0
+# Dependências de runtime -- FIXADAS em versões exatas (==) para builds
+# reprodutíveis. Atualize deliberadamente (revisando o changelog), nunca por
+# resolução automática de um intervalo.
+Django==5.2.16
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.6.0
+psycopg[binary]==3.2.13
+python-dotenv==1.0.1
+gunicorn==23.0.0
 # Serve os estáticos (admin/DRF) direto pelo backend em produção, sem depender
 # de um web server para /static/. Ver config/settings/prod.py.
-whitenoise>=6.6,<7.0
+whitenoise==6.12.0
 # Geração de PDF do orçamento (puro Python, sem dependências de sistema).
-xhtml2pdf>=0.2.16,<0.3
+xhtml2pdf==0.2.17
+# Manipulação de imagem: usada pelo xhtml2pdf (PDFs). Fixada explicitamente por
+# ser dependência efetiva do runtime, não só transitiva.
+pillow==12.3.0
 # Assistente de IA para textos da OS (provedor padrão: Anthropic/Claude).
-anthropic>=0.40,<1.0
+anthropic==0.116.0
 # Observabilidade opcional em produção: só é inicializado se SENTRY_DSN estiver
 # definido (ver config/settings/prod.py). Sem DSN/instalação, é um no-op.
-sentry-sdk>=2.0,<3.0
+sentry-sdk==2.64.0

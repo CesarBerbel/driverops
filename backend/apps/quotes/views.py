@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import HasModulePermission
+from apps.core.uploads import sanitize_filename, validate_upload
 from apps.orders.history import record_event
 from apps.orders.models import OrderEvent, WorkOrder
 
@@ -26,6 +27,10 @@ from .services import (
     apply_item_decisions,
     create_quote_from_order,
 )
+
+# Limites de upload do orçamento.
+MAX_SIGNED_DOCUMENT_BYTES = 10 * 1024 * 1024  # 10 MB (via assinada: imagem/PDF)
+MAX_SIGNATURE_BYTES = 2 * 1024 * 1024  # 2 MB (assinatura desenhada, PNG)
 
 
 def _client_ip(request):
@@ -56,14 +61,22 @@ def _record_quote_decision(quote, channel, actor=None):
 
 
 def _decode_signature(data_uri, name):
-    """data:image/png;base64,... -> ContentFile. Retorna None se inválido."""
+    """data:image/png;base64,... -> ContentFile. Retorna None se inválido.
+
+    Valida o conteúdo real (deve ser PNG) e o tamanho -- não confia no data URI.
+    """
     if not data_uri:
         return None
     payload = data_uri.split(";base64,", 1)[-1]
     try:
-        return ContentFile(base64.b64decode(payload), name=name)
+        raw = base64.b64decode(payload)
     except (ValueError, TypeError):
         return None
+    if not raw or len(raw) > MAX_SIGNATURE_BYTES:
+        return None
+    if not raw.startswith(b"\x89PNG\r\n\x1a\n"):  # assinatura PNG
+        return None
+    return ContentFile(raw, name=sanitize_filename(name, fallback="assinatura"))
 
 
 class QuoteViewSet(viewsets.ModelViewSet):
@@ -80,6 +93,8 @@ class QuoteViewSet(viewsets.ModelViewSet):
         "approve_tablet": "approve",
         "reject": "reject",
         "pdf": "pdf",
+        # Enviar a via assinada é registrar a aprovação -> exige quotes.approve.
+        "upload_signed": "approve",
         "destroy": "cancel",
     }
 
@@ -285,11 +300,12 @@ class QuoteViewSet(viewsets.ModelViewSet):
     def upload_signed(self, request, pk=None):
         quote = self.get_object()
         document = request.FILES.get("document")
-        if not document:
-            return Response(
-                {"document": ["Envie o arquivo do orçamento assinado."]},
-                status=http_status.HTTP_400_BAD_REQUEST,
-            )
+        # Valida tamanho e tipo real (imagem/PDF) e saneia o nome.
+        validate_upload(document, max_bytes=MAX_SIGNED_DOCUMENT_BYTES, field="document")
+        document.name = sanitize_filename(document.name, fallback="assinado")
+        # Remove a via anterior para não deixar arquivo órfão.
+        if quote.signed_document:
+            quote.signed_document.delete(save=False)
         quote.signed_document = document
         quote.save(update_fields=["signed_document", "updated_at"])
         return Response(self.get_serializer(quote).data)

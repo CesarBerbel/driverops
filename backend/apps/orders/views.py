@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.accounts.permissions import HasModulePermission
 from apps.core.periods import period_start_date
+from apps.core.uploads import sanitize_filename, validate_upload
 
 from . import state_machine
 from .history import record_event, record_status_change
@@ -27,10 +28,8 @@ from .status_groups import OPERATIONAL_STATUSES
 
 User = get_user_model()
 
-# Limite de tamanho de anexo (10 MB) e tipos aceitos (imagens + PDF).
+# Limite de tamanho de anexo (10 MB). Tipo validado por magic bytes (imagem/PDF).
 MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
-ALLOWED_ATTACHMENT_PREFIXES = ("image/",)
-ALLOWED_ATTACHMENT_TYPES = ("application/pdf",)
 
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
@@ -316,26 +315,10 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             )
 
         upload = request.FILES.get("file")
-        if upload is None:
-            return Response(
-                {"file": ["Envie um arquivo."]},
-                status=http_status.HTTP_400_BAD_REQUEST,
-            )
-        if upload.size > MAX_ATTACHMENT_BYTES:
-            return Response(
-                {"file": ["O arquivo excede o limite de 10 MB."]},
-                status=http_status.HTTP_400_BAD_REQUEST,
-            )
-        content_type = upload.content_type or ""
-        allowed = (
-            content_type.startswith(ALLOWED_ATTACHMENT_PREFIXES)
-            or content_type in ALLOWED_ATTACHMENT_TYPES
-        )
-        if not allowed:
-            return Response(
-                {"file": ["Tipo de arquivo não permitido. Envie uma imagem ou PDF."]},
-                status=http_status.HTTP_400_BAD_REQUEST,
-            )
+        # Valida tamanho e tipo REAL (magic bytes) -- não confia no content_type
+        # declarado pelo cliente. Levanta 400 amigável se inválido.
+        validate_upload(upload, max_bytes=MAX_ATTACHMENT_BYTES, field="file")
+        upload.name = sanitize_filename(upload.name, fallback="anexo")
 
         category = request.data.get("category") or OrderAttachment.Category.OTHER
         if category not in OrderAttachment.Category.values:
@@ -345,7 +328,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             order=order,
             file=upload,
             original_name=upload.name[:255],
-            content_type=content_type[:100],
+            content_type=(upload.content_type or "")[:100],
             size=upload.size,
             category=category,
             caption=(request.data.get("caption") or "")[:255],

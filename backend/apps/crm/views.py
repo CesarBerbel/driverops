@@ -88,7 +88,9 @@ class SuggestionViewSet(
         items = sorted(
             self.get_queryset(),
             key=lambda s: (-PRIORITY_ORDER.get(s.priority, 0), -s.id),
-        )
+        )[
+            :200
+        ]  # nunca ilimitado
         return Response(SuggestionSerializer(items, many=True).data)
 
     def perform_update(self, serializer):
@@ -263,7 +265,9 @@ class TaskViewSet(viewsets.ModelViewSet):
                 -PRIORITY_ORDER.get(t.priority, 0),
                 -t.id,
             ),
-        )
+        )[
+            :200
+        ]  # nunca ilimitado
         return Response(TaskSerializer(items, many=True).data)
 
     @action(detail=False, methods=["get"], url_path="pending-count")

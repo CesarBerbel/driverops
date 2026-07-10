@@ -174,14 +174,15 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=ACCESS_TOKEN_LIFETIME_MIN),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=REFRESH_TOKEN_LIFETIME_DAYS),
     "ROTATE_REFRESH_TOKENS": True,
-    # NOT blacklisted on rotation on purpose: when the access token expires and
-    # several requests refresh at once (multiple tabs, or a request race the
-    # single-flight client dedup can't cover across tabs), blacklisting the old
-    # refresh token would make the second refresh fail with 401, clear the auth
-    # cookies and bounce the user to the login screen. Logout still ends the
-    # session by clearing the cookies; the tradeoff is that a rotated refresh
-    # token stays valid until its natural expiry.
-    "BLACKLIST_AFTER_ROTATION": False,
+    # Blacklist the previous refresh token on every rotation so that at any
+    # moment only the latest refresh token is valid. This is what makes LOGOUT
+    # actually end the session: logout blacklists the current (latest) token and,
+    # because rotation already invalidated the earlier ones, no stale refresh
+    # token survives to mint new access tokens. Tradeoff: if two tabs refresh at
+    # the exact same instant, the loser gets a 401 and re-authenticates -- the
+    # client's single-flight refresh dedup keeps this rare. Security (revocation
+    # on logout) is prioritized over that edge case.
+    "BLACKLIST_AFTER_ROTATION": True,
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }

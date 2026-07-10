@@ -11,11 +11,15 @@ cada push em `main` e a cada pull request, e foi desenhado para ser rápido:
 - **Cancelamento de execuções obsoletas**: um novo push no mesmo branch/PR cancela a execução
   anterior em andamento (`concurrency` + `cancel-in-progress`), evitando gastar minutos de CI em
   commits já superados.
-- **Job de backend**: sobe um Postgres como *service container*, roda `ruff check`,
+- **Job de backend**: sobe um Postgres como *service container*, roda `pip-audit` (auditoria de
+  vulnerabilidades nas dependências fixadas em `requirements.txt`, `--strict`), `ruff check`,
   `black --check`, `manage.py migrate` e `pytest`.
 - **Job de frontend**: `oxlint`, `tsc -b` (typecheck), `vitest` e `vite build`.
-- **Job `ci`**: um único status obrigatório que agrega o resultado dos dois jobs acima -- útil para
-  configurar *branch protection* sem depender de quais jobs rodaram naquela PR específica.
+- **Job `ci`** (*fail-closed*): um único status obrigatório que agrega o resultado dos jobs acima. Ele
+  só passa se **cada** job dependente terminou em `success` ou `skipped` (pulo legítimo do
+  path-filter); qualquer outro resultado -- `failure`, `cancelled` ou vazio -- **reprova** o gate.
+  Assim um job que quebrou ou foi cancelado nunca é confundido com "passou", e o *branch protection*
+  precisa observar só este status.
 
 Os comandos rodados são os mesmos documentados em [Testes e lint](testing.md) e
 [Build de produção](build.md), então o que passa localmente com `make lint`/`make test`/`make build`
