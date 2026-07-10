@@ -127,7 +127,11 @@ def test_orders_and_quotes_lists(auth_client, customer360):
     orders = auth_client.get(f"/api/customers/{customer360.id}/work-orders/")
     assert orders.status_code == 200 and len(orders.json()) == 1
     quotes = auth_client.get(f"/api/customers/{customer360.id}/quotes/")
-    assert quotes.status_code == 200 and quotes.json()[0]["status"] == "sent"
+    assert quotes.status_code == 200
+    row = quotes.json()[0]
+    assert row["status"] == "sent"
+    # Campos necessarios para as acoes na aba de orcamentos do 360.
+    assert row["public_token"] and "final_value" in row
 
 
 def test_timeline(auth_client, customer360):

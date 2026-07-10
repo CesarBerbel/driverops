@@ -71,6 +71,8 @@ export interface QuoteRow {
   decided_at: string | null;
   valid_until: string | null;
   created_at: string;
+  public_token: string;
+  final_value: string;
 }
 
 export interface Interaction {

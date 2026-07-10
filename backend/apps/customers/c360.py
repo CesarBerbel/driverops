@@ -16,6 +16,7 @@ from apps.accounts.audit import record_audit
 from apps.accounts.permissions import require_permission
 from apps.core.money import apply_discount, money
 from apps.orders.serializers import line_total
+from apps.quotes.calc import compute_totals
 
 from .c360_serializers import InteractionSerializer
 from .models import Customer
@@ -63,8 +64,10 @@ def _orders(customer):
 def _quotes(customer):
     from apps.quotes.models import Quote
 
-    return Quote.objects.filter(work_order__customer=customer).select_related(
-        "work_order", "work_order__vehicle"
+    return (
+        Quote.objects.filter(work_order__customer=customer)
+        .select_related("work_order", "work_order__vehicle")
+        .prefetch_related("items")
     )
 
 
@@ -106,6 +109,8 @@ def _quote_row(q):
         "decided_at": q.decided_at,
         "valid_until": q.valid_until,
         "created_at": q.created_at,
+        "public_token": q.public_token,
+        "final_value": str(compute_totals(q).get("final_value", "0")),
     }
 
 

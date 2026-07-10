@@ -19,6 +19,19 @@ vi.mock("@/features/customer360/api", () => ({
 }));
 import * as api from "@/features/customer360/api";
 
+vi.mock("@/features/quotes/api", () => ({
+  sendQuote: vi.fn(),
+  rejectQuote: vi.fn(),
+  cancelQuote: vi.fn(),
+  openQuotePdf: vi.fn(),
+}));
+import * as quotesApi from "@/features/quotes/api";
+
+vi.mock("@/features/auth/usePermission", () => ({
+  usePermissionCheck: () => () => true,
+  useHasPermission: () => true,
+}));
+
 function data(over: Partial<Customer360> = {}): Customer360 {
   return {
     customer: {
@@ -95,6 +108,24 @@ beforeEach(() => {
   vi.mocked(api.getCustomer360).mockResolvedValue(data());
   vi.mocked(api.getCustomerInteractions).mockResolvedValue([]);
   vi.mocked(api.createInteraction).mockResolvedValue({} as never);
+  vi.mocked(api.getCustomerQuotes).mockResolvedValue([
+    {
+      id: 7,
+      number: 3,
+      version: 1,
+      status: "sent",
+      status_display: "Enviado",
+      work_order: 12,
+      work_order_number: 12,
+      vehicle_plate: "ABC1D23",
+      sent_at: new Date().toISOString(),
+      decided_at: null,
+      valid_until: null,
+      created_at: new Date().toISOString(),
+      public_token: "tok-123",
+      final_value: "450.00",
+    },
+  ]);
   vi.mocked(api.getCustomerFinancial).mockResolvedValue({
     total_value: "1000.00",
     paid_value: "820.00",
@@ -153,6 +184,25 @@ describe("Cliente 360°", () => {
     expect(screen.getByText("1 OS em aberto.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Dispensar aviso" }));
     expect(screen.queryByText("1 OS em aberto.")).not.toBeInTheDocument();
+  });
+
+  it("shows quote action buttons in the Orçamentos tab and can send by email", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: "Maria Silva" });
+    await userEvent.click(screen.getByRole("button", { name: "Orçamentos" }));
+    await waitFor(() => expect(api.getCustomerQuotes).toHaveBeenCalledWith(5));
+
+    expect(await screen.findByText("Orçamento #3")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Gerar PDF/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Copiar link/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /Enviar por e-mail/ }));
+    // O diálogo de envio prefixa o e-mail do cliente.
+    expect(await screen.findByDisplayValue("maria@example.com")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Enviar" }));
+    await waitFor(() =>
+      expect(quotesApi.sendQuote).toHaveBeenCalledWith(7, "maria@example.com"),
+    );
   });
 
   it("shows an error state", async () => {

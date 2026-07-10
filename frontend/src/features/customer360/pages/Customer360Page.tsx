@@ -40,9 +40,9 @@ import {
   getCustomerFinancial,
   getCustomerInteractions,
   getCustomerOrders,
-  getCustomerQuotes,
   getCustomerTimeline,
 } from "../api";
+import { Customer360QuotesTab } from "../QuotesTab";
 import type { Customer360, OrderRow, QuoteRow } from "../types";
 
 const ALERT_STYLE: Record<string, string> = {
@@ -217,7 +217,7 @@ export function Customer360Page() {
       {tab === "overview" && <OverviewTab data={data} onTab={setTab} />}
       {tab === "vehicles" && <VehiclesTab data={data} />}
       {tab === "orders" && <OrdersTab id={id} />}
-      {tab === "quotes" && <QuotesTab id={id} />}
+      {tab === "quotes" && <Customer360QuotesTab id={id} customerEmail={c.email} />}
       {tab === "interactions" && <InteractionsTab id={id} canCreate={data.can_interactions} />}
       {tab === "financial" && data.can_financial && <FinancialTab id={id} />}
       {tab === "timeline" && <TimelineTab id={id} />}
@@ -338,13 +338,6 @@ function OrdersTab({ id }: { id: number }) {
   return <div className="space-y-2">{data.map((o) => <OrderLine key={o.id} o={o} />)}</div>;
 }
 
-function QuotesTab({ id }: { id: number }) {
-  const { data, isLoading } = useQuery({ queryKey: ["c360-quotes", id], queryFn: () => getCustomerQuotes(id) });
-  if (isLoading) return <Skeleton className="h-40 w-full" />;
-  if (!data || data.length === 0)
-    return <p className="rounded-md border p-6 text-center text-sm text-muted-foreground">Nenhum orçamento para este cliente.</p>;
-  return <div className="space-y-2">{data.map((q) => <QuoteLine key={q.id} q={q} />)}</div>;
-}
 
 const INTERACTION_TYPES = [
   { value: "call", label: "Ligação" },

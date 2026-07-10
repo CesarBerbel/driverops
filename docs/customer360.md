@@ -71,7 +71,7 @@ loading via React Query com `enabled`):
 | **Visão geral** | Veículos, OS abertas, última OS finalizada, orçamentos pendentes e interações recentes | payload do `/360` |
 | **Veículos** | Veículos do cliente | payload do `/360` |
 | **OS** | Ordens de serviço do cliente | `GET /work-orders/` |
-| **Orçamentos** | Orçamentos do cliente | `GET /quotes/` |
+| **Orçamentos** | Orçamentos do cliente, com ações rápidas | `GET /quotes/` |
 | **Interações** | Histórico de interações + formulário para registrar nova | `GET`/`POST /interactions/` |
 | **Financeiro** | Total, pago, em aberto, OS com saldo e últimos pagamentos | `GET /financial-summary/` |
 | **Linha do tempo** | Eventos unificados em ordem cronológica | `GET /timeline/` |
@@ -79,6 +79,15 @@ loading via React Query com `enabled`):
 A aba **Financeiro** só aparece para usuários com `financial.view`. O
 formulário de registro de interações só aparece para quem tem
 `customers.interactions`.
+
+Na aba **Orçamentos**, cada orçamento traz ações rápidas, cada uma exibida
+conforme a permissão do usuário e o status do orçamento: **Gerar PDF**
+(`quotes.pdf`), **Copiar link** de aprovação (`quotes.send`, quando
+enviado/visto), **Enviar por e-mail** (`quotes.send`), **Recusar**
+(`quotes.reject`) e **Cancelar** (`quotes.cancel`) — as três últimas só
+enquanto o orçamento está em aberto (rascunho/enviado/visto). A aprovação com
+seleção de itens e assinatura (presencial/tablet) continua na aba de orçamento
+da OS (link **Abrir na OS**), onde há o contexto completo.
 
 ## Interações do cliente
 
