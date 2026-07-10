@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -17,6 +19,7 @@ from .models import (
     CrmSuggestion,
     CrmTask,
     SuggestionStatus,
+    TaskStatus,
 )
 from .serializers import (
     CampaignSerializer,
@@ -222,22 +225,70 @@ class TaskViewSet(viewsets.ModelViewSet):
         "update": "assign_task",
         "partial_update": "assign_task",
         "destroy": "assign_task",
+        "pending_count": "view",
     }
 
     def get_queryset(self):
-        qs = CrmTask.objects.select_related("customer", "assigned_to")
+        qs = CrmTask.objects.select_related(
+            "customer", "vehicle", "work_order", "quote", "assigned_to"
+        )
         p = self.request.query_params
         if p.get("status"):
             qs = qs.filter(status=p["status"])
+        elif p.get("open") == "1":
+            qs = qs.filter(status=TaskStatus.OPEN)
         if p.get("customer"):
             qs = qs.filter(customer_id=p["customer"])
+        if p.get("assigned_to"):
+            qs = qs.filter(assigned_to_id=p["assigned_to"])
+        if p.get("priority"):
+            qs = qs.filter(priority=p["priority"])
+        search = (p.get("q") or "").strip()
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search) | Q(customer__name__icontains=search)
+            )
         return qs
+
+    def list(self, request, *args, **kwargs):
+        # Abertas primeiro, depois por prazo (sem prazo por último), prioridade
+        # (urgente antes) e recência -- só na listagem, para não quebrar o
+        # get_object() das rotas de detalhe.
+        far = date(9999, 12, 31)
+        items = sorted(
+            self.get_queryset(),
+            key=lambda t: (
+                0 if t.status == TaskStatus.OPEN else 1,
+                t.due_date or far,
+                -PRIORITY_ORDER.get(t.priority, 0),
+                -t.id,
+            ),
+        )
+        return Response(TaskSerializer(items, many=True).data)
+
+    @action(detail=False, methods=["get"], url_path="pending-count")
+    def pending_count(self, request):
+        count = CrmTask.objects.filter(status=TaskStatus.OPEN).count()
+        return Response({"count": count})
 
     def perform_create(self, serializer):
         task = serializer.save(
             created_by=self.request.user if self.request.user.is_authenticated else None
         )
         record_audit(self.request, "crm.task.created", new_value={"task": task.id})
+
+    def perform_update(self, serializer):
+        task = serializer.save()
+        record_audit(
+            self.request,
+            "crm.task.update",
+            new_value={"task": task.id, "status": task.status},
+        )
+
+    def perform_destroy(self, instance):
+        task_id = instance.id
+        instance.delete()
+        record_audit(self.request, "crm.task.deleted", new_value={"task": task_id})
 
 
 class CampaignViewSet(

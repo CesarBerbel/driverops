@@ -1,10 +1,13 @@
 import { apiClient } from "@/lib/api-client";
 
 import type {
+  CreateTaskPayload,
   CrmSettings,
+  CrmTask,
   GenerateMessageResult,
   Suggestion,
   SuggestionFilters,
+  TaskFilters,
 } from "./types";
 
 export async function listSuggestions(filters: SuggestionFilters = {}): Promise<Suggestion[]> {
@@ -54,6 +57,34 @@ export async function toTask(id: number, title?: string): Promise<unknown> {
 export async function toCampaign(id: number, name?: string): Promise<unknown> {
   const { data } = await apiClient.post(`/crm/suggestions/${id}/to-campaign/`, { name });
   return data;
+}
+
+export async function listTasks(filters: TaskFilters = {}): Promise<CrmTask[]> {
+  const params: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(filters)) {
+    if (v !== undefined && v !== null && v !== "") params[k] = v;
+  }
+  const { data } = await apiClient.get<CrmTask[]>("/crm/tasks/", { params });
+  return data;
+}
+
+export async function getTasksPendingCount(): Promise<number> {
+  const { data } = await apiClient.get<{ count: number }>("/crm/tasks/pending-count/");
+  return data.count;
+}
+
+export async function createTask(payload: CreateTaskPayload): Promise<CrmTask> {
+  const { data } = await apiClient.post<CrmTask>("/crm/tasks/", payload);
+  return data;
+}
+
+export async function updateTask(id: number, payload: Partial<CrmTask>): Promise<CrmTask> {
+  const { data } = await apiClient.patch<CrmTask>(`/crm/tasks/${id}/`, payload);
+  return data;
+}
+
+export async function deleteTask(id: number): Promise<void> {
+  await apiClient.delete(`/crm/tasks/${id}/`);
 }
 
 export async function getCrmSettings(): Promise<CrmSettings> {

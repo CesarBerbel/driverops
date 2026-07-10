@@ -123,6 +123,21 @@ class TaskSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(
         source="customer.name", read_only=True, default=None
     )
+    customer_phone = serializers.CharField(
+        source="customer.phone", read_only=True, default=""
+    )
+    customer_whatsapp = serializers.CharField(
+        source="customer.whatsapp", read_only=True, default=""
+    )
+    vehicle_plate = serializers.CharField(
+        source="vehicle.license_plate", read_only=True, default=""
+    )
+    work_order_number = serializers.IntegerField(
+        source="work_order.number", read_only=True, default=None
+    )
+    quote_number = serializers.IntegerField(
+        source="quote.number", read_only=True, default=None
+    )
     assigned_to_name = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     priority_display = serializers.CharField(
@@ -136,9 +151,14 @@ class TaskSerializer(serializers.ModelSerializer):
             "title",
             "customer",
             "customer_name",
+            "customer_phone",
+            "customer_whatsapp",
             "vehicle",
+            "vehicle_plate",
             "work_order",
+            "work_order_number",
             "quote",
+            "quote_number",
             "suggestion",
             "assigned_to",
             "assigned_to_name",

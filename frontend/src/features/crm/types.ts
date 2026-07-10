@@ -58,6 +58,50 @@ export interface Suggestion {
   updated_at: string;
 }
 
+export type TaskStatus = "open" | "done" | "canceled";
+
+export interface CrmTask {
+  id: number;
+  title: string;
+  customer: number | null;
+  customer_name: string | null;
+  customer_phone: string;
+  customer_whatsapp: string;
+  vehicle: number | null;
+  vehicle_plate: string;
+  work_order: number | null;
+  work_order_number: number | null;
+  quote: number | null;
+  quote_number: number | null;
+  suggestion: number | null;
+  assigned_to: number | null;
+  assigned_to_name: string | null;
+  due_date: string | null;
+  priority: Priority;
+  priority_display: string;
+  status: TaskStatus;
+  status_display: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface TaskFilters {
+  status?: string;
+  open?: string;
+  priority?: string;
+  customer?: number;
+  assigned_to?: number;
+  q?: string;
+}
+
+export interface CreateTaskPayload {
+  title: string;
+  customer: number;
+  priority?: Priority;
+  due_date?: string | null;
+  notes?: string;
+}
+
 export interface CrmSettings {
   is_active: boolean;
   tone: string;

@@ -16,6 +16,7 @@ import { usePermissionCheck } from "@/features/auth/usePermission";
 
 import { listSuggestions } from "../api";
 import { CATEGORY_OPTIONS, PRIORITY_OPTIONS, STATUS_FILTERS } from "../constants";
+import { CrmTabs } from "../CrmTabs";
 import { SuggestionCard } from "../SuggestionCard";
 
 const ALL = "all";
@@ -65,6 +66,8 @@ export function CrmPage() {
           Sugestões de relacionamento e follow-up. Nada é enviado sem a sua confirmação.
         </p>
       </div>
+
+      <CrmTabs />
 
       <div className="space-y-2">
         <div className="flex flex-wrap gap-1">

@@ -1,4 +1,4 @@
-import type { Priority } from "./types";
+import type { Priority, TaskStatus } from "./types";
 
 export const PRIORITY: Record<Priority, { label: string; badge: string; dot: string }> = {
   low: { label: "Baixa", badge: "border-slate-300 text-muted-foreground", dot: "bg-slate-400" },
@@ -30,4 +30,17 @@ export const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
   { value: "high", label: "Alta" },
   { value: "medium", label: "Média" },
   { value: "low", label: "Baixa" },
+];
+
+export const TASK_STATUS: Record<TaskStatus, { label: string; badge: string }> = {
+  open: { label: "Aberta", badge: "border-blue-300 text-blue-700 dark:text-blue-400" },
+  done: { label: "Concluída", badge: "border-emerald-400 text-emerald-700 dark:text-emerald-400" },
+  canceled: { label: "Cancelada", badge: "border-slate-300 text-muted-foreground" },
+};
+
+export const TASK_STATUS_FILTERS = [
+  { value: "open", label: "Abertas" },
+  { value: "", label: "Todas" },
+  { value: "done", label: "Concluídas" },
+  { value: "canceled", label: "Canceladas" },
 ];

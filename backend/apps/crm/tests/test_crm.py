@@ -181,6 +181,77 @@ def test_to_task_and_to_campaign(atendente_client, order):
     assert CrmCampaign.objects.exists()
 
 
+# --- tarefas ---
+
+TASKS = "/api/crm/tasks/"
+
+
+def test_task_list_requires_permission(estoque_client, atendente_client, order):
+    _one(order)  # gera uma sugestão para virar tarefa
+    s = CrmSuggestion.objects.first()
+    from apps.crm import services
+
+    services.to_task(s, actor=None, title="Ligar para a Maria")
+    assert estoque_client.get(TASKS).status_code == 403
+    resp = atendente_client.get(TASKS)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    row = body[0]
+    assert row["title"] == "Ligar para a Maria"
+    assert row["customer_name"] == "Maria Silva"
+    assert row["vehicle_plate"] == "ABC1D23"
+    assert row["status"] == "open"
+
+
+def test_task_create_update_delete_flow(atendente_client, customer):
+    created = atendente_client.post(
+        TASKS,
+        data={"title": "Retornar ligação", "customer": customer.id, "priority": "high"},
+        content_type="application/json",
+    )
+    assert created.status_code == 201
+    task_id = created.json()["id"]
+    assert CrmTask.objects.get(pk=task_id).status == "open"
+    assert AuditLog.objects.filter(action="crm.task.created").exists()
+
+    # conclui a tarefa via PATCH
+    done = atendente_client.patch(
+        f"{TASKS}{task_id}/",
+        data={"status": "done"},
+        content_type="application/json",
+    )
+    assert done.status_code == 200
+    assert done.json()["status"] == "done"
+    assert AuditLog.objects.filter(action="crm.task.update").exists()
+
+    deleted = atendente_client.delete(f"{TASKS}{task_id}/")
+    assert deleted.status_code == 204
+    assert not CrmTask.objects.filter(pk=task_id).exists()
+    assert AuditLog.objects.filter(action="crm.task.deleted").exists()
+
+
+def test_task_create_requires_assign_permission(tecnico_client, customer):
+    # Técnico tem crm.view mas não crm.assign_task.
+    resp = tecnico_client.post(
+        TASKS,
+        data={"title": "X", "customer": customer.id},
+        content_type="application/json",
+    )
+    assert resp.status_code == 403
+
+
+def test_task_filters_open_and_status(atendente_client, customer):
+    from apps.crm.models import CrmTask as T
+
+    T.objects.create(title="Aberta", customer=customer, status="open")
+    T.objects.create(title="Concluida", customer=customer, status="done")
+    open_only = atendente_client.get(f"{TASKS}?open=1").json()
+    assert [t["title"] for t in open_only] == ["Aberta"]
+    done_only = atendente_client.get(f"{TASKS}?status=done").json()
+    assert [t["title"] for t in done_only] == ["Concluida"]
+
+
 # --- IA ---
 
 
