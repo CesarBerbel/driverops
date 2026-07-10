@@ -12,6 +12,10 @@ import type { Service, ServicePackage } from "@/features/services/types";
 vi.mock("@/features/services/api");
 vi.mock("@/features/categories/api");
 vi.mock("@/features/parts/api");
+// O quick-create de serviço (ServiceForm) gate a edição de peças por permissão.
+vi.mock("@/features/auth/useAuth", () => ({
+  useAuth: () => ({ user: { id: 1, is_superuser: true, permissions: [] } }),
+}));
 
 function service(overrides: Partial<Service> = {}): Service {
   return {

@@ -202,7 +202,9 @@ class QuoteViewSet(viewsets.ModelViewSet):
         if blocked:
             return blocked
         # approved_item_ids ausente => aprovação integral (compatível).
-        result = apply_item_decisions(quote, request.data.get("approved_item_ids"))
+        result = apply_item_decisions(
+            quote, request.data.get("approved_item_ids"), request=request
+        )
         quote.status = result
         quote.approval_channel = Quote.Channel.PHYSICAL
         quote.approved_by = request.user
@@ -240,7 +242,9 @@ class QuoteViewSet(viewsets.ModelViewSet):
                 {"signature": ["A assinatura é obrigatória para aprovar no tablet."]},
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
-        result = apply_item_decisions(quote, request.data.get("approved_item_ids"))
+        result = apply_item_decisions(
+            quote, request.data.get("approved_item_ids"), request=request
+        )
         quote.signature_image = signature
         quote.status = result
         quote.approval_channel = Quote.Channel.TABLET
@@ -358,7 +362,9 @@ class PublicQuoteApproveView(_PublicQuoteBase):
                 status=http_status.HTTP_400_BAD_REQUEST,
             )
         # Aprovação parcial: approved_item_ids ausente => aprova todos.
-        result = apply_item_decisions(quote, request.data.get("approved_item_ids"))
+        result = apply_item_decisions(
+            quote, request.data.get("approved_item_ids"), request=request
+        )
         quote.status = result
         quote.approval_channel = Quote.Channel.EMAIL_LINK
         quote.decided_at = timezone.now()

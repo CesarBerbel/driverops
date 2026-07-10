@@ -80,6 +80,19 @@ aparece **travada** (cadeado, com tooltip explicativo); a opcional tem um **chec
 Badges indicam a origem (`Padrão do serviço`/`Avulsa associada`) e a obrigatoriedade
 (`Obrigatória`/`Opcional`). O PDF traz o mesmo rótulo por peça.
 
+**Permissões e auditoria:**
+
+- Definir/alterar a obrigatoriedade e a lista de **peças padrão** do serviço exige
+  `services.manage_parts`; sem ela, o cadastro do serviço fica somente leitura nessa parte (o backend
+  bloqueia com **403** qualquer alteração das peças, mesmo via payload manipulado).
+- **Vincular** peças a serviços e definir a obrigatoriedade **na OS** exige `orders.manage_part_links`
+  (concedida a Atendente e Técnico); sem ela, os seletores de vínculo/obrigatoriedade não aparecem
+  (os vínculos existentes são preservados). "Desvincular" uma peça (opção *Sem vínculo*) converte-a
+  em avulsa independente.
+- Auditoria: alteração das peças padrão (`services.parts.updated`), **tentativa bloqueada** de recusar
+  peça obrigatória (`quotes.required_part_rejection_blocked`) e **recusa de peça opcional** na
+  aprovação parcial (`quotes.optional_parts_rejected`).
+
 ## Itens e valores
 
 O orçamento exibe, separadamente: serviços, pacotes e peças (cadastrados e avulsos, com a marca

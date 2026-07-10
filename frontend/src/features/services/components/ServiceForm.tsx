@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { usePermissionCheck } from "@/features/auth/usePermission";
 import { listCategories } from "@/features/categories/api";
 import { CategoryQuickCreateDialog } from "@/features/categories/components/CategoryQuickCreateDialog";
 import type { Category } from "@/features/categories/types";
@@ -93,6 +94,7 @@ export function ServiceForm({
   allowAddAnother,
 }: ServiceFormProps) {
   const queryClient = useQueryClient();
+  const canManageParts = usePermissionCheck()("services.manage_parts");
   const isEditMode = service !== null;
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [partDialogOpen, setPartDialogOpen] = useState(false);
@@ -296,22 +298,29 @@ export function ServiceForm({
             <CardTitle className="text-base">Peças padrão</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Vincular peça do estoque</Label>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-xs"
-                  onClick={() => setPartDialogOpen(true)}
-                >
-                  <Plus className="size-3" />
-                  Adicionar peça
-                </Button>
+            {canManageParts ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Vincular peça do estoque</Label>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => setPartDialogOpen(true)}
+                  >
+                    <Plus className="size-3" />
+                    Adicionar peça
+                  </Button>
+                </div>
+                <PartCombobox onSelect={addPart} excludeIds={linkedPartIds} />
               </div>
-              <PartCombobox onSelect={addPart} excludeIds={linkedPartIds} />
-            </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Você não tem permissão para alterar as peças padrão deste serviço
+                (somente leitura).
+              </p>
+            )}
 
             {fields.length === 0 ? (
               <p className="text-sm text-muted-foreground">
@@ -338,6 +347,7 @@ export function ServiceForm({
                               id={`sp-qty-${index}`}
                               inputMode="decimal"
                               className="h-8 w-20"
+                              disabled={!canManageParts}
                               value={field.value}
                               onChange={(event) =>
                                 field.onChange(sanitizeQuantityInput(event.target.value))
@@ -354,6 +364,7 @@ export function ServiceForm({
                           <Select
                             value={field.value ? "required" : "optional"}
                             onValueChange={(v) => field.onChange(v === "required")}
+                            disabled={!canManageParts}
                           >
                             <SelectTrigger
                               className="h-8 w-36"
@@ -368,17 +379,19 @@ export function ServiceForm({
                           </Select>
                         )}
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="Remover peça"
-                        aria-label="Remover peça"
-                        onClick={() => remove(index)}
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                      {canManageParts && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          title="Remover peça"
+                          aria-label="Remover peça"
+                          onClick={() => remove(index)}
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                     <Controller
                       control={control}
@@ -387,6 +400,7 @@ export function ServiceForm({
                         <Input
                           className="h-8"
                           placeholder="Observação (opcional)"
+                          disabled={!canManageParts}
                           value={field.value ?? ""}
                           onChange={(event) => field.onChange(event.target.value)}
                         />

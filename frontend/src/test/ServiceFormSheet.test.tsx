@@ -16,6 +16,14 @@ vi.mock("@/features/services/api");
 vi.mock("@/features/categories/api");
 vi.mock("@/features/parts/api");
 vi.mock("@/features/suppliers/api");
+// A ServiceForm gate a edição de peças por services.manage_parts.
+const auth = vi.hoisted(() => ({
+  user: { is_superuser: true, permissions: [] as string[] } as {
+    is_superuser: boolean;
+    permissions: string[];
+  },
+}));
+vi.mock("@/features/auth/useAuth", () => ({ useAuth: () => ({ user: auth.user }) }));
 
 function category(overrides: Partial<Category> = {}): Category {
   return {
@@ -89,6 +97,7 @@ function renderSheet(onOpenChange = vi.fn()) {
 
 describe("ServiceFormSheet", () => {
   beforeEach(() => {
+    auth.user = { is_superuser: true, permissions: [] };
     vi.mocked(servicesApi.createService).mockReset();
     vi.mocked(categoriesApi.listCategories).mockReset();
     vi.mocked(categoriesApi.createCategory).mockReset();
@@ -98,6 +107,17 @@ describe("ServiceFormSheet", () => {
       Promise.resolve(type === "service" ? [category()] : [category({ id: 5, category_type: "part", name: "Filtros" })]),
     );
     vi.mocked(partsApi.listParts).mockResolvedValue([]);
+  });
+
+  it("hides the standard-parts editor without services.manage_parts", async () => {
+    auth.user = { is_superuser: false, permissions: ["services.create", "services.edit"] };
+    renderSheet();
+    await screen.findByLabelText("Nome do serviço");
+    // Sem a permissão, não há como adicionar/gerenciar peças padrão.
+    expect(screen.queryByRole("button", { name: /Adicionar peça/ })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Você não tem permissão para alterar as peças padrão/),
+    ).toBeInTheDocument();
   });
 
   it("requires a name and a category before submitting", async () => {

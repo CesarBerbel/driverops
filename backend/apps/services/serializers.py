@@ -1,13 +1,46 @@
 from decimal import Decimal
 
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
+from apps.accounts.audit import record_audit
 from apps.categories.models import Category
 from apps.parts.models import Part
 
 from .models import PackageService, Service, ServicePackage, ServicePart
 
 CENTS = Decimal("0.01")
+
+
+def _part_signature(part_id, is_required, quantity, notes):
+    return (part_id, bool(is_required), Decimal(quantity), (notes or "").strip())
+
+
+def _standard_parts_changed(instance, items):
+    """True se a lista/quantidade/obrigatoriedade/observação das peças mudou."""
+    current = sorted(
+        _part_signature(sp.part_id, sp.is_required, sp.suggested_quantity, sp.notes)
+        for sp in (instance.standard_parts.all() if instance is not None else [])
+    )
+    incoming = sorted(
+        _part_signature(
+            it["part"].id,
+            it.get("is_required", True),
+            it["suggested_quantity"],
+            it.get("notes", ""),
+        )
+        for it in items
+    )
+    return current != incoming
+
+
+def _can_manage_parts(request):
+    user = getattr(request, "user", None)
+    return bool(
+        user
+        and getattr(user, "is_authenticated", False)
+        and (user.is_superuser or user.has_perm_code("services.manage_parts"))
+    )
 
 
 def money(value):
@@ -122,16 +155,37 @@ class ServiceSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Selecione uma peça habilitada.")
         return items
 
+    def _guard_and_audit_parts(self, instance, items):
+        """Gerenciar peças padrão/obrigatoriedade exige ``services.manage_parts``.
+
+        Sem a permissão, uma tentativa de *alterar* as peças é bloqueada (403);
+        salvar o serviço sem mexer nas peças continua permitido. Alterações
+        autorizadas ficam registradas em auditoria.
+        """
+        request = self.context.get("request")
+        if not _standard_parts_changed(instance, items):
+            return
+        if not _can_manage_parts(request):
+            raise PermissionDenied(
+                "Você não tem permissão para alterar as peças padrão do serviço "
+                "(inclui a obrigatoriedade)."
+            )
+        self._pending_parts_audit = request
+
     def create(self, validated_data):
         standard_parts = validated_data.pop("standard_parts", [])
+        self._guard_and_audit_parts(None, standard_parts)
         service = Service.objects.create(**validated_data)
         ServicePart.objects.bulk_create(
             ServicePart(service=service, **item) for item in standard_parts
         )
+        self._audit_parts(service, standard_parts)
         return service
 
     def update(self, instance, validated_data):
         standard_parts = validated_data.pop("standard_parts", None)
+        if standard_parts is not None:
+            self._guard_and_audit_parts(instance, standard_parts)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -142,7 +196,23 @@ class ServiceSerializer(serializers.ModelSerializer):
             ServicePart.objects.bulk_create(
                 ServicePart(service=instance, **item) for item in standard_parts
             )
+            self._audit_parts(instance, standard_parts)
         return instance
+
+    def _audit_parts(self, service, items):
+        request = getattr(self, "_pending_parts_audit", None)
+        if request is None:
+            return
+        self._pending_parts_audit = None
+        record_audit(
+            request,
+            "services.parts.updated",
+            new_value={
+                "service": service.id,
+                "parts": len(items),
+                "required": sum(1 for it in items if it.get("is_required", True)),
+            },
+        )
 
 
 class PackageServiceSerializer(serializers.ModelSerializer):

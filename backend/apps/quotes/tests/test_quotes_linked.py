@@ -1,5 +1,6 @@
 import pytest
 
+from apps.accounts.models import AuditLog
 from apps.quotes.services import create_quote_from_order
 
 pytestmark = pytest.mark.django_db
@@ -82,6 +83,10 @@ def test_required_part_cannot_be_rejected_when_service_approved(
     body_err = resp.json()
     assert body_err["code"] == "required_service_part_cannot_be_rejected"
     assert body_err["items"][0]["part_name"] == "Pastilha dianteira"
+    # A tentativa bloqueada é auditada.
+    assert AuditLog.objects.filter(
+        action="quotes.required_part_rejection_blocked"
+    ).exists()
 
 
 def test_optional_standard_part_can_be_rejected(auth_client, customer, vehicle, db):
@@ -130,6 +135,8 @@ def test_optional_standard_part_can_be_rejected(auth_client, customer, vehicle, 
     assert statuses["Óleo do motor"] == "approved"
     assert statuses["Filtro de ar"] == "rejected"  # opcional pode ser recusada
     assert approved["status"] == "partially_approved"
+    # A recusa de peça opcional na aprovação parcial é auditada.
+    assert AuditLog.objects.filter(action="quotes.optional_parts_rejected").exists()
 
 
 def test_manual_avulso_link_flows_into_the_quote(auth_client, customer, vehicle):

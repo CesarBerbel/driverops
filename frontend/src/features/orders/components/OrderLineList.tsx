@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePermissionCheck } from "@/features/auth/usePermission";
 import { formatCurrencyBRL } from "@/lib/masks";
 
 import type { OrderFormValues, OrderLineValues } from "../schemas";
@@ -77,6 +78,7 @@ export function OrderLineList({
   errors,
   serviceOptions,
 }: OrderLineListProps) {
+  const canLinkParts = usePermissionCheck()("orders.manage_part_links");
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -178,7 +180,7 @@ export function OrderLineList({
                   </div>
                 </div>
 
-                {serviceOptions && serviceOptions.length > 0 && (
+                {serviceOptions && serviceOptions.length > 0 && canLinkParts && (
                   <Controller
                     control={control}
                     name={`${namePrefix}.${index}.linked_service_index`}
@@ -233,6 +235,24 @@ export function OrderLineList({
                         )}
                       </div>
                     )}
+                  />
+                )}
+
+                {serviceOptions && serviceOptions.length > 0 && !canLinkParts && (
+                  <Controller
+                    control={control}
+                    name={`${namePrefix}.${index}.linked_service_index`}
+                    render={({ field: linkField }) =>
+                      linkField.value != null ? (
+                        <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Link2 className="size-3 shrink-0" />
+                          {serviceOptions.find((o) => o.index === linkField.value)
+                            ?.label ?? "Serviço vinculado"}
+                        </p>
+                      ) : (
+                        <></>
+                      )
+                    }
                   />
                 )}
               </li>

@@ -1,10 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useForm } from "react-hook-form";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { OrderLineList } from "@/features/orders/components/OrderLineList";
 import type { OrderFormValues } from "@/features/orders/schemas";
+
+// Vincular peça a serviço na OS exige orders.manage_part_links.
+vi.mock("@/features/auth/useAuth", () => ({
+  useAuth: () => ({ user: { is_superuser: true, permissions: [] } }),
+}));
 
 function Harness() {
   const { control, register, watch } = useForm<OrderFormValues>({

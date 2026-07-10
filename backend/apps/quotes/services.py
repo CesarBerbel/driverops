@@ -152,7 +152,7 @@ def _decision_violation(detail, code, offending, service_by_id):
     }
 
 
-def apply_item_decisions(quote, approved_ids):
+def apply_item_decisions(quote, approved_ids, *, request=None):
     """Aplica a decisão do cliente item a item e devolve o status geral resultante.
 
     ``approved_ids`` = ids dos itens aprovados; os demais são recusados. Se for
@@ -166,9 +166,13 @@ def apply_item_decisions(quote, approved_ids):
       separadamente é bloqueado (400 estruturado).
     - Serviço aprovado + peça **opcional** -> pode ser aprovada ou recusada.
     - Peça sem vínculo (avulsa independente) -> decidida por conta própria.
-    O backend é a fonte da verdade: payloads manipulados são rejeitados.
+    O backend é a fonte da verdade: payloads manipulados são rejeitados. Quando
+    ``request`` é informado, eventos críticos são auditados (tentativa bloqueada e
+    recusa de peça opcional na aprovação parcial).
     """
     from rest_framework.exceptions import ValidationError
+
+    from apps.accounts.audit import record_audit
 
     items = list(quote.items.all())
     approve_all = approved_ids is None
@@ -183,6 +187,7 @@ def apply_item_decisions(quote, approved_ids):
 
     final = {}
     rejected_required = []  # obrigatória de serviço aprovado marcada p/ recusa
+    rejected_optional = []  # opcional de serviço aprovado recusada (auditável)
     for item in items:
         if item.linked_service_id in service_decision:
             svc_approved = service_decision[item.linked_service_id]
@@ -199,10 +204,21 @@ def apply_item_decisions(quote, approved_ids):
             else:
                 # Serviço aprovado + opcional -> respeita a decisão.
                 final[item.id] = wants_approve
+                if not wants_approve:
+                    rejected_optional.append(item)
         else:
             final[item.id] = approve_all or item.id in approved_set
 
     if rejected_required:
+        if request is not None:
+            record_audit(
+                request,
+                "quotes.required_part_rejection_blocked",
+                new_value={
+                    "quote": quote.id,
+                    "parts": [p.id for p in rejected_required],
+                },
+            )
         raise ValidationError(
             _decision_violation(
                 "Peças obrigatórias vinculadas a serviços aprovados não podem ser "
@@ -212,6 +228,16 @@ def apply_item_decisions(quote, approved_ids):
                 rejected_required,
                 service_by_id,
             )
+        )
+
+    if request is not None and rejected_optional:
+        record_audit(
+            request,
+            "quotes.optional_parts_rejected",
+            new_value={
+                "quote": quote.id,
+                "parts": [p.id for p in rejected_optional],
+            },
         )
 
     n_approved = 0
