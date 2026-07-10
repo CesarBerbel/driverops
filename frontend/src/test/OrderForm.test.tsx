@@ -265,12 +265,11 @@ describe("OrderForm", () => {
     expect(
       screen.getByText(/O veículo não pode ser alterado após a abertura da OS/),
     ).toBeInTheDocument();
-    // ...with a "Ver detalhes" link to the Customer 360.
-    const details = screen.getAllByRole("link", { name: /ver detalhes/i });
-    expect(details.length).toBeGreaterThanOrEqual(2);
-    for (const link of details) {
-      expect(link).toHaveAttribute("href", "/customers/1/360");
-    }
+    // O cliente tem "Ver detalhes" como link para o Cliente 360...
+    const customerLink = screen.getByRole("link", { name: /ver detalhes/i });
+    expect(customerLink).toHaveAttribute("href", "/customers/1/360");
+    // ...e o veículo tem "Ver detalhes" como botão (abre o modal de dados).
+    expect(screen.getByRole("button", { name: /ver detalhes/i })).toBeInTheDocument();
 
     // ...with no way to change or clear them.
     expect(
@@ -292,10 +291,22 @@ describe("OrderForm", () => {
     expect(screen.queryByText("Editar cliente")).not.toBeInTheDocument();
   });
 
-  it("refreshes the status select when the loaded OS changes", async () => {
+  it("opens the vehicle details modal from 'Ver detalhes'", async () => {
+    const user = userEvent.setup();
+    vi.mocked(vehiclesApi.getVehicle).mockResolvedValue(
+      vehicle({ id: 1, license_plate: "ABC1234", brand: "Fiat", model: "Uno" }),
+    );
+    renderForm(workOrder());
+    await user.click(screen.getByRole("button", { name: /ver detalhes/i }));
+    expect(await screen.findByText("Dados do veículo")).toBeInTheDocument();
+    expect(await screen.findByText("Fiat Uno")).toBeInTheDocument();
+  });
+
+  it("refreshes the status display when the loaded OS changes", async () => {
     const { queryClient, rerender } = renderForm(workOrder());
 
-    expect(screen.getByLabelText("Status da OS")).toHaveTextContent("Aberta");
+    // O status é mostrado na linha do tempo (stepper), não mais como campo.
+    expect(screen.getByLabelText(/atual: Aberta/)).toBeInTheDocument();
 
     rerender(
       formTree(
@@ -309,9 +320,7 @@ describe("OrderForm", () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByLabelText("Status da OS")).toHaveTextContent(
-        "Em diagnóstico",
-      ),
+      expect(screen.getByLabelText(/atual: Em diagnóstico/)).toBeInTheDocument(),
     );
   });
 

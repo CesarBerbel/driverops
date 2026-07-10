@@ -205,6 +205,12 @@ describe("Cliente 360°", () => {
     );
   });
 
+  it("shows an Editar button in the header for who can edit", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: "Maria Silva" });
+    expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
+  });
+
   it("shows an error state", async () => {
     vi.mocked(api.getCustomer360).mockRejectedValue(new Error("fail"));
     renderPage();

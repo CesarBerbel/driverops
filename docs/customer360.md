@@ -46,6 +46,8 @@ dados disponíveis:
 - **Ligar** — `tel:` do telefone.
 - **E-mail** — `mailto:` do e-mail.
 - **Nova OS** — atalho para abrir uma ordem de serviço já com o cliente.
+- **Editar** — abre o cadastro do cliente para edição (exige `customers.edit`);
+  ao salvar, a tela 360 é atualizada.
 
 ### Cards de resumo
 

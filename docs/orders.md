@@ -87,8 +87,9 @@ As sete abas, nesta ordem:
    veículo); à **direita**, os **Dados principais** da OS (data de abertura, previsão de entrega,
    quilometragem, **Status** e **Técnico responsável**). No tablet/mobile as colunas empilham,
    preservando a ordem **Veículo → Cliente → Dados principais**. Numa OS já salva o veículo e o
-   cliente aparecem como **campos somente leitura** (não são clicáveis); o link **Ver detalhes**
-   leva à [Central do Cliente 360°](customer360.md) do cliente da OS.
+   cliente aparecem como **campos somente leitura** (não são clicáveis). O **Ver detalhes** do
+   **cliente** leva à [Central do Cliente 360°](customer360.md); o **Ver detalhes** do **veículo**
+   abre um **modal** com os dados do veículo (placa, marca/modelo, ano, cor, km, chassi, etc.).
 2. **Relato e diagnóstico** — relato do cliente (obrigatório), diagnóstico técnico e **observações
    internas** (uso interno; não aparecem no PDF nem na página pública do cliente).
 3. **Serviços e peças** — serviços, pacotes e peças (cadastrados ou avulsos), com cadastro inline.

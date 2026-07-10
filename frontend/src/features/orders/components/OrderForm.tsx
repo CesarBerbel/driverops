@@ -46,6 +46,7 @@ import type { Service, ServicePackage } from "@/features/services/types";
 import { listVehicles } from "@/features/vehicles/api";
 import { formatPlateForDisplay } from "@/features/vehicles/plate";
 import type { Vehicle } from "@/features/vehicles/types";
+import { VehicleDetailsDialog } from "@/features/vehicles/VehicleDetailsDialog";
 import { VehicleFormSheet } from "@/features/vehicles/VehicleFormSheet";
 import { VehicleSelectorDialog } from "@/features/vehicles/VehicleSelectorDialog";
 import { getOrderSettings } from "@/features/settings/api";
@@ -65,7 +66,7 @@ import { OrderPaymentsPanel } from "@/features/financial/components/OrderPayment
 import { usePermissionCheck } from "@/features/auth/usePermission";
 
 import { createWorkOrder, listTechnicians, updateWorkOrder } from "../api";
-import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS, statusLabel } from "../constants";
+import { DISCOUNT_TYPE_OPTIONS, ORDER_STATUS_OPTIONS } from "../constants";
 import {
   addDaysISO,
   EMPTY_ORDER_VALUES,
@@ -146,6 +147,7 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
 
   const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
   const [vehicleSheetOpen, setVehicleSheetOpen] = useState(false);
+  const [vehicleDetailsOpen, setVehicleDetailsOpen] = useState(false);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [packageDialogOpen, setPackageDialogOpen] = useState(false);
   const [partDialogOpen, setPartDialogOpen] = useState(false);
@@ -459,17 +461,16 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                       Adicionar veículo
                     </Button>
                   ) : (
-                    customerId != null && (
+                    vehicleId != null && (
                       <Button
-                        asChild
+                        type="button"
                         variant="link"
                         size="sm"
                         className="h-auto p-0 text-xs"
+                        onClick={() => setVehicleDetailsOpen(true)}
                       >
-                        <Link to={`/customers/${customerId}/360`}>
-                          <ExternalLink className="size-3" />
-                          Ver detalhes
-                        </Link>
+                        <ExternalLink className="size-3" />
+                        Ver detalhes
                       </Button>
                     )
                   )}
@@ -635,23 +636,6 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                       />
                     )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Status da OS</Label>
-                  {/* Somente leitura: o status é consequência de uma ação da
-                      máquina de estados (barra "Ações da OS"), nunca editado
-                      diretamente. Em OS nova começa sempre em "Aberta". */}
-                  <div
-                    aria-label="Status da OS"
-                    className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm font-medium"
-                  >
-                    {statusLabel(statusValue)}
-                  </div>
-                  {isEditMode && (
-                    <p className="text-xs text-muted-foreground">
-                      Para mudar o status, use as "Ações da OS" no topo.
-                    </p>
-                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="assigned_technician">Técnico responsável</Label>
@@ -1089,6 +1073,11 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         defaultCustomerId={customerId}
         defaultCustomerName={customerName}
         onCreated={selectVehicle}
+      />
+      <VehicleDetailsDialog
+        open={vehicleDetailsOpen}
+        onOpenChange={setVehicleDetailsOpen}
+        vehicleId={vehicleId ?? null}
       />
       <ServiceQuickCreateDialog
         open={serviceDialogOpen}

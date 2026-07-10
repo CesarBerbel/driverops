@@ -7,6 +7,7 @@ import {
   FileText,
   Mail,
   MessageCircle,
+  Pencil,
   Phone,
   Plus,
   X,
@@ -20,6 +21,8 @@ import { ContactLink } from "@/components/shared/ContactLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePermissionCheck } from "@/features/auth/usePermission";
+import { CustomerFormSheet } from "@/features/customers/CustomerFormSheet";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -63,7 +66,9 @@ type TabKey =
 export function Customer360Page() {
   const { id: idParam } = useParams();
   const id = Number(idParam);
+  const can = usePermissionCheck();
   const [tab, setTab] = useState<TabKey>("overview");
+  const [editOpen, setEditOpen] = useState(false);
   // Avisos dispensados só nesta visita: o estado zera ao (re)entrar na tela do
   // cliente, então os avisos voltam a aparecer na próxima vez.
   const [dismissedAlerts, setDismissedAlerts] = useState<number[]>([]);
@@ -151,6 +156,11 @@ export function Customer360Page() {
                 <Plus className="size-4" /> Nova OS
               </Link>
             </Button>
+            {can("customers.edit") && (
+              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil className="size-4" /> Editar
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -221,6 +231,13 @@ export function Customer360Page() {
       {tab === "interactions" && <InteractionsTab id={id} canCreate={data.can_interactions} />}
       {tab === "financial" && data.can_financial && <FinancialTab id={id} />}
       {tab === "timeline" && <TimelineTab id={id} />}
+
+      <CustomerFormSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        customerId={id}
+        onCreated={() => refetch()}
+      />
     </div>
   );
 }
