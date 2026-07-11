@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   Service,
@@ -23,6 +24,18 @@ export async function listServices(params: ListServicesParams = {}): Promise<Ser
     },
   });
   return data;
+}
+
+// Página real da listagem de serviços (envelope {count,next,previous,results}).
+export function listServicesPage(
+  page: number,
+  params: ListServicesParams = {},
+): Promise<Paginated<Service>> {
+  return fetchPage<Service>("/services/", page, {
+    search: params.search,
+    status: params.status,
+    category: params.category,
+  });
 }
 
 export async function getService(id: number): Promise<Service> {
@@ -67,6 +80,17 @@ export async function listServicePackages(
     },
   });
   return data;
+}
+
+// Página real da listagem de pacotes (envelope {count,next,previous,results}).
+export function listServicePackagesPage(
+  page: number,
+  params: ListPackagesParams = {},
+): Promise<Paginated<ServicePackage>> {
+  return fetchPage<ServicePackage>("/service-packages/", page, {
+    search: params.search,
+    status: params.status,
+  });
 }
 
 export async function getServicePackage(id: number): Promise<ServicePackage> {

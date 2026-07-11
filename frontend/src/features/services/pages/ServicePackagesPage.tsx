@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertCircle,
   Info,
@@ -10,7 +15,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -37,11 +42,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Pagination } from "@/components/shared/Pagination";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { deleteServicePackage, listServicePackages, reactivateServicePackage } from "../api";
+import { deleteServicePackage, listServicePackagesPage, reactivateServicePackage } from "../api";
 import { ServicesNav } from "../components/ServicesNav";
 import { PACKAGE_STATUS_OPTIONS } from "../constants";
 import { PackageFormSheet } from "../PackageFormSheet";
@@ -58,19 +65,28 @@ export function ServicePackagesPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingPackageId, setEditingPackageId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ServicePackage | null>(null);
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [effectiveSearch, statusFilter]);
 
   const queryClient = useQueryClient();
 
   const {
-    data: packages,
+    data,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: [...PACKAGES_QUERY_KEY, effectiveSearch, statusFilter],
+    queryKey: [...PACKAGES_QUERY_KEY, page, effectiveSearch, statusFilter],
     queryFn: () =>
-      listServicePackages({ search: effectiveSearch || undefined, status: statusFilter }),
+      listServicePackagesPage(page, { search: effectiveSearch || undefined, status: statusFilter }),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const packages = data?.results;
 
   const deleteMutation = useMutation({
     mutationFn: deleteServicePackage,
@@ -96,7 +112,7 @@ export function ServicePackagesPage() {
     },
   });
 
-  const isEmpty = (packages?.length ?? 0) === 0;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function openCreateSheet() {
     setEditingPackageId(null);
@@ -263,6 +279,15 @@ export function ServicePackagesPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <PackageFormSheet open={sheetOpen} onOpenChange={setSheetOpen} packageId={editingPackageId} />

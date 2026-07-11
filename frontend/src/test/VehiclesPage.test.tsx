@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import * as vehiclesApi from "@/features/vehicles/api";
 import { VehiclesPage } from "@/features/vehicles/pages/VehiclesPage";
 import type { Vehicle } from "@/features/vehicles/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/vehicles/api");
 vi.mock("@/features/customers/api");
@@ -49,6 +50,11 @@ function vehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de veículos.
+function paged(items: Vehicle[]): Paginated<Vehicle> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -63,24 +69,21 @@ function renderPage() {
 
 describe("VehiclesPage", () => {
   beforeEach(() => {
-    vi.mocked(vehiclesApi.listVehicles).mockReset();
+    vi.mocked(vehiclesApi.listVehiclesPage).mockReset();
     vi.mocked(vehiclesApi.deleteVehicle).mockReset();
     vi.mocked(vehiclesApi.reactivateVehicle).mockReset();
   });
 
   it("shows the empty state when there are no vehicles", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(paged([]));
     renderPage();
 
     expect(await screen.findByText("Nenhum veículo cadastrado ainda.")).toBeInTheDocument();
-    expect(vehiclesApi.listVehicles).toHaveBeenCalledWith({
-      search: undefined,
-      status: "active",
-    });
+    expect(vehiclesApi.listVehiclesPage).toHaveBeenCalledWith(1, undefined, "active");
   });
 
   it("renders the plate with its display hyphen, the customer, and the model year", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(paged([vehicle()]));
     renderPage();
 
     const table = await screen.findByRole("table");
@@ -91,9 +94,9 @@ describe("VehiclesPage", () => {
   });
 
   it("renders the customer's WhatsApp number as a clickable wa.me link next to the name", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([
-      vehicle({ customer_whatsapp: "11912345678" }),
-    ]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(
+      paged([vehicle({ customer_whatsapp: "11912345678" })]),
+    );
     renderPage();
 
     const table = await screen.findByRole("table");
@@ -103,7 +106,9 @@ describe("VehiclesPage", () => {
   });
 
   it("does not render a WhatsApp link when the customer has none", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle({ customer_whatsapp: "" })]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(
+      paged([vehicle({ customer_whatsapp: "" })]),
+    );
     const { container } = renderPage();
 
     await screen.findByText("Alice Wonderland");
@@ -111,7 +116,7 @@ describe("VehiclesPage", () => {
   });
 
   it("debounces the search box and queries by plate/customer/brand/model", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(paged([vehicle()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -122,15 +127,12 @@ describe("VehiclesPage", () => {
     );
 
     await waitFor(() =>
-      expect(vehiclesApi.listVehicles).toHaveBeenLastCalledWith({
-        search: "abc",
-        status: "active",
-      }),
+      expect(vehiclesApi.listVehiclesPage).toHaveBeenLastCalledWith(1, "abc", "active"),
     );
   });
 
   it("switches to the inactive filter and shows Reativar instead of Excluir", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(paged([vehicle()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -139,17 +141,14 @@ describe("VehiclesPage", () => {
     await user.click(screen.getByRole("option", { name: "Veículos desabilitados" }));
 
     await waitFor(() =>
-      expect(vehiclesApi.listVehicles).toHaveBeenLastCalledWith({
-        search: undefined,
-        status: "inactive",
-      }),
+      expect(vehiclesApi.listVehiclesPage).toHaveBeenLastCalledWith(1, undefined, "inactive"),
     );
     expect(screen.getByLabelText("Reativar veículo")).toBeInTheDocument();
     expect(screen.queryByLabelText("Excluir veículo")).not.toBeInTheDocument();
   });
 
   it("soft-deletes a vehicle through the confirm dialog", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(paged([vehicle()]));
     vi.mocked(vehiclesApi.deleteVehicle).mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();
@@ -164,7 +163,7 @@ describe("VehiclesPage", () => {
   });
 
   it("reactivates a vehicle from the inactive list", async () => {
-    vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle({ id: 2 })]);
+    vi.mocked(vehiclesApi.listVehiclesPage).mockResolvedValue(paged([vehicle({ id: 2 })]));
     vi.mocked(vehiclesApi.reactivateVehicle).mockResolvedValue(vehicle({ id: 2 }));
     const user = userEvent.setup();
     renderPage();

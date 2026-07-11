@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type { Vehicle, VehiclePayload, VehicleStatusFilter } from "./types";
 
@@ -17,6 +18,15 @@ export async function listVehicles(params: ListVehiclesParams = {}): Promise<Veh
     },
   });
   return data;
+}
+
+// Página real da listagem de veículos (envelope {count,next,previous,results}).
+export function listVehiclesPage(
+  page: number,
+  search?: string,
+  status?: VehicleStatusFilter,
+): Promise<Paginated<Vehicle>> {
+  return fetchPage<Vehicle>("/vehicles/", page, { search, status });
 }
 
 export async function getVehicle(id: number): Promise<Vehicle> {

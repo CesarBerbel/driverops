@@ -1,4 +1,9 @@
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertCircle,
   Car,
@@ -11,7 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -25,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { CustomerLink } from "@/components/shared/CustomerLink";
+import { Pagination } from "@/components/shared/Pagination";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,10 +47,11 @@ import {
 } from "@/components/ui/table";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatPhone } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
-import { deleteVehicle, listVehicles, reactivateVehicle } from "../api";
+import { deleteVehicle, listVehiclesPage, reactivateVehicle } from "../api";
 import { VEHICLE_STATUS_OPTIONS } from "../constants";
 import { formatPlateForDisplay } from "../plate";
 import type { Vehicle, VehicleStatusFilter } from "../types";
@@ -62,17 +69,27 @@ export function VehiclesPage() {
   const [editingVehicleId, setEditingVehicleId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null);
 
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [effectiveSearch, statusFilter]);
+
   const queryClient = useQueryClient();
 
   const {
-    data: vehicles,
+    data,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: [...VEHICLES_QUERY_KEY, effectiveSearch, statusFilter],
-    queryFn: () => listVehicles({ search: effectiveSearch || undefined, status: statusFilter }),
+    queryKey: [...VEHICLES_QUERY_KEY, page, effectiveSearch, statusFilter],
+    queryFn: () => listVehiclesPage(page, effectiveSearch || undefined, statusFilter),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const vehicles = data?.results;
 
   const deleteMutation = useMutation({
     mutationFn: deleteVehicle,
@@ -100,7 +117,7 @@ export function VehiclesPage() {
     },
   });
 
-  const isEmpty = (vehicles?.length ?? 0) === 0;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function openCreateSheet() {
     setEditingVehicleId(null);
@@ -286,6 +303,15 @@ export function VehiclesPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <VehicleFormSheet open={sheetOpen} onOpenChange={setSheetOpen} vehicleId={editingVehicleId} />

@@ -7,9 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Toaster } from "@/components/ui/sonner";
 import { CrmTasksPage } from "@/features/crm/pages/CrmTasksPage";
 import type { CrmTask } from "@/features/crm/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/crm/api", () => ({
   listTasks: vi.fn(),
+  listTasksPage: vi.fn(),
   createTask: vi.fn(),
   updateTask: vi.fn(),
   deleteTask: vi.fn(),
@@ -53,6 +55,11 @@ function task(over: Partial<CrmTask> = {}): CrmTask {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de tarefas.
+function paged(items: CrmTask[]): Paginated<CrmTask> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -67,7 +74,7 @@ function renderPage() {
 
 beforeEach(() => {
   perms.codes = new Set(["crm.view", "crm.assign_task"]);
-  vi.mocked(api.listTasks).mockResolvedValue([task()]);
+  vi.mocked(api.listTasksPage).mockResolvedValue(paged([task()]));
   vi.mocked(api.updateTask).mockResolvedValue(task({ status: "done" }));
   vi.mocked(api.deleteTask).mockResolvedValue(undefined);
 });
@@ -90,7 +97,7 @@ describe("CRM — Tarefas", () => {
   });
 
   it("shows the empty state", async () => {
-    vi.mocked(api.listTasks).mockResolvedValue([]);
+    vi.mocked(api.listTasksPage).mockResolvedValue(paged([]));
     renderPage();
     expect(await screen.findByText("Nenhuma tarefa por aqui.")).toBeInTheDocument();
   });

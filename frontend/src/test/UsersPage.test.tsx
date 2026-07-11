@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UsersPage } from "@/features/users/pages/UsersPage";
 import * as usersApi from "@/features/users/api";
 import type { ManagedUser, Role } from "@/features/users/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/users/api");
 vi.mock("@/features/auth/useAuth", () => ({
@@ -40,6 +41,11 @@ function managedUser(overrides: Partial<ManagedUser> = {}): ManagedUser {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de usuários.
+function paged(items: ManagedUser[]): Paginated<ManagedUser> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -54,11 +60,11 @@ function renderPage() {
 describe("UsersPage", () => {
   beforeEach(() => {
     vi.mocked(usersApi.listRoles).mockResolvedValue(ROLES);
-    vi.mocked(usersApi.listUsers).mockReset();
+    vi.mocked(usersApi.listUsersPage).mockReset();
   });
 
   it("lists users with name, email, role and status", async () => {
-    vi.mocked(usersApi.listUsers).mockResolvedValue([managedUser()]);
+    vi.mocked(usersApi.listUsersPage).mockResolvedValue(paged([managedUser()]));
     renderPage();
     expect(await screen.findByText("Ana Souza")).toBeInTheDocument();
     expect(screen.getByText("ana@example.com")).toBeInTheDocument();
@@ -67,7 +73,7 @@ describe("UsersPage", () => {
   });
 
   it("opens the create dialog from 'Novo usuário'", async () => {
-    vi.mocked(usersApi.listUsers).mockResolvedValue([]);
+    vi.mocked(usersApi.listUsersPage).mockResolvedValue(paged([]));
     const user = userEvent.setup();
     renderPage();
     await user.click(await screen.findByRole("button", { name: /Novo usuário/ }));
@@ -75,10 +81,11 @@ describe("UsersPage", () => {
   });
 
   it("queries active users by default", async () => {
-    vi.mocked(usersApi.listUsers).mockResolvedValue([]);
+    vi.mocked(usersApi.listUsersPage).mockResolvedValue(paged([]));
     renderPage();
     await screen.findByText(/Nenhum usuário encontrado/);
-    expect(usersApi.listUsers).toHaveBeenCalledWith(
+    expect(usersApi.listUsersPage).toHaveBeenCalledWith(
+      1,
       expect.objectContaining({ status: "active" }),
     );
   });

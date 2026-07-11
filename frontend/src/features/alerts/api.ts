@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   NotificationFilters,
@@ -16,6 +17,15 @@ export async function listNotifications(
   }
   const { data } = await apiClient.get<NotificationItem[]>("/notifications/", { params });
   return data;
+}
+
+// Página real da central de notificações (envelope {count,next,previous,results}).
+// O sino/contadores continuam usando `listNotifications` (lista simples) acima.
+export function listNotificationsPage(
+  page: number,
+  filters: NotificationFilters = {},
+): Promise<Paginated<NotificationItem>> {
+  return fetchPage<NotificationItem>("/notifications/", page, { ...filters });
 }
 
 export async function getUnreadCount(): Promise<number> {

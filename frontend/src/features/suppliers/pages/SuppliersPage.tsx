@@ -1,6 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AlertCircle, Info, Pencil, Plus, RotateCcw, Search, Trash2, Truck, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -27,10 +32,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Pagination } from "@/components/shared/Pagination";
 import { extractErrorMessage } from "@/lib/api-client";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { deleteSupplier, listSuppliers, reactivateSupplier } from "../api";
+import { deleteSupplier, listSuppliersPage, reactivateSupplier } from "../api";
 import { SUPPLIER_STATUS_OPTIONS, SUPPLIER_TYPE_OPTIONS } from "../constants";
 import { SupplierFormSheet } from "../SupplierFormSheet";
 import type { Supplier, SupplierStatusFilter } from "../types";
@@ -51,17 +58,23 @@ export function SuppliersPage() {
   const [editingSupplierId, setEditingSupplierId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
 
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [effectiveSearch, statusFilter]);
+
   const queryClient = useQueryClient();
 
-  const {
-    data: suppliers,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey: [...SUPPLIERS_QUERY_KEY, effectiveSearch, statusFilter],
-    queryFn: () => listSuppliers({ search: effectiveSearch || undefined, status: statusFilter }),
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: [...SUPPLIERS_QUERY_KEY, page, effectiveSearch, statusFilter],
+    queryFn: () =>
+      listSuppliersPage(page, { search: effectiveSearch || undefined, status: statusFilter }),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const suppliers = data?.results;
 
   const deleteMutation = useMutation({
     mutationFn: deleteSupplier,
@@ -87,7 +100,7 @@ export function SuppliersPage() {
     },
   });
 
-  const isEmpty = (suppliers?.length ?? 0) === 0;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function openCreateSheet() {
     setEditingSupplierId(null);
@@ -264,6 +277,15 @@ export function SuppliersPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <SupplierFormSheet open={sheetOpen} onOpenChange={setSheetOpen} supplierId={editingSupplierId} />

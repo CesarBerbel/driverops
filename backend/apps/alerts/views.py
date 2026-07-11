@@ -87,9 +87,12 @@ class NotificationViewSet(
         qs = self.filter_queryset(self.get_queryset())
         limit = request.query_params.get("limit")
         if limit and limit.isdigit():
+            # Uso do sino (limit=N): array simples, sem paginação.
             qs = qs[: int(limit)]
-        serializer = self.get_serializer(qs, many=True)
-        return Response(serializer.data)
+            return Response(self.get_serializer(qs, many=True).data)
+        # Sem ?page: array cortado em 200; com ?page: envelope paginado.
+        page = self.paginate_queryset(qs)
+        return self.get_paginated_response(self.get_serializer(page, many=True).data)
 
     @action(detail=False, methods=["get"], url_path="unread-count")
     def unread_count(self, request):

@@ -11,6 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 import * as partsApi from "@/features/parts/api";
 import { PartsPage } from "@/features/parts/pages/PartsPage";
 import type { Part } from "@/features/parts/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/parts/api");
 vi.mock("@/features/categories/api");
@@ -42,6 +43,11 @@ function part(overrides: Partial<Part> = {}): Part {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de peças.
+function paged(items: Part[]): Paginated<Part> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -54,13 +60,13 @@ function renderPage() {
 
 describe("PartsPage", () => {
   beforeEach(() => {
-    vi.mocked(partsApi.listParts).mockReset();
+    vi.mocked(partsApi.listPartsPage).mockReset();
     vi.mocked(partsApi.deletePart).mockReset();
     vi.mocked(partsApi.reactivatePart).mockReset();
   });
 
   it("renders the 'Peças em Estoque' heading and 'Nova peça' button", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([]));
     renderPage();
 
     expect(
@@ -70,15 +76,15 @@ describe("PartsPage", () => {
   });
 
   it("shows the empty state when there are no parts", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([]));
     renderPage();
 
     expect(await screen.findByText("Nenhuma peça cadastrada ainda.")).toBeInTheDocument();
-    expect(partsApi.listParts).toHaveBeenCalledWith({ search: undefined, status: "active" });
+    expect(partsApi.listPartsPage).toHaveBeenCalledWith(1, undefined, "active");
   });
 
   it("lists parts with category, quantity, and min stock", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part()]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part()]));
     renderPage();
 
     const table = await screen.findByRole("table");
@@ -89,10 +95,12 @@ describe("PartsPage", () => {
   });
 
   it("shows the linked supplier's name, or a dash when there is none", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([
-      part({ id: 1, supplier: 1, supplier_name: "Fornecedor Ltda" }),
-      part({ id: 2, name: "Vela de ignição", supplier: null, supplier_name: null }),
-    ]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(
+      paged([
+        part({ id: 1, supplier: 1, supplier_name: "Fornecedor Ltda" }),
+        part({ id: 2, name: "Vela de ignição", supplier: null, supplier_name: null }),
+      ]),
+    );
     renderPage();
 
     const table = await screen.findByRole("table");
@@ -102,7 +110,7 @@ describe("PartsPage", () => {
   });
 
   it("shows a dash for min stock when it is not set", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part({ min_quantity: null })]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part({ min_quantity: null })]));
     renderPage();
 
     const table = await screen.findByRole("table");
@@ -112,14 +120,14 @@ describe("PartsPage", () => {
   });
 
   it("shows the 'Estoque baixo' badge when is_low_stock is true", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part({ is_low_stock: true })]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part({ is_low_stock: true })]));
     renderPage();
 
     expect(await screen.findByText("Estoque baixo")).toBeInTheDocument();
   });
 
   it("does not show the 'Estoque baixo' badge when is_low_stock is false", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part({ is_low_stock: false })]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part({ is_low_stock: false })]));
     renderPage();
 
     await screen.findByText("Filtro de óleo");
@@ -127,7 +135,7 @@ describe("PartsPage", () => {
   });
 
   it("debounces the search box and queries by name/code/category/brand", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part()]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -138,15 +146,12 @@ describe("PartsPage", () => {
     );
 
     await waitFor(() =>
-      expect(partsApi.listParts).toHaveBeenLastCalledWith({
-        search: "filtro",
-        status: "active",
-      }),
+      expect(partsApi.listPartsPage).toHaveBeenLastCalledWith(1, "filtro", "active"),
     );
   });
 
   it("clears the search box and refetches unfiltered", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part()]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -155,15 +160,12 @@ describe("PartsPage", () => {
     await user.click(screen.getByRole("button", { name: /limpar pesquisa/i }));
 
     await waitFor(() =>
-      expect(partsApi.listParts).toHaveBeenLastCalledWith({
-        search: undefined,
-        status: "active",
-      }),
+      expect(partsApi.listPartsPage).toHaveBeenLastCalledWith(1, undefined, "active"),
     );
   });
 
   it("switches to the inactive filter and shows Reativar instead of Excluir", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part()]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -172,17 +174,14 @@ describe("PartsPage", () => {
     await user.click(screen.getByRole("option", { name: "Peças desabilitadas" }));
 
     await waitFor(() =>
-      expect(partsApi.listParts).toHaveBeenLastCalledWith({
-        search: undefined,
-        status: "inactive",
-      }),
+      expect(partsApi.listPartsPage).toHaveBeenLastCalledWith(1, undefined, "inactive"),
     );
     expect(screen.getByLabelText("Reativar peça")).toBeInTheDocument();
     expect(screen.queryByLabelText("Excluir peça")).not.toBeInTheDocument();
   });
 
   it("shows an error state with a retry button when the query fails", async () => {
-    vi.mocked(partsApi.listParts).mockRejectedValue(new Error("network"));
+    vi.mocked(partsApi.listPartsPage).mockRejectedValue(new Error("network"));
     renderPage();
 
     expect(
@@ -192,8 +191,8 @@ describe("PartsPage", () => {
   });
 
   it("shows a distinct empty state for a search with no results", async () => {
-    vi.mocked(partsApi.listParts).mockImplementation((params) =>
-      Promise.resolve(params?.search ? [] : [part()]),
+    vi.mocked(partsApi.listPartsPage).mockImplementation((_page, search) =>
+      Promise.resolve(paged(search ? [] : [part()])),
     );
     const user = userEvent.setup();
     renderPage();
@@ -208,7 +207,7 @@ describe("PartsPage", () => {
   });
 
   it("soft-deletes a part through the confirm dialog", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part()]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part()]));
     vi.mocked(partsApi.deletePart).mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();
@@ -223,7 +222,7 @@ describe("PartsPage", () => {
   });
 
   it("reactivates a part from the inactive list", async () => {
-    vi.mocked(partsApi.listParts).mockResolvedValue([part({ id: 2 })]);
+    vi.mocked(partsApi.listPartsPage).mockResolvedValue(paged([part({ id: 2 })]));
     vi.mocked(partsApi.reactivatePart).mockResolvedValue(part({ id: 2 }));
     const user = userEvent.setup();
     renderPage();

@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as financialApi from "@/features/financial/api";
 import { ExpensesPage } from "@/features/financial/pages/ExpensesPage";
 import type { Expense } from "@/features/financial/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/financial/api");
 
@@ -34,6 +35,11 @@ function expense(overrides: Partial<Expense> = {}): Expense {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de despesas.
+function paged(items: Expense[]): Paginated<Expense> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -49,13 +55,18 @@ describe("ExpensesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     auth.user = { is_superuser: false, permissions: ["financial.view", "financial.register_expense"] };
-    vi.mocked(financialApi.listExpenses).mockResolvedValue([expense()]);
+    vi.mocked(financialApi.listExpensesPage).mockResolvedValue(paged([expense()]));
   });
 
   it("lists expenses and the period total", async () => {
     renderPage();
     expect(await screen.findByText("Aluguel julho")).toBeInTheDocument();
     expect(screen.getAllByText("R$ 2.000,00").length).toBeGreaterThan(0);
+    expect(financialApi.listExpensesPage).toHaveBeenCalledWith(1, {
+      period: "month",
+      category: undefined,
+      search: undefined,
+    });
   });
 
   it("opens the new-expense dialog", async () => {

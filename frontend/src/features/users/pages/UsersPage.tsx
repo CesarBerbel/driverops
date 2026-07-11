@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertCircle,
   KeyRound,
@@ -12,7 +17,7 @@ import {
   UserX,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -53,8 +58,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/features/auth/useAuth";
+import { Pagination } from "@/components/shared/Pagination";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatPhone } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { cn } from "@/lib/utils";
 
@@ -62,7 +69,7 @@ import {
   deactivateUser,
   forceUserPasswordChange,
   listRoles,
-  listUsers,
+  listUsersPage,
   reactivateUser,
   resetUserPassword,
 } from "../api";
@@ -91,6 +98,11 @@ export function UsersPage() {
   const [roleFilter, setRoleFilter] = useState(ALL);
   const [specialtyFilter, setSpecialtyFilter] = useState(ALL);
   const [statusFilter, setStatusFilter] = useState("active");
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que um filtro/busca muda.
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, specialtyFilter, statusFilter]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ManagedUser | null>(null);
@@ -98,16 +110,19 @@ export function UsersPage() {
 
   const rolesQuery = useQuery({ queryKey: ["roles"], queryFn: listRoles });
 
-  const { data: users, isLoading, isError, refetch } = useQuery({
-    queryKey: ["users", search, roleFilter, specialtyFilter, statusFilter],
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["users", page, search, roleFilter, specialtyFilter, statusFilter],
     queryFn: () =>
-      listUsers({
+      listUsersPage(page, {
         search: search || undefined,
         role: roleFilter === ALL ? undefined : roleFilter,
         specialty: specialtyFilter === ALL ? undefined : specialtyFilter,
         status: statusFilter as "active" | "inactive" | "all",
       }),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const users = data?.results;
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -149,6 +164,8 @@ export function UsersPage() {
     },
     onError,
   });
+
+  const isEmpty = (data?.count ?? 0) === 0;
 
   const hasFilters =
     Boolean(search) ||
@@ -257,7 +274,7 @@ export function UsersPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : (users ?? []).length === 0 ? (
+      ) : isEmpty ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Nenhum usuário encontrado.
@@ -377,6 +394,15 @@ export function UsersPage() {
             </Table>
           </div>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <UserFormDialog open={formOpen} onOpenChange={setFormOpen} user={editing} />

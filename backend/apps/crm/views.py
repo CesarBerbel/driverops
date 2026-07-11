@@ -88,10 +88,11 @@ class SuggestionViewSet(
         items = sorted(
             self.get_queryset(),
             key=lambda s: (-PRIORITY_ORDER.get(s.priority, 0), -s.id),
-        )[
-            :200
-        ]  # nunca ilimitado
-        return Response(SuggestionSerializer(items, many=True).data)
+        )
+        # paginate_queryset (OptionalPageNumberPagination): sem ?page devolve um
+        # array cortado em 200; com ?page devolve {count,next,previous,results}.
+        page = self.paginate_queryset(items)
+        return self.get_paginated_response(SuggestionSerializer(page, many=True).data)
 
     def perform_update(self, serializer):
         suggestion = serializer.save()
@@ -265,10 +266,10 @@ class TaskViewSet(viewsets.ModelViewSet):
                 -PRIORITY_ORDER.get(t.priority, 0),
                 -t.id,
             ),
-        )[
-            :200
-        ]  # nunca ilimitado
-        return Response(TaskSerializer(items, many=True).data)
+        )
+        # Sem ?page: array cortado em 200; com ?page: envelope paginado.
+        page = self.paginate_queryset(items)
+        return self.get_paginated_response(TaskSerializer(page, many=True).data)
 
     @action(detail=False, methods=["get"], url_path="pending-count")
     def pending_count(self, request):

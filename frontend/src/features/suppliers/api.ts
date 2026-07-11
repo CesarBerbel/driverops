@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type { Supplier, SupplierPayload, SupplierStatusFilter } from "./types";
 
@@ -15,6 +16,17 @@ export async function listSuppliers(params: ListSuppliersParams = {}): Promise<S
     },
   });
   return data;
+}
+
+// Página real da listagem de fornecedores (envelope {count,next,previous,results}).
+export function listSuppliersPage(
+  page: number,
+  params: ListSuppliersParams = {},
+): Promise<Paginated<Supplier>> {
+  return fetchPage<Supplier>("/suppliers/", page, {
+    search: params.search,
+    status: params.status,
+  });
 }
 
 export async function getSupplier(id: number): Promise<Supplier> {

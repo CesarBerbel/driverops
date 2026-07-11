@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   AuditEntry,
@@ -18,6 +19,14 @@ export interface ListUsersParams {
 export async function listUsers(params: ListUsersParams = {}): Promise<ManagedUser[]> {
   const { data } = await apiClient.get<ManagedUser[]>("/users/", { params });
   return data;
+}
+
+// Página real da listagem de usuários (envelope {count,next,previous,results}).
+export function listUsersPage(
+  page: number,
+  params: ListUsersParams = {},
+): Promise<Paginated<ManagedUser>> {
+  return fetchPage<ManagedUser>("/users/", page, { ...params });
 }
 
 export async function createUser(payload: UserPayload): Promise<ManagedUser> {
@@ -89,4 +98,12 @@ export async function listAudit(targetUser?: number): Promise<AuditEntry[]> {
     params: { target_user: targetUser },
   });
   return data;
+}
+
+// Página real da auditoria (envelope {count,next,previous,results}).
+export function listAuditPage(
+  page: number,
+  targetUser?: number,
+): Promise<Paginated<AuditEntry>> {
+  return fetchPage<AuditEntry>("/audit/", page, { target_user: targetUser });
 }

@@ -13,6 +13,7 @@ import * as categoriesApi from "@/features/categories/api";
 import * as servicesApi from "@/features/services/api";
 import { ServicesPage } from "@/features/services/pages/ServicesPage";
 import type { Service } from "@/features/services/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/services/api");
 vi.mock("@/features/categories/api");
@@ -36,6 +37,11 @@ function service(overrides: Partial<Service> = {}): Service {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de serviços.
+function paged(items: Service[]): Paginated<Service> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -50,7 +56,7 @@ function renderPage() {
 
 describe("ServicesPage", () => {
   beforeEach(() => {
-    vi.mocked(servicesApi.listServices).mockReset();
+    vi.mocked(servicesApi.listServicesPage).mockReset();
     vi.mocked(servicesApi.deleteService).mockReset();
     vi.mocked(servicesApi.reactivateService).mockReset();
     vi.mocked(categoriesApi.listCategories).mockReset();
@@ -58,17 +64,17 @@ describe("ServicesPage", () => {
   });
 
   it("renders the heading and 'Novo serviço' button", async () => {
-    vi.mocked(servicesApi.listServices).mockResolvedValue([]);
+    vi.mocked(servicesApi.listServicesPage).mockResolvedValue(paged([]));
     renderPage();
     expect(await screen.findByRole("heading", { name: "Serviços" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /novo serviço/i }).length).toBeGreaterThan(0);
   });
 
   it("shows the empty state and queries active by default", async () => {
-    vi.mocked(servicesApi.listServices).mockResolvedValue([]);
+    vi.mocked(servicesApi.listServicesPage).mockResolvedValue(paged([]));
     renderPage();
     expect(await screen.findByText("Nenhum serviço cadastrado ainda.")).toBeInTheDocument();
-    expect(servicesApi.listServices).toHaveBeenCalledWith({
+    expect(servicesApi.listServicesPage).toHaveBeenCalledWith(1, {
       search: undefined,
       status: "active",
       category: undefined,
@@ -76,9 +82,9 @@ describe("ServicesPage", () => {
   });
 
   it("lists services with category and value", async () => {
-    vi.mocked(servicesApi.listServices).mockResolvedValue([
-      service({ value: "250.00" }),
-    ]);
+    vi.mocked(servicesApi.listServicesPage).mockResolvedValue(
+      paged([service({ value: "250.00" })]),
+    );
     renderPage();
     const table = await screen.findByRole("table");
     expect(within(table).getByText("Troca de óleo")).toBeInTheDocument();
@@ -87,13 +93,13 @@ describe("ServicesPage", () => {
   });
 
   it("debounces the search box and queries by the typed value", async () => {
-    vi.mocked(servicesApi.listServices).mockResolvedValue([service()]);
+    vi.mocked(servicesApi.listServicesPage).mockResolvedValue(paged([service()]));
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Troca de óleo");
     await user.type(screen.getByPlaceholderText("Buscar por nome ou categoria..."), "óleo");
     await waitFor(() =>
-      expect(servicesApi.listServices).toHaveBeenLastCalledWith({
+      expect(servicesApi.listServicesPage).toHaveBeenLastCalledWith(1, {
         search: "óleo",
         status: "active",
         category: undefined,
@@ -102,7 +108,7 @@ describe("ServicesPage", () => {
   });
 
   it("switches to the inactive filter and shows Reativar instead of Excluir", async () => {
-    vi.mocked(servicesApi.listServices).mockResolvedValue([service()]);
+    vi.mocked(servicesApi.listServicesPage).mockResolvedValue(paged([service()]));
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Troca de óleo");
@@ -111,7 +117,7 @@ describe("ServicesPage", () => {
     await user.click(combos[combos.length - 1]);
     await user.click(screen.getByRole("option", { name: "Serviços desabilitados" }));
     await waitFor(() =>
-      expect(servicesApi.listServices).toHaveBeenLastCalledWith({
+      expect(servicesApi.listServicesPage).toHaveBeenLastCalledWith(1, {
         search: undefined,
         status: "inactive",
         category: undefined,
@@ -122,7 +128,7 @@ describe("ServicesPage", () => {
   });
 
   it("soft-deletes a service through the confirm dialog", async () => {
-    vi.mocked(servicesApi.listServices).mockResolvedValue([service()]);
+    vi.mocked(servicesApi.listServicesPage).mockResolvedValue(paged([service()]));
     vi.mocked(servicesApi.deleteService).mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();
@@ -135,7 +141,7 @@ describe("ServicesPage", () => {
   });
 
   it("reactivates a service from the inactive list", async () => {
-    vi.mocked(servicesApi.listServices).mockResolvedValue([service({ id: 2 })]);
+    vi.mocked(servicesApi.listServicesPage).mockResolvedValue(paged([service({ id: 2 })]));
     vi.mocked(servicesApi.reactivateService).mockResolvedValue(service({ id: 2 }));
     const user = userEvent.setup();
     renderPage();

@@ -1,6 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AlertCircle, Pencil, Plus, Search, Trash2, TrendingDown, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,11 +28,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Can } from "@/features/auth/Can";
+import { Pagination } from "@/components/shared/Pagination";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { deleteExpense, listExpenses, type ReportPeriod } from "../api";
+import { deleteExpense, listExpenses, listExpensesPage, type ReportPeriod } from "../api";
 import { EXPENSE_CATEGORY_OPTIONS } from "../constants";
 import { ExpenseFormDialog } from "../components/ExpenseFormDialog";
 import { FinancialNav } from "../components/FinancialNav";
@@ -57,15 +64,23 @@ export function ExpensesPage() {
   const effectiveSearch = searchInput === "" ? "" : debouncedSearch;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [period, category, effectiveSearch]);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["expenses", period, category, effectiveSearch],
+    queryKey: ["expenses", page, period, category, effectiveSearch],
     queryFn: () =>
-      listExpenses({
+      listExpensesPage(page, {
         period,
         category: category === CATEGORY_ALL ? undefined : category,
         search: effectiveSearch || undefined,
       }),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
 
   const deleteMutation = useMutation({
@@ -81,8 +96,24 @@ export function ExpensesPage() {
       toast.error(extractErrorMessage(error, "Não foi possível excluir a despesa.")),
   });
 
-  const expenses = data ?? [];
-  const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const expenses = data?.results ?? [];
+  const isEmpty = (data?.count ?? 0) === 0;
+
+  // O card "Total no período" precisa somar o CONJUNTO FILTRADO inteiro, não só a
+  // página atual -- por isso uma query separada, não paginada (o backend limita
+  // em 200, mesmo teto de antes de a tabela paginar). Sem ?page, listExpenses
+  // devolve o array cortado no teto.
+  const { data: allForTotal } = useQuery({
+    queryKey: ["expenses-total", period, category, effectiveSearch],
+    queryFn: () =>
+      listExpenses({
+        period,
+        category: category === CATEGORY_ALL ? undefined : category,
+        search: effectiveSearch || undefined,
+      }),
+    placeholderData: keepPreviousData,
+  });
+  const total = (allForTotal ?? []).reduce((sum, e) => sum + Number(e.amount), 0);
 
   function openCreate() {
     setEditing(null);
@@ -183,7 +214,7 @@ export function ExpensesPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : expenses.length === 0 ? (
+      ) : isEmpty ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <TrendingDown className="size-8 text-muted-foreground" />
@@ -257,6 +288,15 @@ export function ExpensesPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <ExpenseFormDialog

@@ -1,8 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Bell, CheckCheck, RefreshCw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Pagination } from "@/components/shared/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,11 +19,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 
 import {
   archiveNotification,
-  listNotifications,
+  listNotificationsPage,
   markAllRead,
   markRead,
   markReadBulk,
@@ -43,6 +50,7 @@ export function NotificationsPage() {
   const [priority, setPriority] = useState(ALL);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [page, setPage] = useState(1);
 
   const filters: NotificationFilters = {
     status: status || "all",
@@ -51,10 +59,20 @@ export function NotificationsPage() {
     q: search || undefined,
   };
 
-  const { data: items, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["notifications", filters],
-    queryFn: () => listNotifications(filters),
+  // Voltar para a 1ª página sempre que um filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [status, module, priority, search]);
+
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["notifications", page, filters],
+    queryFn: () => listNotificationsPage(page, filters),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const items = data?.results;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -200,7 +218,7 @@ export function NotificationsPage() {
             </Button>
           </div>
         </div>
-      ) : !items || items.length === 0 ? (
+      ) : isEmpty ? (
         <div className="rounded-md border p-10 text-center text-sm text-muted-foreground">
           <Bell className="mx-auto mb-3 size-8 opacity-40" />
           <p className="font-medium text-foreground">Nenhuma notificação no momento.</p>
@@ -231,6 +249,15 @@ export function NotificationsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   AlertTriangle,
@@ -8,7 +8,7 @@ import {
   UserCheck,
   UserPlus,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +23,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/shared/Pagination";
 import { formatPhone } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { formatPlateForDisplay } from "@/features/vehicles/plate";
 
-import { listLeads } from "../api";
+import { listLeadsPage } from "../api";
 import { REQUEST_TYPES, STATUS_OPTIONS, timeSince } from "../constants";
 import type { LeadListItem } from "../types";
 
@@ -66,22 +68,29 @@ export function LeadInboxPage() {
   const [status, setStatus] = useState<string>("open");
   const [requestType, setRequestType] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  // Volta para a 1ª página sempre que um filtro muda (senão poderíamos ficar
+  // numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [status, requestType, search]);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["leads", { status, requestType, search }],
+    queryKey: ["leads", page, { status, requestType, search }],
     queryFn: () =>
-      listLeads({
-        status: status !== "open" && status !== "all" ? status : undefined,
+      // O backend entende `status=open` como os pedidos não terminais; "all"
+      // não filtra por status; qualquer outro valor filtra pelo status exato.
+      listLeadsPage(page, {
+        status: status !== "all" ? status : undefined,
         request_type: requestType !== "all" ? requestType : undefined,
         q: search.trim() || undefined,
       }),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
 
-  const leads = (data ?? []).filter((l) =>
-    status === "open"
-      ? ["new", "in_analysis", "contacted", "awaiting_return"].includes(l.status)
-      : true,
-  );
+  const leads = data?.results ?? [];
+  const isEmpty = (data?.count ?? 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -147,7 +156,7 @@ export function LeadInboxPage() {
             </Button>
           </CardContent>
         </Card>
-      ) : leads.length === 0 ? (
+      ) : isEmpty ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
             <Inbox className="size-8" />
@@ -191,6 +200,15 @@ export function LeadInboxPage() {
             </Link>
           ))}
         </div>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );

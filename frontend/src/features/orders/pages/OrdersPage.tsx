@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertCircle,
   ClipboardList,
@@ -11,7 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -45,13 +50,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Pagination } from "@/components/shared/Pagination";
 import { Can } from "@/features/auth/Can";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL, formatPhone } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
-import { deleteWorkOrder, listWorkOrders, reactivateWorkOrder } from "../api";
+import { deleteWorkOrder, listWorkOrdersPage, reactivateWorkOrder } from "../api";
 import { ORDER_STATUS_OPTIONS, STATUS_FILTER_ALL, STATUS_FILTER_DISABLED } from "../constants";
 import { formatOrderNumber } from "../lib/orderMapping";
 import type { OrderStatus, WorkOrder } from "../types";
@@ -78,6 +85,13 @@ export function OrdersPage() {
 
   const isDisabledView = statusFilter === STATUS_FILTER_DISABLED;
 
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [effectiveSearch, statusFilter]);
+
   const listParams = {
     search: effectiveSearch || undefined,
     active: isDisabledView ? ("inactive" as const) : ("active" as const),
@@ -88,14 +102,17 @@ export function OrdersPage() {
   };
 
   const {
-    data: orders,
+    data,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: [...ORDERS_QUERY_KEY, effectiveSearch, statusFilter],
-    queryFn: () => listWorkOrders(listParams),
+    queryKey: [...ORDERS_QUERY_KEY, page, effectiveSearch, statusFilter],
+    queryFn: () => listWorkOrdersPage(page, listParams),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const orders = data?.results;
 
   const deleteMutation = useMutation({
     mutationFn: deleteWorkOrder,
@@ -121,7 +138,7 @@ export function OrdersPage() {
     },
   });
 
-  const isEmpty = (orders?.length ?? 0) === 0;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -333,6 +350,15 @@ export function OrdersPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <AlertDialog

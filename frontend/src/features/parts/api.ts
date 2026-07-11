@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   Part,
@@ -23,6 +24,15 @@ export async function listParts(params: ListPartsParams = {}): Promise<Part[]> {
     },
   });
   return data;
+}
+
+// Página real da listagem de peças (envelope {count,next,previous,results}).
+export function listPartsPage(
+  page: number,
+  search?: string,
+  status?: PartStatusFilter,
+): Promise<Paginated<Part>> {
+  return fetchPage<Part>("/parts/", page, { search, status });
 }
 
 export async function getPart(id: number): Promise<Part> {

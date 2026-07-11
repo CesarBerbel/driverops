@@ -7,9 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Toaster } from "@/components/ui/sonner";
 import { NotificationsPage } from "@/features/alerts/pages/NotificationsPage";
 import type { NotificationItem } from "@/features/alerts/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/alerts/api", () => ({
   listNotifications: vi.fn(),
+  listNotificationsPage: vi.fn(),
   markRead: vi.fn(),
   markUnread: vi.fn(),
   markAllRead: vi.fn(),
@@ -46,6 +48,11 @@ function item(over: Partial<NotificationItem> = {}): NotificationItem {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de notificações.
+function paged(items: NotificationItem[]): Paginated<NotificationItem> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -59,7 +66,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  vi.mocked(api.listNotifications).mockResolvedValue([item()]);
+  vi.mocked(api.listNotificationsPage).mockResolvedValue(paged([item()]));
   vi.mocked(api.markRead).mockResolvedValue(item({ status: "read" }));
   vi.mocked(api.markAllRead).mockResolvedValue({ updated: 1 });
 });
@@ -84,14 +91,15 @@ describe("Central de Notificações", () => {
     await screen.findByText("OS #12 atrasada");
     await userEvent.click(screen.getByRole("button", { name: "Não lidas" }));
     await waitFor(() =>
-      expect(api.listNotifications).toHaveBeenCalledWith(
+      expect(api.listNotificationsPage).toHaveBeenCalledWith(
+        1,
         expect.objectContaining({ status: "unread" }),
       ),
     );
   });
 
   it("shows the empty state when there are no notifications", async () => {
-    vi.mocked(api.listNotifications).mockResolvedValue([]);
+    vi.mocked(api.listNotificationsPage).mockResolvedValue(paged([]));
     renderPage();
     expect(await screen.findByText(/Nenhuma notificação no momento/)).toBeInTheDocument();
   });

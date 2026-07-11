@@ -11,6 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 import * as suppliersApi from "@/features/suppliers/api";
 import { SuppliersPage } from "@/features/suppliers/pages/SuppliersPage";
 import type { Supplier } from "@/features/suppliers/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/suppliers/api");
 vi.mock("@/lib/cepService");
@@ -42,6 +43,11 @@ function supplier(overrides: Partial<Supplier> = {}): Supplier {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de fornecedores.
+function paged(items: Supplier[]): Paginated<Supplier> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -54,13 +60,13 @@ function renderPage() {
 
 describe("SuppliersPage", () => {
   beforeEach(() => {
-    vi.mocked(suppliersApi.listSuppliers).mockReset();
+    vi.mocked(suppliersApi.listSuppliersPage).mockReset();
     vi.mocked(suppliersApi.deleteSupplier).mockReset();
     vi.mocked(suppliersApi.reactivateSupplier).mockReset();
   });
 
   it("renders the heading and 'Novo fornecedor' button", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([]));
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "Fornecedores" })).toBeInTheDocument();
@@ -68,20 +74,20 @@ describe("SuppliersPage", () => {
   });
 
   it("shows the empty state when there are no suppliers", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([]));
     renderPage();
 
     expect(await screen.findByText("Nenhum fornecedor cadastrado ainda.")).toBeInTheDocument();
-    expect(suppliersApi.listSuppliers).toHaveBeenCalledWith({
+    expect(suppliersApi.listSuppliersPage).toHaveBeenCalledWith(1, {
       search: undefined,
       status: "active",
     });
   });
 
   it("lists suppliers with name, trade name, type, and document", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([
-      supplier({ trade_name: "Peças Silva", document: "12345678000199" }),
-    ]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(
+      paged([supplier({ trade_name: "Peças Silva", document: "12345678000199" })]),
+    );
     renderPage();
 
     const table = await screen.findByRole("table");
@@ -92,7 +98,7 @@ describe("SuppliersPage", () => {
   });
 
   it("debounces the search box and queries by name/trade name/document", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([supplier()]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([supplier()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -103,7 +109,7 @@ describe("SuppliersPage", () => {
     );
 
     await waitFor(() =>
-      expect(suppliersApi.listSuppliers).toHaveBeenLastCalledWith({
+      expect(suppliersApi.listSuppliersPage).toHaveBeenLastCalledWith(1, {
         search: "forn",
         status: "active",
       }),
@@ -111,7 +117,7 @@ describe("SuppliersPage", () => {
   });
 
   it("clears the search box and refetches unfiltered", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([supplier()]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([supplier()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -123,7 +129,7 @@ describe("SuppliersPage", () => {
     await user.click(screen.getByRole("button", { name: /limpar pesquisa/i }));
 
     await waitFor(() =>
-      expect(suppliersApi.listSuppliers).toHaveBeenLastCalledWith({
+      expect(suppliersApi.listSuppliersPage).toHaveBeenLastCalledWith(1, {
         search: undefined,
         status: "active",
       }),
@@ -131,8 +137,8 @@ describe("SuppliersPage", () => {
   });
 
   it("shows a distinct empty state for a search with no results", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockImplementation((params) =>
-      Promise.resolve(params?.search ? [] : [supplier()]),
+    vi.mocked(suppliersApi.listSuppliersPage).mockImplementation((_page, params) =>
+      Promise.resolve(paged(params?.search ? [] : [supplier()])),
     );
     const user = userEvent.setup();
     renderPage();
@@ -147,7 +153,7 @@ describe("SuppliersPage", () => {
   });
 
   it("switches to the inactive filter and shows Reativar instead of Excluir", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([supplier()]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([supplier()]));
     const user = userEvent.setup();
     renderPage();
 
@@ -156,7 +162,7 @@ describe("SuppliersPage", () => {
     await user.click(screen.getByRole("option", { name: "Fornecedores desabilitados" }));
 
     await waitFor(() =>
-      expect(suppliersApi.listSuppliers).toHaveBeenLastCalledWith({
+      expect(suppliersApi.listSuppliersPage).toHaveBeenLastCalledWith(1, {
         search: undefined,
         status: "inactive",
       }),
@@ -166,7 +172,7 @@ describe("SuppliersPage", () => {
   });
 
   it("soft-deletes a supplier through the confirm dialog", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([supplier()]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([supplier()]));
     vi.mocked(suppliersApi.deleteSupplier).mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();
@@ -181,7 +187,7 @@ describe("SuppliersPage", () => {
   });
 
   it("reactivates a supplier from the inactive list", async () => {
-    vi.mocked(suppliersApi.listSuppliers).mockResolvedValue([supplier({ id: 2 })]);
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([supplier({ id: 2 })]));
     vi.mocked(suppliersApi.reactivateSupplier).mockResolvedValue(supplier({ id: 2 }));
     const user = userEvent.setup();
     renderPage();

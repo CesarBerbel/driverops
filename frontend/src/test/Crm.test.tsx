@@ -7,9 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Toaster } from "@/components/ui/sonner";
 import { CrmPage } from "@/features/crm/pages/CrmPage";
 import type { Suggestion } from "@/features/crm/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/crm/api", () => ({
   listSuggestions: vi.fn(),
+  listSuggestionsPage: vi.fn(),
   getPendingCount: vi.fn(),
   approveSuggestion: vi.fn(),
   dismissSuggestion: vi.fn(),
@@ -71,6 +73,11 @@ function suggestion(over: Partial<Suggestion> = {}): Suggestion {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de sugestões.
+function paged(items: Suggestion[]): Paginated<Suggestion> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -85,7 +92,7 @@ function renderPage() {
 
 beforeEach(() => {
   perms.codes = new Set(["crm.view", "crm.manage", "crm.use_ai", "crm.dismiss", "crm.send_message"]);
-  vi.mocked(api.listSuggestions).mockResolvedValue([suggestion()]);
+  vi.mocked(api.listSuggestionsPage).mockResolvedValue(paged([suggestion()]));
   vi.mocked(api.approveSuggestion).mockResolvedValue(suggestion({ status: "in_analysis" }));
   vi.mocked(api.generateMessage).mockResolvedValue({ text: "Mensagem gerada pela IA.", ai_used: true });
 });
@@ -107,7 +114,7 @@ describe("CRM — Próximas Ações", () => {
   });
 
   it("shows the empty state", async () => {
-    vi.mocked(api.listSuggestions).mockResolvedValue([]);
+    vi.mocked(api.listSuggestionsPage).mockResolvedValue(paged([]));
     renderPage();
     expect(await screen.findByText(/Nenhuma sugestão inteligente agora/)).toBeInTheDocument();
   });

@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeftRight,
@@ -11,7 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -40,11 +45,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Pagination } from "@/components/shared/Pagination";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatQuantityBRL } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { deletePart, listParts, reactivatePart } from "../api";
+import { deletePart, listPartsPage, reactivatePart } from "../api";
 import { StockMovementDialog } from "../components/StockMovementDialog";
 import { PART_STATUS_OPTIONS, UNIT_OF_MEASURE_LABELS } from "../constants";
 import { PartFormSheet } from "../PartFormSheet";
@@ -58,6 +65,12 @@ export function PartsPage() {
   const effectiveSearch = searchInput === "" ? "" : debouncedSearch;
 
   const [statusFilter, setStatusFilter] = useState<PartStatusFilter>("active");
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [effectiveSearch, statusFilter]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingPartId, setEditingPartId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
@@ -68,14 +81,17 @@ export function PartsPage() {
   const canMoveStock = can("parts.stock_move") || can("parts.stock_adjust");
 
   const {
-    data: parts,
+    data,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: [...PARTS_QUERY_KEY, effectiveSearch, statusFilter],
-    queryFn: () => listParts({ search: effectiveSearch || undefined, status: statusFilter }),
+    queryKey: [...PARTS_QUERY_KEY, page, effectiveSearch, statusFilter],
+    queryFn: () => listPartsPage(page, effectiveSearch || undefined, statusFilter),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const parts = data?.results;
 
   const deleteMutation = useMutation({
     mutationFn: deletePart,
@@ -101,7 +117,7 @@ export function PartsPage() {
     },
   });
 
-  const isEmpty = (parts?.length ?? 0) === 0;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function openCreateSheet() {
     setEditingPartId(null);
@@ -291,6 +307,15 @@ export function PartsPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <PartFormSheet open={sheetOpen} onOpenChange={setSheetOpen} partId={editingPartId} />

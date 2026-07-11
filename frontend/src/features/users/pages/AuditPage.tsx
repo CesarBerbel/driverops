@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,8 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Pagination } from "@/components/shared/Pagination";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
-import { listAudit } from "../api";
+import { listAuditPage } from "../api";
 
 const ACTION_LABELS: Record<string, string> = {
   "user.create": "Usuário criado",
@@ -30,7 +33,15 @@ function formatDateTime(iso: string): string {
 }
 
 export function AuditPage() {
-  const { data, isLoading } = useQuery({ queryKey: ["audit"], queryFn: () => listAudit() });
+  const [page, setPage] = useState(1);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["audit", page],
+    queryFn: () => listAuditPage(page),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
+  });
+  const entries = data?.results;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -43,7 +54,7 @@ export function AuditPage() {
 
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
-      ) : (data ?? []).length === 0 ? (
+      ) : isEmpty ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Nenhum registro de auditoria ainda.
@@ -63,7 +74,7 @@ export function AuditPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.map((entry) => (
+                {entries?.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
                       {formatDateTime(entry.created_at)}
@@ -82,6 +93,15 @@ export function AuditPage() {
             </Table>
           </div>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );

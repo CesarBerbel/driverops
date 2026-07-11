@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   DreReport,
@@ -67,6 +68,18 @@ export async function listExpenses(params: ListExpensesParams = {}): Promise<Exp
     },
   });
   return data;
+}
+
+// Página real da listagem de despesas (envelope {count,next,previous,results}).
+export function listExpensesPage(
+  page: number,
+  params: ListExpensesParams = {},
+): Promise<Paginated<Expense>> {
+  return fetchPage<Expense>("/expenses/", page, {
+    period: params.period,
+    category: params.category,
+    search: params.search || undefined,
+  });
 }
 
 export async function createExpense(payload: ExpensePayload): Promise<Expense> {

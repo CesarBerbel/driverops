@@ -8,9 +8,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { LeadDetailPage } from "@/features/leads/pages/LeadDetailPage";
 import { LeadInboxPage } from "@/features/leads/pages/LeadInboxPage";
 import type { LeadDetail, LeadListItem } from "@/features/leads/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/leads/api", () => ({
-  listLeads: vi.fn(),
+  listLeadsPage: vi.fn(),
   getLead: vi.fn(),
   getLeadsPendingCount: vi.fn(),
   leadActions: {
@@ -66,6 +67,11 @@ function listItem(over: Partial<LeadListItem> = {}): LeadListItem {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de pedidos.
+function paged(items: LeadListItem[]): Paginated<LeadListItem> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function detail(): LeadDetail {
   return {
     ...listItem(),
@@ -119,7 +125,7 @@ function renderDetail() {
 
 beforeEach(() => {
   perms.codes = new Set(["leads.view", "leads.attend", "leads.convert"]);
-  vi.mocked(api.listLeads).mockResolvedValue([listItem()]);
+  vi.mocked(api.listLeadsPage).mockResolvedValue(paged([listItem()]));
   vi.mocked(api.getLead).mockResolvedValue(detail());
   vi.mocked(api.leadActions.convertOs).mockResolvedValue(detail());
 });

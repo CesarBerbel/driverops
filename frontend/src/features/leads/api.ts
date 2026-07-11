@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   LeadDetail,
@@ -31,14 +32,18 @@ interface LeadFilters {
   q?: string;
 }
 
-export async function listLeads(filters: LeadFilters = {}): Promise<LeadListItem[]> {
-  const params: Record<string, string> = {};
-  if (filters.status) params.status = filters.status;
-  if (filters.assigned_to) params.assigned_to = String(filters.assigned_to);
-  if (filters.request_type) params.request_type = filters.request_type;
-  if (filters.q) params.q = filters.q;
-  const { data } = await apiClient.get<LeadListItem[]>("/leads/", { params });
-  return data;
+// Página real do inbox (envelope {count,next,previous,results}). O backend
+// entende `status=open` como "não terminais" (mesmos status do badge/pendências).
+export function listLeadsPage(
+  page: number,
+  filters: LeadFilters = {},
+): Promise<Paginated<LeadListItem>> {
+  return fetchPage<LeadListItem>("/leads/", page, {
+    status: filters.status,
+    assigned_to: filters.assigned_to,
+    request_type: filters.request_type,
+    q: filters.q,
+  });
 }
 
 export async function getLead(id: number): Promise<LeadDetail> {

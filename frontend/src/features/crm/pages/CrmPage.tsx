@@ -1,9 +1,10 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { PageLoader } from "@/components/loading";
+import { Pagination } from "@/components/shared/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,8 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { usePermissionCheck } from "@/features/auth/usePermission";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 
-import { listSuggestions } from "../api";
+import { listSuggestionsPage } from "../api";
 import { CATEGORY_OPTIONS, PRIORITY_OPTIONS, STATUS_FILTERS } from "../constants";
 import { CrmTabs } from "../CrmTabs";
 import { SuggestionCard } from "../SuggestionCard";
@@ -36,6 +38,11 @@ export function CrmPage() {
   const [priority, setPriority] = useState(ALL);
   const [category, setCategory] = useState(ALL);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  // Volta para a 1ª página sempre que um filtro/busca muda.
+  useEffect(() => {
+    setPage(1);
+  }, [status, priority, category, search]);
 
   useEffect(() => {
     if (searchParams.has("suggestion")) {
@@ -56,9 +63,12 @@ export function CrmPage() {
   };
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["crm-suggestions", filters],
-    queryFn: () => listSuggestions(filters),
+    queryKey: ["crm-suggestions", page, filters],
+    queryFn: () => listSuggestionsPage(page, filters),
+    placeholderData: keepPreviousData,
   });
+  const suggestions = data?.results;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function onChanged() {
     queryClient.invalidateQueries({ queryKey: ["crm-suggestions"] });
@@ -137,7 +147,7 @@ export function CrmPage() {
             <Button size="sm" variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
           </div>
         </div>
-      ) : !data || data.length === 0 ? (
+      ) : isEmpty ? (
         <div className="rounded-md border p-10 text-center text-sm text-muted-foreground">
           <Sparkles className="mx-auto mb-3 size-8 opacity-40" />
           <p className="font-medium text-foreground">Nenhuma sugestão inteligente agora.</p>
@@ -145,7 +155,7 @@ export function CrmPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {data.map((s) => (
+          {suggestions?.map((s) => (
             <SuggestionCard
               key={s.id}
               suggestion={s}
@@ -154,6 +164,15 @@ export function CrmPage() {
             />
           ))}
         </div>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );

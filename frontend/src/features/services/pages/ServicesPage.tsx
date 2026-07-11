@@ -1,6 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { AlertCircle, Info, Pencil, Plus, RotateCcw, Search, Trash2, Wrench, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -28,11 +33,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listCategories } from "@/features/categories/api";
+import { Pagination } from "@/components/shared/Pagination";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
-import { deleteService, listServices, reactivateService } from "../api";
+import { deleteService, listServicesPage, reactivateService } from "../api";
 import { ServicesNav } from "../components/ServicesNav";
 import { SERVICE_STATUS_OPTIONS } from "../constants";
 import { ServiceFormSheet } from "../ServiceFormSheet";
@@ -51,6 +58,12 @@ export function ServicesPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null);
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [effectiveSearch, statusFilter, categoryFilter]);
 
   const queryClient = useQueryClient();
 
@@ -60,19 +73,22 @@ export function ServicesPage() {
   });
 
   const {
-    data: services,
+    data,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: [...SERVICES_QUERY_KEY, effectiveSearch, statusFilter, categoryFilter],
+    queryKey: [...SERVICES_QUERY_KEY, page, effectiveSearch, statusFilter, categoryFilter],
     queryFn: () =>
-      listServices({
+      listServicesPage(page, {
         search: effectiveSearch || undefined,
         status: statusFilter,
         category: categoryFilter === ALL_CATEGORIES ? undefined : Number(categoryFilter),
       }),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const services = data?.results;
 
   const deleteMutation = useMutation({
     mutationFn: deleteService,
@@ -98,7 +114,7 @@ export function ServicesPage() {
     },
   });
 
-  const isEmpty = (services?.length ?? 0) === 0;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function openCreateSheet() {
     setEditingServiceId(null);
@@ -278,6 +294,15 @@ export function ServicesPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <ServiceFormSheet open={sheetOpen} onOpenChange={setSheetOpen} serviceId={editingServiceId} />

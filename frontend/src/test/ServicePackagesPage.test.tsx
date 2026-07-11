@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import * as servicesApi from "@/features/services/api";
 import { ServicePackagesPage } from "@/features/services/pages/ServicePackagesPage";
 import type { ServicePackage } from "@/features/services/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/services/api");
 
@@ -35,6 +36,11 @@ function servicePackage(overrides: Partial<ServicePackage> = {}): ServicePackage
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de pacotes.
+function paged(items: ServicePackage[]): Paginated<ServicePackage> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -49,13 +55,13 @@ function renderPage() {
 
 describe("ServicePackagesPage", () => {
   beforeEach(() => {
-    vi.mocked(servicesApi.listServicePackages).mockReset();
+    vi.mocked(servicesApi.listServicePackagesPage).mockReset();
     vi.mocked(servicesApi.deleteServicePackage).mockReset();
     vi.mocked(servicesApi.reactivateServicePackage).mockReset();
   });
 
   it("renders the heading and 'Novo pacote' button", async () => {
-    vi.mocked(servicesApi.listServicePackages).mockResolvedValue([]);
+    vi.mocked(servicesApi.listServicePackagesPage).mockResolvedValue(paged([]));
     renderPage();
     expect(
       await screen.findByRole("heading", { name: "Pacotes de Serviços" }),
@@ -64,13 +70,13 @@ describe("ServicePackagesPage", () => {
   });
 
   it("shows the empty state", async () => {
-    vi.mocked(servicesApi.listServicePackages).mockResolvedValue([]);
+    vi.mocked(servicesApi.listServicePackagesPage).mockResolvedValue(paged([]));
     renderPage();
     expect(await screen.findByText("Nenhum pacote cadastrado ainda.")).toBeInTheDocument();
   });
 
   it("lists packages with service count and final value", async () => {
-    vi.mocked(servicesApi.listServicePackages).mockResolvedValue([servicePackage()]);
+    vi.mocked(servicesApi.listServicePackagesPage).mockResolvedValue(paged([servicePackage()]));
     renderPage();
     const table = await screen.findByRole("table");
     expect(within(table).getByText("Pacote Revisão")).toBeInTheDocument();
@@ -79,14 +85,14 @@ describe("ServicePackagesPage", () => {
   });
 
   it("switches to the inactive filter and shows Reativar instead of Excluir", async () => {
-    vi.mocked(servicesApi.listServicePackages).mockResolvedValue([servicePackage()]);
+    vi.mocked(servicesApi.listServicePackagesPage).mockResolvedValue(paged([servicePackage()]));
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Pacote Revisão");
     await user.click(screen.getByRole("combobox"));
     await user.click(screen.getByRole("option", { name: "Pacotes desabilitados" }));
     await waitFor(() =>
-      expect(servicesApi.listServicePackages).toHaveBeenLastCalledWith({
+      expect(servicesApi.listServicePackagesPage).toHaveBeenLastCalledWith(1, {
         search: undefined,
         status: "inactive",
       }),
@@ -96,7 +102,7 @@ describe("ServicePackagesPage", () => {
   });
 
   it("soft-deletes a package through the confirm dialog", async () => {
-    vi.mocked(servicesApi.listServicePackages).mockResolvedValue([servicePackage()]);
+    vi.mocked(servicesApi.listServicePackagesPage).mockResolvedValue(paged([servicePackage()]));
     vi.mocked(servicesApi.deleteServicePackage).mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();

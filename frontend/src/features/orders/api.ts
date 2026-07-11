@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   AttachmentCategory,
@@ -60,6 +61,28 @@ export async function listWorkOrders(
     },
   });
   return data;
+}
+
+// Página real da listagem de OS (envelope {count,next,previous,results}),
+// reaproveitando os MESMOS params de `listWorkOrders`.
+export function listWorkOrdersPage(
+  page: number,
+  params: ListWorkOrdersParams = {},
+): Promise<Paginated<WorkOrder>> {
+  return fetchPage<WorkOrder>("/work-orders/", page, {
+    search: params.search || undefined,
+    active: params.active,
+    status:
+      params.statuses && params.statuses.length > 0
+        ? params.statuses.join(",")
+        : params.status,
+    overdue: params.overdue ? "true" : undefined,
+    customer: params.customer,
+    vehicle: params.vehicle,
+    technician: params.technician,
+    board: params.board,
+    period: params.period,
+  });
 }
 
 // Kanban drag-and-drop: change only the OS status. The backend validates the

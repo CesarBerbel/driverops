@@ -143,18 +143,27 @@ class LeadViewSet(
 
     def list(self, request, *args, **kwargs):
         # Pré-carrega os mapas dos indicadores em lote (evita N+1 por lead).
-        leads = list(self.filter_queryset(self.get_queryset()))[:200]  # nunca ilimitado
-        self._indicator_maps = build_indicator_maps(leads)
-        serializer = self.get_serializer(leads, many=True)
-        return Response(serializer.data)
+        # `paginate_queryset` devolve a página real com `?page` (envelope
+        # {count,next,previous,results}) ou, sem ele, a lista limitada ao teto.
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        self._indicator_maps = build_indicator_maps(page)
+        serializer = self.get_serializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def get_queryset(self):
+        from .models import CLOSED_STATUSES
+
         qs = SiteLead.objects.select_related(
             "assigned_to", "linked_customer", "linked_vehicle"
         )
         p = self.request.query_params
-        if p.get("status"):
-            qs = qs.filter(status=p["status"])
+        status_param = p.get("status")
+        if status_param == "open":
+            # "Em aberto" = pedidos não terminais (mesmos status do badge).
+            qs = qs.exclude(status__in=CLOSED_STATUSES)
+        elif status_param:
+            qs = qs.filter(status=status_param)
         if p.get("assigned_to"):
             qs = qs.filter(assigned_to_id=p["assigned_to"])
         if p.get("request_type"):

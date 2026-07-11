@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type {
   CreateTaskPayload,
@@ -17,6 +18,14 @@ export async function listSuggestions(filters: SuggestionFilters = {}): Promise<
   }
   const { data } = await apiClient.get<Suggestion[]>("/crm/suggestions/", { params });
   return data;
+}
+
+// Página real da listagem de sugestões (envelope {count,next,previous,results}).
+export function listSuggestionsPage(
+  page: number,
+  filters: SuggestionFilters = {},
+): Promise<Paginated<Suggestion>> {
+  return fetchPage<Suggestion>("/crm/suggestions/", page, { ...filters });
 }
 
 export async function getPendingCount(): Promise<number> {
@@ -66,6 +75,14 @@ export async function listTasks(filters: TaskFilters = {}): Promise<CrmTask[]> {
   }
   const { data } = await apiClient.get<CrmTask[]>("/crm/tasks/", { params });
   return data;
+}
+
+// Página real da listagem de tarefas (envelope {count,next,previous,results}).
+export function listTasksPage(
+  page: number,
+  filters: TaskFilters = {},
+): Promise<Paginated<CrmTask>> {
+  return fetchPage<CrmTask>("/crm/tasks/", page, { ...filters });
 }
 
 export async function getTasksPendingCount(): Promise<number> {

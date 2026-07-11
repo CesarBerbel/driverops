@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import * as ordersApi from "@/features/orders/api";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
 import type { WorkOrder } from "@/features/orders/types";
+import type { Paginated } from "@/lib/pagination";
 
 vi.mock("@/features/orders/api");
 
@@ -55,6 +56,11 @@ function workOrder(overrides: Partial<WorkOrder> = {}): WorkOrder {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de OS.
+function paged(items: WorkOrder[]): Paginated<WorkOrder> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -69,13 +75,13 @@ function renderPage() {
 
 describe("OrdersPage", () => {
   beforeEach(() => {
-    vi.mocked(ordersApi.listWorkOrders).mockReset();
+    vi.mocked(ordersApi.listWorkOrdersPage).mockReset();
     vi.mocked(ordersApi.deleteWorkOrder).mockReset();
     vi.mocked(ordersApi.reactivateWorkOrder).mockReset();
   });
 
   it("renders the heading and 'Nova OS' button", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([]));
     renderPage();
     expect(
       await screen.findByRole("heading", { name: "Ordens de Serviço" }),
@@ -84,12 +90,12 @@ describe("OrdersPage", () => {
   });
 
   it("shows the empty state and queries active by default", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([]));
     renderPage();
     expect(
       await screen.findByText("Nenhuma ordem de serviço cadastrada ainda."),
     ).toBeInTheDocument();
-    expect(ordersApi.listWorkOrders).toHaveBeenCalledWith({
+    expect(ordersApi.listWorkOrdersPage).toHaveBeenCalledWith(1, {
       search: undefined,
       active: "active",
       status: undefined,
@@ -97,7 +103,7 @@ describe("OrdersPage", () => {
   });
 
   it("opens the editor when the clickable OS number is clicked", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([workOrder()]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([workOrder()]));
     const user = userEvent.setup();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -116,7 +122,7 @@ describe("OrdersPage", () => {
   });
 
   it("lists an OS with number, plate, customer and a clickable WhatsApp link", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([workOrder()]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([workOrder()]));
     renderPage();
     const table = await screen.findByRole("table");
     expect(within(table).getByText("OS 0001")).toBeInTheDocument();
@@ -129,15 +135,15 @@ describe("OrdersPage", () => {
   });
 
   it("shows 'WhatsApp não informado' when the customer has none", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([
-      workOrder({ customer_whatsapp: "" }),
-    ]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(
+      paged([workOrder({ customer_whatsapp: "" })]),
+    );
     renderPage();
     expect(await screen.findByText("WhatsApp não informado")).toBeInTheDocument();
   });
 
   it("debounces the search box and queries by the typed value", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([workOrder()]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([workOrder()]));
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("OS 0001");
@@ -146,7 +152,7 @@ describe("OrdersPage", () => {
       "ABC",
     );
     await waitFor(() =>
-      expect(ordersApi.listWorkOrders).toHaveBeenLastCalledWith({
+      expect(ordersApi.listWorkOrdersPage).toHaveBeenLastCalledWith(1, {
         search: "ABC",
         active: "active",
         status: undefined,
@@ -155,14 +161,14 @@ describe("OrdersPage", () => {
   });
 
   it("filters by a workflow status", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([workOrder()]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([workOrder()]));
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("OS 0001");
     await user.click(screen.getByRole("combobox"));
     await user.click(screen.getByRole("option", { name: "Em execução" }));
     await waitFor(() =>
-      expect(ordersApi.listWorkOrders).toHaveBeenLastCalledWith({
+      expect(ordersApi.listWorkOrdersPage).toHaveBeenLastCalledWith(1, {
         search: undefined,
         active: "active",
         status: "in_progress",
@@ -171,14 +177,14 @@ describe("OrdersPage", () => {
   });
 
   it("switches to the disabled view and shows Reativar instead of Excluir", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([workOrder()]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([workOrder()]));
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("OS 0001");
     await user.click(screen.getByRole("combobox"));
     await user.click(screen.getByRole("option", { name: "Desabilitadas" }));
     await waitFor(() =>
-      expect(ordersApi.listWorkOrders).toHaveBeenLastCalledWith({
+      expect(ordersApi.listWorkOrdersPage).toHaveBeenLastCalledWith(1, {
         search: undefined,
         active: "inactive",
         status: undefined,
@@ -189,7 +195,7 @@ describe("OrdersPage", () => {
   });
 
   it("soft-deletes an OS through the confirm dialog", async () => {
-    vi.mocked(ordersApi.listWorkOrders).mockResolvedValue([workOrder()]);
+    vi.mocked(ordersApi.listWorkOrdersPage).mockResolvedValue(paged([workOrder()]));
     vi.mocked(ordersApi.deleteWorkOrder).mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();

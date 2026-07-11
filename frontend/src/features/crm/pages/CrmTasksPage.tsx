@@ -1,11 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Check, ListTodo, Lock, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PageLoader } from "@/components/loading";
 import { CustomerLink } from "@/components/shared/CustomerLink";
+import { Pagination } from "@/components/shared/Pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,9 +44,10 @@ import {
 import { usePermissionCheck } from "@/features/auth/usePermission";
 import { formatBrDate } from "@/features/dashboard/osStatus";
 import { extractErrorMessage } from "@/lib/api-client";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 
-import { deleteTask, listTasks, updateTask } from "../api";
+import { deleteTask, listTasksPage, updateTask } from "../api";
 import { PRIORITY, PRIORITY_OPTIONS, TASK_STATUS, TASK_STATUS_FILTERS } from "../constants";
 import { CrmTabs } from "../CrmTabs";
 import { TaskFormDialog } from "../TaskFormDialog";
@@ -61,6 +68,11 @@ export function CrmTasksPage() {
   const [status, setStatus] = useState("open");
   const [priority, setPriority] = useState(ALL);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  // Volta para a 1ª página sempre que um filtro/busca muda.
+  useEffect(() => {
+    setPage(1);
+  }, [status, priority, search]);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<CrmTask | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CrmTask | null>(null);
@@ -73,10 +85,13 @@ export function CrmTasksPage() {
   };
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["crm-tasks", filters],
-    queryFn: () => listTasks(filters),
+    queryKey: ["crm-tasks", page, filters],
+    queryFn: () => listTasksPage(page, filters),
     enabled: can("crm.view"),
+    placeholderData: keepPreviousData,
   });
+  const tasks = data?.results;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["crm-tasks"] });
@@ -186,7 +201,7 @@ export function CrmTasksPage() {
             </Button>
           </div>
         </div>
-      ) : !data || data.length === 0 ? (
+      ) : isEmpty ? (
         <div className="rounded-md border p-10 text-center text-sm text-muted-foreground">
           <ListTodo className="mx-auto mb-3 size-8 opacity-40" />
           <p className="font-medium text-foreground">Nenhuma tarefa por aqui.</p>
@@ -213,7 +228,7 @@ export function CrmTasksPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((task) => (
+              {tasks?.map((task) => (
                 <TableRow key={task.id}>
                   <TableCell className="max-w-xs">
                     <p className="font-medium">{task.title}</p>
@@ -315,6 +330,15 @@ export function CrmTasksPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <TaskFormDialog
