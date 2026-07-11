@@ -1,5 +1,6 @@
-import { CalendarClock, Menu, Phone } from "lucide-react";
+import { CalendarClock, Car, Menu, Phone } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import {
   Sheet,
@@ -44,6 +45,13 @@ export function PublicHeader({ workshop, onRequest }: PublicHeaderProps) {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <Link
+            to="/veiculo"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-white/15 px-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10"
+          >
+            <Car className="size-4" />
+            Acompanhar meu veículo
+          </Link>
           {workshop.whatsapp && (
             <a
               href={waLink(workshop.whatsapp)}
@@ -106,6 +114,15 @@ export function PublicHeader({ workshop, onRequest }: PublicHeaderProps) {
                 <CalendarClock className="size-5" />
                 Pedir marcação de horário
               </button>
+              <SheetClose asChild>
+                <Link
+                  to="/veiculo"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-white/15 px-4 font-semibold text-white/80 hover:bg-white/10"
+                >
+                  <Car className="size-5" />
+                  Acompanhar meu veículo
+                </Link>
+              </SheetClose>
             </div>
           </SheetContent>
         </Sheet>
