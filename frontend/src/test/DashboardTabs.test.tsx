@@ -88,16 +88,18 @@ describe("DashboardTabs", () => {
     renderTabs();
     const panel = screen.getByRole("tabpanel");
 
-    // Swipe left (dx negative) -> next tab (OS).
+    // Swipe left (dx negative) -> next tab (OS). O gesto dispara no touchmove.
     fireEvent.touchStart(panel, { touches: [{ clientX: 240, clientY: 100 }] });
-    fireEvent.touchEnd(panel, { changedTouches: [{ clientX: 100, clientY: 108 }] });
+    fireEvent.touchMove(panel, { touches: [{ clientX: 100, clientY: 108 }] });
+    fireEvent.touchEnd(panel);
     await waitFor(() =>
       expect(screen.getByRole("tab", { name: "OS" })).toHaveAttribute("aria-selected", "true"),
     );
 
     // Swipe right (dx positive) -> previous tab (Operacional).
     fireEvent.touchStart(panel, { touches: [{ clientX: 100, clientY: 100 }] });
-    fireEvent.touchEnd(panel, { changedTouches: [{ clientX: 250, clientY: 105 }] });
+    fireEvent.touchMove(panel, { touches: [{ clientX: 250, clientY: 105 }] });
+    fireEvent.touchEnd(panel);
     await waitFor(() =>
       expect(screen.getByRole("tab", { name: "Operacional" })).toHaveAttribute(
         "aria-selected",
@@ -110,7 +112,8 @@ describe("DashboardTabs", () => {
     renderTabs();
     const panel = screen.getByRole("tabpanel");
     fireEvent.touchStart(panel, { touches: [{ clientX: 200, clientY: 100 }] });
-    fireEvent.touchEnd(panel, { changedTouches: [{ clientX: 180, clientY: 400 }] });
+    fireEvent.touchMove(panel, { touches: [{ clientX: 180, clientY: 400 }] });
+    fireEvent.touchEnd(panel);
     expect(screen.getByRole("tab", { name: "Operacional" })).toHaveAttribute(
       "aria-selected",
       "true",

@@ -1,5 +1,5 @@
 import { AlertCircle } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 import { useSwipeNavigation } from "@/lib/useSwipeNavigation";
 import { cn } from "@/lib/utils";
@@ -39,16 +39,24 @@ export function ServiceOrderTabs({ tabs, active, onChange, children }: ServiceOr
     onPrev: () => goTo(activeIndex - 1),
   });
 
+  // Mantém o título da aba ativa visível na barra (que rola no mobile) conforme
+  // o usuário troca de aba deslizando o dedo.
+  const activeTabRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [active]);
+
   return (
     <div className="space-y-6">
       <div
         role="tablist"
         aria-label="Seções da Ordem de Serviço"
-        className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1"
+        className="flex gap-1 overflow-x-auto scrollbar-none rounded-lg bg-muted p-1"
       >
         {tabs.map((tab) => (
           <button
             key={tab.key}
+            ref={active === tab.key ? activeTabRef : undefined}
             type="button"
             role="tab"
             aria-selected={active === tab.key}
@@ -74,7 +82,16 @@ export function ServiceOrderTabs({ tabs, active, onChange, children }: ServiceOr
         ))}
       </div>
 
-      <div role="tabpanel" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
+      {/* Área com swipe horizontal (toque): deslizar para o lado troca a aba
+          inteira. touch-pan-y deixa a rolagem vertical nativa, mas entrega o
+          gesto horizontal para o nosso handler (o navegador não o sequestra). */}
+      <div
+        role="tabpanel"
+        className="touch-pan-y"
+        onTouchStart={swipe.onTouchStart}
+        onTouchMove={swipe.onTouchMove}
+        onTouchEnd={swipe.onTouchEnd}
+      >
         {children}
       </div>
     </div>

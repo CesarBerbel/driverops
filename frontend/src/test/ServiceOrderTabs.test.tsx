@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -50,5 +50,40 @@ describe("ServiceOrderTabs", () => {
     expect(photosTab).toBeDisabled();
     await user.click(photosTab);
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("changes the whole tab on a horizontal finger swipe over the content", () => {
+    const onChange = vi.fn();
+    render(
+      <ServiceOrderTabs tabs={TABS} active="main" onChange={onChange}>
+        <div>panel</div>
+      </ServiceOrderTabs>,
+    );
+    const panel = screen.getByRole("tabpanel");
+    // Deslize para a esquerda (dx negativo) -> próxima aba habilitada (report).
+    fireEvent.touchStart(panel, { touches: [{ clientX: 260, clientY: 120 }] });
+    fireEvent.touchMove(panel, { touches: [{ clientX: 110, clientY: 128 }] });
+    fireEvent.touchEnd(panel);
+    expect(onChange).toHaveBeenCalledWith("report");
+  });
+
+  it("skips disabled tabs when swiping (jumps to the next enabled one)", () => {
+    const onChange = vi.fn();
+    // "report" desabilitada: a partir de "main", o swipe deve pular para "photos".
+    const tabs: ServiceOrderTabDef[] = [
+      { key: "main", label: "Veículo e cliente" },
+      { key: "report", label: "Relato", disabled: true },
+      { key: "photos", label: "Fotos" },
+    ];
+    render(
+      <ServiceOrderTabs tabs={tabs} active="main" onChange={onChange}>
+        <div>panel</div>
+      </ServiceOrderTabs>,
+    );
+    const panel = screen.getByRole("tabpanel");
+    fireEvent.touchStart(panel, { touches: [{ clientX: 260, clientY: 120 }] });
+    fireEvent.touchMove(panel, { touches: [{ clientX: 110, clientY: 126 }] });
+    fireEvent.touchEnd(panel);
+    expect(onChange).toHaveBeenCalledWith("photos");
   });
 });

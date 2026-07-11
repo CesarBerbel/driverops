@@ -72,9 +72,16 @@ export function DashboardTabs() {
         ))}
       </div>
 
-      {/* Área com suporte a swipe horizontal (toque). Não usa preventDefault,
-          então a rolagem vertical e os cliques continuam funcionando. */}
-      <div role="tabpanel" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
+      {/* Área com swipe horizontal (toque): deslizar para o lado troca a visão.
+          touch-pan-y mantém a rolagem vertical nativa e entrega o gesto
+          horizontal ao nosso handler (sem o navegador sequestrá-lo). */}
+      <div
+        role="tabpanel"
+        className="touch-pan-y"
+        onTouchStart={swipe.onTouchStart}
+        onTouchMove={swipe.onTouchMove}
+        onTouchEnd={swipe.onTouchEnd}
+      >
         {active === "operacional" && <DashboardOperacionalView />}
         {active === "os" && <DashboardOSView />}
         {active === "administrativo" && <DashboardAdministrativoView />}
