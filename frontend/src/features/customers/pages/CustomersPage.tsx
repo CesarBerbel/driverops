@@ -48,6 +48,7 @@ import { VehicleFormSheet } from "@/features/vehicles/VehicleFormSheet";
 import { VehicleSelectorDialog } from "@/features/vehicles/VehicleSelectorDialog";
 import type { Vehicle } from "@/features/vehicles/types";
 import { Pagination } from "@/components/shared/Pagination";
+import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { formatPhone } from "@/lib/masks";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -61,6 +62,7 @@ import {
   type CustomerStatusFilter,
 } from "../api";
 import { CustomerFormSheet } from "../CustomerFormSheet";
+import { CustomerMobileCard } from "../components/CustomerMobileCard";
 import { CUSTOMER_TYPE_LABELS } from "../constants";
 import type { Customer } from "../types";
 
@@ -238,7 +240,12 @@ export function CustomersPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <ResponsiveDataView
+          items={customers ?? []}
+          getKey={(c) => c.id}
+          renderCard={(c) => <CustomerMobileCard customer={c} />}
+          table={
+            <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -350,7 +357,9 @@ export function CustomersPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+            </Card>
+          }
+        />
       )}
 
       {!isLoading && !isError && !isEmpty && (

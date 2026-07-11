@@ -46,12 +46,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/shared/Pagination";
+import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatQuantityBRL } from "@/lib/masks";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { deletePart, listPartsPage, reactivatePart } from "../api";
+import { PartMobileCard } from "../components/PartMobileCard";
 import { StockMovementDialog } from "../components/StockMovementDialog";
 import { PART_STATUS_OPTIONS, UNIT_OF_MEASURE_LABELS } from "../constants";
 import { PartFormSheet } from "../PartFormSheet";
@@ -224,7 +226,22 @@ export function PartsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <ResponsiveDataView
+          items={parts ?? []}
+          getKey={(p) => p.id}
+          renderCard={(p) => (
+            <PartMobileCard
+              part={p}
+              onEdit={openEditSheet}
+              onMoveStock={
+                statusFilter !== "inactive" && canMoveStock
+                  ? (target) => setMovementTarget(target)
+                  : undefined
+              }
+            />
+          )}
+          table={
+            <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -306,7 +323,9 @@ export function PartsPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+            </Card>
+          }
+        />
       )}
 
       {!isLoading && !isError && !isEmpty && (

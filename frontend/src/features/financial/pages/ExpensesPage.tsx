@@ -28,7 +28,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Can } from "@/features/auth/Can";
+import { useHasPermission } from "@/features/auth/usePermission";
 import { Pagination } from "@/components/shared/Pagination";
+import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL } from "@/lib/masks";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -37,6 +39,7 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { deleteExpense, listExpenses, listExpensesPage, type ReportPeriod } from "../api";
 import { EXPENSE_CATEGORY_OPTIONS } from "../constants";
 import { ExpenseFormDialog } from "../components/ExpenseFormDialog";
+import { ExpenseMobileCard } from "../components/ExpenseMobileCard";
 import { FinancialNav } from "../components/FinancialNav";
 import type { Expense } from "../types";
 
@@ -98,6 +101,9 @@ export function ExpensesPage() {
 
   const expenses = data?.results ?? [];
   const isEmpty = (data?.count ?? 0) === 0;
+  // Mesma regra do <Can> que guarda as ações na tabela: só passamos handlers
+  // ao card mobile quando o usuário pode gerenciar despesas.
+  const canManage = useHasPermission("financial.register_expense");
 
   // O card "Total no período" precisa somar o CONJUNTO FILTRADO inteiro, não só a
   // página atual -- por isso uma query separada, não paginada (o backend limita
@@ -230,7 +236,21 @@ export function ExpensesPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <ResponsiveDataView
+          items={expenses}
+          getKey={(e) => e.id}
+          renderCard={(e) => (
+            <ExpenseMobileCard
+              expense={e}
+              onEdit={canManage ? openEdit : undefined}
+              onDelete={
+                canManage ? (ex) => deleteMutation.mutate(ex.id) : undefined
+              }
+              deleting={deleteMutation.isPending}
+            />
+          )}
+          table={
+            <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -287,7 +307,9 @@ export function ExpensesPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+            </Card>
+          }
+        />
       )}
 
       {!isLoading && !isError && !isEmpty && (

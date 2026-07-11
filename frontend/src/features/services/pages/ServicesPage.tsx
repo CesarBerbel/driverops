@@ -34,12 +34,14 @@ import {
 } from "@/components/ui/table";
 import { listCategories } from "@/features/categories/api";
 import { Pagination } from "@/components/shared/Pagination";
+import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL } from "@/lib/masks";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { deleteService, listServicesPage, reactivateService } from "../api";
+import { ServiceMobileCard } from "../components/ServiceMobileCard";
 import { ServicesNav } from "../components/ServicesNav";
 import { SERVICE_STATUS_OPTIONS } from "../constants";
 import { ServiceFormSheet } from "../ServiceFormSheet";
@@ -236,7 +238,18 @@ export function ServicesPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <ResponsiveDataView
+          items={services ?? []}
+          getKey={(service) => service.id}
+          renderCard={(service) => (
+            <ServiceMobileCard
+              service={service}
+              active={statusFilter !== "inactive"}
+              onEdit={() => openEditSheet(service.id)}
+            />
+          )}
+          table={
+            <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -293,7 +306,9 @@ export function ServicesPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+            </Card>
+          }
+        />
       )}
 
       {!isLoading && !isError && !isEmpty && (

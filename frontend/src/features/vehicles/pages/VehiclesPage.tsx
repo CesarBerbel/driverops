@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CustomerLink } from "@/components/shared/CustomerLink";
 import { Pagination } from "@/components/shared/Pagination";
+import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/features/auth/Can";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +53,7 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { deleteVehicle, listVehiclesPage, reactivateVehicle } from "../api";
+import { VehicleMobileCard } from "../components/VehicleMobileCard";
 import { VEHICLE_STATUS_OPTIONS } from "../constants";
 import { formatPlateForDisplay } from "../plate";
 import type { Vehicle, VehicleStatusFilter } from "../types";
@@ -224,7 +226,14 @@ export function VehiclesPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <ResponsiveDataView
+          items={vehicles ?? []}
+          getKey={(v) => v.id}
+          renderCard={(v) => (
+            <VehicleMobileCard vehicle={v} onOpen={() => openEditSheet(v.id)} />
+          )}
+          table={
+            <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -302,7 +311,9 @@ export function VehiclesPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+            </Card>
+          }
+        />
       )}
 
       {!isLoading && !isError && !isEmpty && (

@@ -33,11 +33,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/shared/Pagination";
+import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { extractErrorMessage } from "@/lib/api-client";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 import { deleteSupplier, listSuppliersPage, reactivateSupplier } from "../api";
+import { SupplierMobileCard } from "../components/SupplierMobileCard";
 import { SUPPLIER_STATUS_OPTIONS, SUPPLIER_TYPE_OPTIONS } from "../constants";
 import { SupplierFormSheet } from "../SupplierFormSheet";
 import type { Supplier, SupplierStatusFilter } from "../types";
@@ -208,7 +210,12 @@ export function SuppliersPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <ResponsiveDataView
+          items={suppliers ?? []}
+          getKey={(s) => s.id}
+          renderCard={(s) => <SupplierMobileCard supplier={s} onEdit={openEditSheet} />}
+          table={
+            <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -276,7 +283,9 @@ export function SuppliersPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+            </Card>
+          }
+        />
       )}
 
       {!isLoading && !isError && !isEmpty && (
