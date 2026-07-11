@@ -51,6 +51,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/shared/Pagination";
+import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { Can } from "@/features/auth/Can";
 import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL, formatPhone } from "@/lib/masks";
@@ -60,6 +61,7 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { deleteWorkOrder, listWorkOrdersPage, reactivateWorkOrder } from "../api";
 import { ORDER_STATUS_OPTIONS, STATUS_FILTER_ALL, STATUS_FILTER_DISABLED } from "../constants";
+import { OrderMobileCard } from "../components/OrderMobileCard";
 import { formatOrderNumber } from "../lib/orderMapping";
 import type { OrderStatus, WorkOrder } from "../types";
 
@@ -240,7 +242,12 @@ export function OrdersPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <ResponsiveDataView
+          items={orders ?? []}
+          getKey={(o) => o.id}
+          renderCard={(o) => <OrderMobileCard order={o} />}
+          table={
+            <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -349,7 +356,9 @@ export function OrdersPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+            </Card>
+          }
+        />
       )}
 
       {!isLoading && !isError && !isEmpty && (
