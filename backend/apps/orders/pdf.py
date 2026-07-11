@@ -75,6 +75,54 @@ def _fmt_qty(value):
     return text.replace(".", ",") or "0"
 
 
+def _digits(value):
+    return "".join(ch for ch in (value or "") if ch.isdigit())
+
+
+def _fmt_cnpj_cpf(value):
+    """Formata CNPJ (14) ou CPF (11) a partir dos dígitos; devolve o original se
+    não bater com nenhum dos dois tamanhos."""
+    d = _digits(value)
+    if len(d) == 14:
+        return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:]}"
+    if len(d) == 11:
+        return f"{d[:3]}.{d[3:6]}.{d[6:9]}-{d[9:]}"
+    return value or ""
+
+
+def _fmt_phone(value):
+    d = _digits(value)
+    if len(d) == 11:
+        return f"({d[:2]}) {d[2:7]}-{d[7:]}"
+    if len(d) == 10:
+        return f"({d[:2]}) {d[2:6]}-{d[6:]}"
+    return value or ""
+
+
+def _fmt_cep(value):
+    d = _digits(value)
+    return f"{d[:5]}-{d[5:]}" if len(d) == 8 else (value or "")
+
+
+def _workshop_address(profile):
+    """Endereço da oficina em uma linha: rua, nº, complemento - bairro - cidade/UF - CEP."""
+    line = profile.street or ""
+    if profile.number:
+        line += f", {profile.number}"
+    if profile.complement:
+        line += f" - {profile.complement}"
+    if profile.neighborhood:
+        line += f" - {profile.neighborhood}"
+    parts = [line.strip(" -")]
+    if profile.city:
+        parts.append(
+            f"{profile.city}/{profile.state}" if profile.state else profile.city
+        )
+    if profile.zip_code:
+        parts.append(f"CEP {_fmt_cep(profile.zip_code)}")
+    return " - ".join(p for p in parts if p)
+
+
 def build_order_pdf_context(order, request=None):
     from .serializers import WorkOrderSerializer
 
@@ -140,7 +188,21 @@ def build_order_pdf_context(order, request=None):
         "order": order,
         "profile": profile,
         "logo": _logo(profile.logo),
+        # Dados institucionais da oficina, já formatados para o cabeçalho.
+        "workshop": {
+            "cnpj": _fmt_cnpj_cpf(profile.cnpj),
+            "state_registration": profile.state_registration,
+            "responsible": profile.responsible,
+            "phone": _fmt_phone(profile.phone),
+            "whatsapp": _fmt_phone(profile.whatsapp),
+            "email": profile.email,
+            "website": profile.website,
+            "address": _workshop_address(profile),
+            "business_hours": profile.business_hours,
+        },
         "customer": order.customer,
+        "customer_document": _fmt_cnpj_cpf(order.customer.document),
+        "customer_phone": _fmt_phone(order.customer.phone or order.customer.whatsapp),
         "vehicle": vehicle,
         "vehicle_description": " ".join(
             p for p in [vehicle.brand, vehicle.model] if p
@@ -173,8 +235,25 @@ def build_order_pdf_context(order, request=None):
             "balance": _brl(data["balance_due"]),
             "status_display": PAYMENT_STATUS_LABEL.get(data["payment_status"], ""),
         },
-        "service_authorization_terms": os_settings.service_authorization_terms,
-        "general_conditions": os_settings.general_conditions,
+        # Todos os termos aplicáveis à OS (só entram os preenchidos), na ordem em
+        # que devem aparecer no rodapé. Antes o PDF só mostrava autorização +
+        # condições gerais, deixando de fora garantia e ciência do cliente.
+        "terms": [
+            term
+            for term in [
+                {
+                    "title": "Autorização de serviço",
+                    "text": os_settings.service_authorization_terms,
+                },
+                {"title": "Garantia", "text": os_settings.warranty_terms},
+                {"title": "Condições gerais", "text": os_settings.general_conditions},
+                {
+                    "title": "Ciência do cliente",
+                    "text": os_settings.customer_acknowledgment_terms,
+                },
+            ]
+            if (term["text"] or "").strip()
+        ],
         "footer_text": os_settings.pdf_footer_text,
     }
 

@@ -65,8 +65,17 @@
     border-top: 1.5px solid #1e293b; font-weight: bold; font-size: 10pt; color: #0f172a;
   }
 
-  .terms { margin-top: 10px; font-size: 7.5pt; color: #374151; white-space: pre-line; }
-  .footer { margin-top: 12px; border-top: 0.5px solid #cbd5e1; padding-top: 4px;
+  .terms { margin-top: 9px; font-size: 7.5pt; color: #374151; white-space: pre-line; }
+  .terms .section-title { color: #475569; }
+
+  /* Assinaturas (cliente / oficina) lado a lado. */
+  table.sign { width: 100%; margin-top: 26px; }
+  table.sign td {
+    width: 50%; text-align: center; font-size: 7.5pt; color: #374151; padding: 0 22px;
+  }
+  .sign-line { border-top: 0.5px solid #94a3b8; margin-bottom: 3px; font-size: 0; line-height: 0; }
+
+  .footer { margin-top: 14px; border-top: 0.5px solid #cbd5e1; padding-top: 4px;
     font-size: 7pt; color: #6b7280; white-space: pre-line; text-align: center; }
 </style>
 </head>
@@ -79,11 +88,11 @@
         <span class="brand">{{ profile.trade_name|default:profile.legal_name|default:"Oficina" }}</span>
         <div class="small muted">
           {% if profile.legal_name and profile.trade_name %}{{ profile.legal_name }}<br />{% endif %}
-          {% if profile.cnpj %}CNPJ: {{ profile.cnpj }}<br />{% endif %}
-          {% if profile.phone or profile.whatsapp %}Tel: {{ profile.phone|default:profile.whatsapp }}<br />{% endif %}
-          {% if profile.email %}{{ profile.email }}<br />{% endif %}
-          {% if profile.street %}{{ profile.street }}{% if profile.number %}, {{ profile.number }}{% endif %}
-            {% if profile.city %} - {{ profile.city }}/{{ profile.state }}{% endif %}{% endif %}
+          {% if workshop.cnpj %}CNPJ: {{ workshop.cnpj }}{% endif %}{% if workshop.state_registration %} · IE: {{ workshop.state_registration }}{% endif %}{% if workshop.cnpj or workshop.state_registration %}<br />{% endif %}
+          {% if workshop.address %}{{ workshop.address }}<br />{% endif %}
+          {% if workshop.phone %}Tel: {{ workshop.phone }}{% endif %}{% if workshop.whatsapp %} · WhatsApp: {{ workshop.whatsapp }}{% endif %}{% if workshop.phone or workshop.whatsapp %}<br />{% endif %}
+          {% if workshop.email %}{{ workshop.email }}{% endif %}{% if workshop.website %} · {{ workshop.website }}{% endif %}{% if workshop.email or workshop.website %}<br />{% endif %}
+          {% if workshop.responsible %}Responsável: {{ workshop.responsible }}{% endif %}
         </div>
       </td>
       <td class="doc-box">
@@ -114,8 +123,8 @@
           <div class="section-title">Cliente</div>
           <strong>{{ customer.name }}</strong>
           <div class="small">
-            {% if customer.document %}CPF/CNPJ: {{ customer.document }}<br />{% endif %}
-            {% if customer.phone or customer.whatsapp %}Tel: {{ customer.phone|default:customer.whatsapp }}<br />{% endif %}
+            {% if customer_document %}CPF/CNPJ: {{ customer_document }}<br />{% endif %}
+            {% if customer_phone %}Tel: {{ customer_phone }}<br />{% endif %}
             {% if customer.email %}{{ customer.email }}{% endif %}
           </div>
         </td>
@@ -200,19 +209,27 @@
     </table>
   </div>
 
-  <!-- Termos -->
-  {% if service_authorization_terms %}
+  <!-- Termos (autorização, garantia, condições gerais, ciência do cliente) -->
+  {% for term in terms %}
   <div class="terms">
-    <div class="section-title">Autorização de serviço</div>
-    {{ service_authorization_terms }}
+    <div class="section-title">{{ term.title }}</div>
+    {{ term.text }}
   </div>
-  {% endif %}
-  {% if general_conditions %}
-  <div class="terms">
-    <div class="section-title">Condições gerais</div>
-    {{ general_conditions }}
-  </div>
-  {% endif %}
+  {% endfor %}
+
+  <!-- Assinaturas -->
+  <table class="sign">
+    <tr>
+      <td>
+        <div class="sign-line">&nbsp;</div>
+        Cliente{% if customer.name %}<br /><span class="muted">{{ customer.name }}</span>{% endif %}
+      </td>
+      <td>
+        <div class="sign-line">&nbsp;</div>
+        {{ profile.trade_name|default:profile.legal_name|default:"Oficina" }}{% if workshop.responsible %}<br /><span class="muted">{{ workshop.responsible }}</span>{% endif %}
+      </td>
+    </tr>
+  </table>
 
   {% if footer_text %}<div class="footer">{{ footer_text }}</div>{% endif %}
 </body>

@@ -4,6 +4,7 @@ import pytest
 
 from apps.orders.models import WorkOrder, WorkOrderPart, WorkOrderService
 from apps.orders.pdf import build_order_pdf_context, render_order_pdf
+from apps.workshop.models import OrderSettings, WorkshopProfile
 
 pytestmark = pytest.mark.django_db
 
@@ -62,3 +63,40 @@ def test_line_rows_nest_parts_under_their_service(db, customer, vehicle):
     assert ctx["line_rows"][1]["service_name"] == "Troca de óleo"
     # E o PDF renderiza sem erro.
     assert render_order_pdf(o)[:5] == b"%PDF-"
+
+
+def test_context_formats_workshop_and_includes_all_terms(db, customer, vehicle):
+    """Cabeçalho da oficina com dados formatados e TODOS os termos preenchidos
+    (garantia e ciência do cliente antes ficavam de fora do PDF)."""
+    p = WorkshopProfile.get_solo()
+    p.cnpj = "12345678000190"
+    p.phone = "1140028922"
+    p.zip_code = "01310100"
+    p.street = "Av. Paulista"
+    p.number = "1000"
+    p.neighborhood = "Bela Vista"
+    p.city = "Sao Paulo"
+    p.state = "SP"
+    p.save()
+    s = OrderSettings.get_solo()
+    s.service_authorization_terms = "Autorizo."
+    s.warranty_terms = "Garantia de 90 dias."
+    s.customer_acknowledgment_terms = "Ciente."
+    s.general_conditions = ""  # vazio nao entra
+    s.save()
+
+    order = WorkOrder.objects.create(
+        customer=customer, vehicle=vehicle, opened_at="2026-07-04"
+    )
+    order.refresh_from_db()
+    ctx = build_order_pdf_context(order)
+
+    assert ctx["workshop"]["cnpj"] == "12.345.678/0001-90"
+    assert ctx["workshop"]["phone"] == "(11) 4002-8922"
+    assert "CEP 01310-100" in ctx["workshop"]["address"]
+    # Termos preenchidos entram na ordem certa; o vazio (condicoes gerais) nao.
+    assert [t["title"] for t in ctx["terms"]] == [
+        "Autorização de serviço",
+        "Garantia",
+        "Ciência do cliente",
+    ]
