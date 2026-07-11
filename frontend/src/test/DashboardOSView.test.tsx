@@ -44,6 +44,8 @@ function workOrder(overrides: Partial<WorkOrder> = {}): WorkOrder {
     amount_paid: "0.00",
     balance_due: "150.00",
     payment_status: "open",
+    quote_status: null,
+    quote_status_display: null,
     created_at: "2026-07-04T00:00:00Z",
     updated_at: "2026-07-04T00:00:00Z",
     ...overrides,

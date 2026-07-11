@@ -20,6 +20,18 @@ function fmtDate(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
 }
 
+// Cor do selo de orçamento por status (aprovado = verde, recusado/expirado =
+// vermelho, enviado/visto/rascunho = âmbar).
+function quoteChipClass(status: string): string {
+  if (status === "approved" || status === "partially_approved") {
+    return "bg-success/10 text-success";
+  }
+  if (status === "rejected" || status === "expired") {
+    return "bg-destructive/10 text-destructive";
+  }
+  return "bg-amber-500/10 text-amber-600";
+}
+
 // Card mobile da OS: centro operacional do sistema, completo mas objetivo. O
 // "orçamento" pertence à OS (acessado dentro dela em "Ver OS"), então não há
 // atalho/menu separado de orçamento aqui.
@@ -59,6 +71,20 @@ export function OrderMobileCard({ order }: { order: WorkOrder }) {
             </span>
           )}
         </p>
+
+        {/* Orçamento da OS (parte da própria OS -- sem tela separada). */}
+        {order.quote_status && (
+          <div>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                quoteChipClass(order.quote_status),
+              )}
+            >
+              Orçamento: {order.quote_status_display}
+            </span>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">

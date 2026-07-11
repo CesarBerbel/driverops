@@ -88,6 +88,10 @@ export interface WorkOrder {
   amount_paid: string;
   balance_due: string;
   payment_status: PaymentStatus;
+  // Resumo do orçamento da OS (o orçamento é parte da OS). null quando a OS não
+  // tem orçamento ativo.
+  quote_status: string | null;
+  quote_status_display: string | null;
   created_at: string;
   updated_at: string;
 }

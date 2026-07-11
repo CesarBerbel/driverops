@@ -212,6 +212,22 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     amount_paid = serializers.SerializerMethodField()
     balance_due = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
+    # Resumo do orçamento da OS (o orçamento é parte da OS, não módulo à parte).
+    quote_status = serializers.SerializerMethodField()
+    quote_status_display = serializers.SerializerMethodField()
+
+    def _current_quote(self, obj):
+        # Orçamento "atual" da OS: o de maior número que não foi cancelado.
+        quotes = [q for q in obj.quotes.all() if q.status != "canceled"]
+        return max(quotes, key=lambda q: q.number) if quotes else None
+
+    def get_quote_status(self, obj):
+        quote = self._current_quote(obj)
+        return quote.status if quote else None
+
+    def get_quote_status_display(self, obj):
+        quote = self._current_quote(obj)
+        return quote.get_status_display() if quote else None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -261,6 +277,8 @@ class WorkOrderSerializer(serializers.ModelSerializer):
             "amount_paid",
             "balance_due",
             "payment_status",
+            "quote_status",
+            "quote_status_display",
             "stock_deducted",
             "created_at",
             "updated_at",

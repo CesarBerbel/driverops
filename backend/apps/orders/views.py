@@ -63,6 +63,8 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             "package_items__package",
             "part_items__part",
             "payments",
+            # Para o resumo do orçamento da OS (status do orçamento atual) sem N+1.
+            "quotes",
         )
 
         customer_id = self.request.query_params.get("customer")

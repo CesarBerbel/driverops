@@ -43,6 +43,8 @@ function order(overrides: Partial<WorkOrder> = {}): WorkOrder {
     amount_paid: "0",
     balance_due: "500",
     payment_status: "open",
+    quote_status: null,
+    quote_status_display: null,
     created_at: "2026-07-04T00:00:00Z",
     updated_at: "2026-07-04T00:00:00Z",
     ...overrides,
@@ -78,6 +80,29 @@ describe("OrderMobileCard", () => {
       </MemoryRouter>,
     );
     expect(screen.queryByRole("link", { name: "WhatsApp" })).not.toBeInTheDocument();
+  });
+
+  it("shows the OS quote (orçamento) status when applicable", () => {
+    render(
+      <MemoryRouter>
+        <OrderMobileCard
+          order={order({
+            quote_status: "partially_approved",
+            quote_status_display: "Aprovado parcialmente",
+          })}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Orçamento: Aprovado parcialmente")).toBeInTheDocument();
+  });
+
+  it("hides the quote line when the OS has no quote", () => {
+    render(
+      <MemoryRouter>
+        <OrderMobileCard order={order()} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(/Orçamento:/)).not.toBeInTheDocument();
   });
 });
 
