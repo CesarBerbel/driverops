@@ -20,6 +20,8 @@ const LoginPage = named(() => import("@/features/auth/pages/LoginPage"), "LoginP
 const ForgotPasswordPage = named(() => import("@/features/auth/pages/ForgotPasswordPage"), "ForgotPasswordPage");
 const ResetPasswordPage = named(() => import("@/features/auth/pages/ResetPasswordPage"), "ResetPasswordPage");
 const PublicQuoteApprovalPage = named(() => import("@/features/quotes/pages/PublicQuoteApprovalPage"), "PublicQuoteApprovalPage");
+const VehicleAccessRequestPage = named(() => import("@/features/vehicle-portal/pages/VehicleAccessRequestPage"), "VehicleAccessRequestPage");
+const VehiclePortalPage = named(() => import("@/features/vehicle-portal/pages/VehiclePortalPage"), "VehiclePortalPage");
 const DashboardPage = named(() => import("@/features/dashboard/pages/DashboardPage"), "DashboardPage");
 const KanbanPage = named(() => import("@/features/kanban/pages/KanbanPage"), "KanbanPage");
 const ProfilePage = named(() => import("@/features/profile/pages/ProfilePage"), "ProfilePage");
@@ -64,6 +66,10 @@ export function AppRoutes() {
 
         {/* Página pública de aprovação do orçamento (acesso só pelo token, sem login). */}
         <Route path="/orcamento/:token" element={<PublicQuoteApprovalPage />} />
+
+        {/* Portal público de consulta do veículo (link mágico por e-mail). */}
+        <Route path="/veiculo" element={<VehicleAccessRequestPage />} />
+        <Route path="/veiculo/:token" element={<VehiclePortalPage />} />
 
         <Route element={<PublicOnlyRoute />}>
           <Route path="/login" element={<LoginPage />} />
