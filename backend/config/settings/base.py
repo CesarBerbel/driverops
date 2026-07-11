@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.alerts",
     "apps.checkin",
     "apps.crm",
+    "apps.customer_portal",
 ]
 
 MIDDLEWARE = [
@@ -161,6 +162,8 @@ REST_FRAMEWORK = {
         "password_reset": "3/min",
         # Formulário público de pedidos do site (proteção contra abuso/spam).
         "public_lead": "10/hour",
+        # Solicitação de link do portal do cliente (anti-abuso/enumeração de placa).
+        "vehicle_portal": "10/hour",
     },
 }
 

@@ -23,6 +23,7 @@ urlpatterns = [
     path("api/", include("apps.alerts.urls")),
     path("api/", include("apps.checkin.urls")),
     path("api/", include("apps.crm.urls")),
+    path("api/", include("apps.customer_portal.urls")),
     # Mídia (uploads) servida de forma PRIVADA -- exige autenticação, exceto o
     # branding público (logo). Nunca exposta diretamente pelo nginx.
     re_path(r"^media/(?P<path>.+)$", ProtectedMediaView.as_view(), name="media"),
