@@ -50,6 +50,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { FilterChips } from "@/components/shared/FilterChips";
+import { MobileFilterSheet } from "@/components/shared/MobileFilterSheet";
 import { Pagination } from "@/components/shared/Pagination";
 import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { Can } from "@/features/auth/Can";
@@ -57,6 +59,7 @@ import { extractErrorMessage } from "@/lib/api-client";
 import { formatCurrencyBRL, formatPhone } from "@/lib/masks";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { deleteWorkOrder, listWorkOrdersPage, reactivateWorkOrder } from "../api";
@@ -75,6 +78,7 @@ function formatBrDate(iso: string): string {
 export function OrdersPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 300);
@@ -142,6 +146,31 @@ export function OrdersPage() {
 
   const isEmpty = (data?.count ?? 0) === 0;
 
+  // Rótulo do filtro de status ativo (para o chip no mobile). ALL = sem filtro.
+  const statusFilterLabel =
+    statusFilter === STATUS_FILTER_ALL
+      ? ""
+      : statusFilter === STATUS_FILTER_DISABLED
+        ? "Desabilitadas"
+        : (ORDER_STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label ?? "");
+
+  const statusSelect = (
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-56">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={STATUS_FILTER_ALL}>Todas as ativas</SelectItem>
+        {ORDER_STATUS_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+        <SelectItem value={STATUS_FILTER_DISABLED}>Desabilitadas</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -175,21 +204,31 @@ export function OrdersPage() {
             Limpar pesquisa
           </Button>
         )}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-56">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={STATUS_FILTER_ALL}>Todas as ativas</SelectItem>
-            {ORDER_STATUS_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-            <SelectItem value={STATUS_FILTER_DISABLED}>Desabilitadas</SelectItem>
-          </SelectContent>
-        </Select>
+        {isMobile ? (
+          <MobileFilterSheet
+            activeCount={statusFilter !== STATUS_FILTER_ALL ? 1 : 0}
+            onClear={() => setStatusFilter(STATUS_FILTER_ALL)}
+          >
+            <div className="space-y-1.5">
+              <span className="text-sm font-medium">Status</span>
+              {statusSelect}
+            </div>
+          </MobileFilterSheet>
+        ) : (
+          statusSelect
+        )}
       </div>
+
+      {isMobile && statusFilterLabel && (
+        <FilterChips
+          chips={[
+            {
+              label: `Status: ${statusFilterLabel}`,
+              onRemove: () => setStatusFilter(STATUS_FILTER_ALL),
+            },
+          ]}
+        />
+      )}
 
       {isDisabledView && (
         <div className="flex items-start gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
