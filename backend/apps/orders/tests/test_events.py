@@ -27,9 +27,14 @@ def _create(auth_client, customer, vehicle):
 
 
 def _png():
-    return SimpleUploadedFile(
-        "foto.png", b"\x89PNG\r\n\x1a\nfake", content_type="image/png"
-    )
+    # PNG REAL (decodificável): anexos passam por re-codificação.
+    from io import BytesIO
+
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buffer, format="PNG")
+    return SimpleUploadedFile("foto.png", buffer.getvalue(), content_type="image/png")
 
 
 def test_creating_an_order_records_a_created_event(auth_client, customer, vehicle):
