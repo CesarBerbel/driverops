@@ -416,10 +416,10 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         {isEditMode && orderId !== null && can("orders.edit") && (
           <NotifyCustomerButton orderId={orderId} />
         )}
-        {/* No mobile a linha do tempo desce para a própria linha (w-full +
-            order-last) e vira um carrossel horizontal; no desktop volta a
-            dividir a linha entre os botões (flex-1, ordem natural). */}
-        <div className="order-last w-full min-w-0 md:order-none md:w-auto md:flex-1">
+        {/* No mobile e no tablet a linha do tempo desce para a própria linha
+            (w-full + order-last) e vira um carrossel horizontal deslizável; só no
+            desktop (lg+) ela volta a dividir a linha entre os botões (flex-1). */}
+        <div className="order-last w-full min-w-0 lg:order-none lg:w-auto lg:flex-1">
           <OrderStatusStepper status={statusValue} orderId={orderId} />
         </div>
         <div className="ml-auto flex gap-2">

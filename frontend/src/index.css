@@ -100,6 +100,16 @@
   }
 }
 
+/* Carrossel por toque sem a barra de rolagem visível: continua deslizável com
+   o dedo (overflow-x-auto), mas sem a scrollbar horizontal poluindo a UI. */
+@utility scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Edge/IE legado */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+}
+
 /* -------------------------------------------------------------------------
    EngineLoader -- animação de pistões de motor em V (CSS puro, sem libs).
    Respeita prefers-reduced-motion: sem movimento, pistões em posição neutra.

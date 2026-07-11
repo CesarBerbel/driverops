@@ -78,9 +78,10 @@ export function OrderStatusStepper({ status, orderId }: OrderStatusStepperProps)
     <ol
       className={cn(
         "flex w-full items-start",
-        // Mobile: carrossel horizontal (as etapas não cabem lado a lado, então
-        // rolam/deslizam). Desktop: distribuídas igualmente na largura toda.
-        "snap-x overflow-x-auto pb-1 md:snap-none md:overflow-visible md:pb-0",
+        // Mobile/tablet: carrossel horizontal deslizável com o dedo, sem a barra
+        // de rolagem visível (scrollbar-none). Desktop (lg+): etapas distribuídas
+        // igualmente na largura toda, sem rolagem.
+        "snap-x overflow-x-auto scrollbar-none pb-1 lg:snap-none lg:overflow-visible lg:pb-0",
       )}
       aria-label={`Linha do tempo de status da OS -- atual: ${statusLabel(status)}`}
     >
@@ -94,9 +95,9 @@ export function OrderStatusStepper({ status, orderId }: OrderStatusStepperProps)
             ref={current ? currentRef : undefined}
             className={cn(
               "flex flex-col items-center gap-1 snap-start",
-              // Mobile: largura mínima fixa (não encolhe) -> transborda e rola.
-              // Desktop: divide a largura disponível igualmente.
-              "min-w-[4.5rem] flex-none md:min-w-0 md:flex-1",
+              // Mobile/tablet: largura mínima fixa (não encolhe) -> transborda e
+              // rola. Desktop (lg+): divide a largura disponível igualmente.
+              "min-w-[4.5rem] flex-none lg:min-w-0 lg:flex-1",
             )}
           >
             {/* Marcador + conectores (linha contínua entre as etapas). */}
