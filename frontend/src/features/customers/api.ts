@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { fetchPage, type Paginated } from "@/lib/pagination";
 
 import type { Customer, CustomerPayload } from "./types";
 
@@ -15,6 +16,15 @@ export async function listCustomers(
     params: Object.keys(params).length ? params : undefined,
   });
   return data;
+}
+
+// Página real da listagem de clientes (envelope {count,next,previous,results}).
+export function listCustomersPage(
+  page: number,
+  search?: string,
+  status?: CustomerStatusFilter,
+): Promise<Paginated<Customer>> {
+  return fetchPage<Customer>("/customers/", page, { search, status });
 }
 
 export async function getCustomer(id: number): Promise<Customer> {

@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertCircle,
   Car,
@@ -11,7 +16,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -42,14 +47,16 @@ import { listVehicles } from "@/features/vehicles/api";
 import { VehicleFormSheet } from "@/features/vehicles/VehicleFormSheet";
 import { VehicleSelectorDialog } from "@/features/vehicles/VehicleSelectorDialog";
 import type { Vehicle } from "@/features/vehicles/types";
+import { Pagination } from "@/components/shared/Pagination";
 import { formatPhone } from "@/lib/masks";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { cn } from "@/lib/utils";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import {
   deleteCustomer,
-  listCustomers,
+  listCustomersPage,
   reactivateCustomer,
   type CustomerStatusFilter,
 } from "../api";
@@ -66,6 +73,12 @@ export function CustomersPage() {
   // Bypass the debounce when the box is empty, so "Limpar pesquisa" (and
   // deleting the text manually) restores the full list instantly.
   const effectiveSearch = searchInput === "" ? "" : debouncedSearch;
+  const [page, setPage] = useState(1);
+  // Voltar para a 1ª página sempre que o filtro/busca muda (senão você poderia
+  // ficar numa página que não existe mais no resultado filtrado).
+  useEffect(() => {
+    setPage(1);
+  }, [effectiveSearch, statusFilter]);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingCustomerId, setEditingCustomerId] = useState<number | null>(null);
@@ -76,15 +89,13 @@ export function CustomersPage() {
   const [selectorVehicles, setSelectorVehicles] = useState<Vehicle[]>([]);
   const [loadingVehiclesFor, setLoadingVehiclesFor] = useState<number | null>(null);
 
-  const {
-    data: customers,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey: ["customers", effectiveSearch, statusFilter],
-    queryFn: () => listCustomers(effectiveSearch || undefined, statusFilter),
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["customers", page, effectiveSearch, statusFilter],
+    queryFn: () => listCustomersPage(page, effectiveSearch || undefined, statusFilter),
+    // Mantém a página anterior visível enquanto a próxima carrega (sem "piscar").
+    placeholderData: keepPreviousData,
   });
+  const customers = data?.results;
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["customers"] });
@@ -109,7 +120,7 @@ export function CustomersPage() {
     onError: () => toast.error("Não foi possível reativar o cliente."),
   });
 
-  const isEmpty = (customers?.length ?? 0) === 0;
+  const isEmpty = (data?.count ?? 0) === 0;
 
   function openCreateSheet() {
     setEditingCustomerId(null);
@@ -340,6 +351,15 @@ export function CustomersPage() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty && (
+        <Pagination
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          count={data?.count ?? 0}
+          onPageChange={setPage}
+        />
       )}
 
       <CustomerFormSheet

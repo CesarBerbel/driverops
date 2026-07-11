@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import * as customersApi from "@/features/customers/api";
 import { CustomersPage } from "@/features/customers/pages/CustomersPage";
 import type { Customer } from "@/features/customers/types";
+import type { Paginated } from "@/lib/pagination";
 import * as vehiclesApi from "@/features/vehicles/api";
 import type { Vehicle } from "@/features/vehicles/types";
 
@@ -78,6 +79,11 @@ function customer(overrides: Partial<Customer> = {}): Customer {
   };
 }
 
+// Envelope paginado do backend a partir de uma lista de clientes.
+function paged(items: Customer[]): Paginated<Customer> {
+  return { count: items.length, next: null, previous: null, results: items };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -92,20 +98,20 @@ function renderPage() {
 
 describe("CustomersPage", () => {
   beforeEach(() => {
-    vi.mocked(customersApi.listCustomers).mockReset();
+    vi.mocked(customersApi.listCustomersPage).mockReset();
     vi.mocked(customersApi.createCustomer).mockReset();
   });
 
   it("shows the empty state when there are no customers", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(paged([]));
     renderPage();
 
     expect(await screen.findByText("Nenhum cliente cadastrado ainda.")).toBeInTheDocument();
-    expect(customersApi.listCustomers).toHaveBeenCalledWith(undefined, "active");
+    expect(customersApi.listCustomersPage).toHaveBeenCalledWith(1, undefined, "active");
   });
 
   it("renders customers with formatted phone and city/UF", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(paged([customer()]));
     renderPage();
 
     expect(await screen.findByText("Alice Wonderland")).toBeInTheDocument();
@@ -115,9 +121,9 @@ describe("CustomersPage", () => {
   });
 
   it("renders the WhatsApp number as a wa.me link when present", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([
-      customer({ whatsapp: "11912345678" }),
-    ]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(
+      paged([customer({ whatsapp: "11912345678" })]),
+    );
     renderPage();
 
     const link = await screen.findByRole("link", { name: /\(11\) 91234-5678/ });
@@ -127,9 +133,9 @@ describe("CustomersPage", () => {
 
   it("uses the phone as a WhatsApp link when there is no separate WhatsApp", async () => {
     // O telefone do cliente é considerado WhatsApp.
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([
-      customer({ whatsapp: "", phone: "11987654321" }),
-    ]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(
+      paged([customer({ whatsapp: "", phone: "11987654321" })]),
+    );
     renderPage();
 
     const link = await screen.findByRole("link", { name: /\(11\) 98765-4321/ });
@@ -137,9 +143,9 @@ describe("CustomersPage", () => {
   });
 
   it("shows a dash when the customer has no phone or WhatsApp", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([
-      customer({ whatsapp: "", phone: "" }),
-    ]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(
+      paged([customer({ whatsapp: "", phone: "" })]),
+    );
     const { container } = renderPage();
 
     await screen.findByText("Alice Wonderland");
@@ -147,19 +153,21 @@ describe("CustomersPage", () => {
   });
 
   it("debounces the search box and queries by name", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(paged([customer()]));
     const user = userEvent.setup();
     renderPage();
 
     await screen.findByText("Alice Wonderland");
     await user.type(screen.getByPlaceholderText("Buscar cliente pelo nome..."), "ali");
 
-    await waitFor(() => expect(customersApi.listCustomers).toHaveBeenCalledWith("ali", "active"));
+    await waitFor(() =>
+      expect(customersApi.listCustomersPage).toHaveBeenCalledWith(1, "ali", "active"),
+    );
   });
 
   it("shows a distinct empty state and clears back to the full list", async () => {
-    vi.mocked(customersApi.listCustomers).mockImplementation((search) =>
-      Promise.resolve(search ? [] : [customer()]),
+    vi.mocked(customersApi.listCustomersPage).mockImplementation((_page, search) =>
+      Promise.resolve(paged(search ? [] : [customer()])),
     );
     const user = userEvent.setup();
     renderPage();
@@ -171,11 +179,11 @@ describe("CustomersPage", () => {
 
     await user.click(screen.getByRole("button", { name: /limpar pesquisa/i }));
     await screen.findByText("Alice Wonderland");
-    expect(customersApi.listCustomers).toHaveBeenLastCalledWith(undefined, "active");
+    expect(customersApi.listCustomersPage).toHaveBeenLastCalledWith(1, undefined, "active");
   });
 
   it("shows an error state with a retry button when the query fails", async () => {
-    vi.mocked(customersApi.listCustomers).mockRejectedValue(new Error("network"));
+    vi.mocked(customersApi.listCustomersPage).mockRejectedValue(new Error("network"));
     renderPage();
 
     expect(
@@ -185,7 +193,7 @@ describe("CustomersPage", () => {
   });
 
   it("opens the create sheet from the header button and creates a customer", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(paged([]));
     vi.mocked(customersApi.createCustomer).mockResolvedValue(customer({ name: "New Customer" }));
     const user = userEvent.setup();
     renderPage();
@@ -195,7 +203,9 @@ describe("CustomersPage", () => {
     const [createButton] = screen.getAllByRole("button", { name: "Novo cliente" });
     await user.click(createButton);
 
-    expect(await screen.findByText("Novo cliente", { selector: "[data-slot=sheet-title]" })).toBeInTheDocument();
+    expect(
+      await screen.findByText("Novo cliente", { selector: "[data-slot=sheet-title]" }),
+    ).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Nome"), "New Customer");
     await user.click(screen.getByRole("button", { name: "Salvar" }));
@@ -208,7 +218,7 @@ describe("CustomersPage", () => {
   });
 
   it("soft-deletes a customer after confirming", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(paged([customer()]));
     vi.mocked(customersApi.deleteCustomer).mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();
@@ -221,23 +231,23 @@ describe("CustomersPage", () => {
   });
 
   it("filters inactive customers and offers reactivation", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([
-      customer({ is_active: false }),
-    ]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(
+      paged([customer({ is_active: false })]),
+    );
     vi.mocked(customersApi.reactivateCustomer).mockResolvedValue(customer());
     const user = userEvent.setup();
     renderPage();
 
     await user.click(screen.getByRole("button", { name: "Inativos" }));
     await waitFor(() =>
-      expect(customersApi.listCustomers).toHaveBeenLastCalledWith(undefined, "inactive"),
+      expect(customersApi.listCustomersPage).toHaveBeenLastCalledWith(1, undefined, "inactive"),
     );
     await user.click(await screen.findByRole("button", { name: "Reativar" }));
     await waitFor(() => expect(customersApi.reactivateCustomer).toHaveBeenCalledWith(1));
   });
 
   it("opens the edit sheet with the selected customer's data", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(paged([customer()]));
     vi.mocked(customersApi.getCustomer).mockResolvedValue(customer());
     const user = userEvent.setup();
     renderPage();
@@ -250,19 +260,22 @@ describe("CustomersPage", () => {
   });
 
   it("shows a disabled car icon with a zero count and does not fetch vehicles on click", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ vehicle_count: 0 })]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(
+      paged([customer({ vehicle_count: 0 })]),
+    );
     const user = userEvent.setup();
     renderPage();
 
     const carButton = await screen.findByLabelText("0 veículo(s) vinculados");
     expect(carButton).toBeDisabled();
-
     await user.click(carButton);
     expect(vehiclesApi.listVehicles).not.toHaveBeenCalled();
   });
 
   it("opens the vehicle directly when the customer has exactly one vehicle", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ vehicle_count: 1 })]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(
+      paged([customer({ vehicle_count: 1 })]),
+    );
     vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([vehicle()]);
     vi.mocked(vehiclesApi.getVehicle).mockResolvedValue(vehicle());
     const user = userEvent.setup();
@@ -278,12 +291,16 @@ describe("CustomersPage", () => {
   });
 
   it("shows a picker dialog when the customer has more than one vehicle", async () => {
-    vi.mocked(customersApi.listCustomers).mockResolvedValue([customer({ vehicle_count: 2 })]);
+    vi.mocked(customersApi.listCustomersPage).mockResolvedValue(
+      paged([customer({ vehicle_count: 2 })]),
+    );
     vi.mocked(vehiclesApi.listVehicles).mockResolvedValue([
       vehicle({ id: 1, license_plate: "ABC1234" }),
       vehicle({ id: 2, license_plate: "XYZ9876" }),
     ]);
-    vi.mocked(vehiclesApi.getVehicle).mockResolvedValue(vehicle({ id: 2, license_plate: "XYZ9876" }));
+    vi.mocked(vehiclesApi.getVehicle).mockResolvedValue(
+      vehicle({ id: 2, license_plate: "XYZ9876" }),
+    );
     const user = userEvent.setup();
     renderPage();
 
