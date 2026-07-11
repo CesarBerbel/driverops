@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -9,6 +9,7 @@ import { formatOrderNumber } from "../lib/orderMapping";
 
 export function OrderEditorPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const params = useParams();
   const orderId = params.id ? Number(params.id) : null;
   const isEditMode = orderId !== null;
@@ -21,8 +22,15 @@ export function OrderEditorPage() {
 
   const isWaitingForData = isEditMode && !order;
 
-  function goToList() {
-    navigate("/orders");
+  function goBack() {
+    // "Voltar" retorna para a página anterior real (Kanban, lista, dashboard,
+    // Cliente 360...). Quando a OS foi aberta direto (deep link/refresh) não há
+    // histórico interno de navegação -- aí caímos na lista de OS.
+    if (location.key !== "default") {
+      navigate(-1);
+    } else {
+      navigate("/orders");
+    }
   }
 
   return (
@@ -47,7 +55,7 @@ export function OrderEditorPage() {
           <Skeleton className="h-32 w-full" />
         </div>
       ) : (
-        <OrderForm key={orderId ?? "create"} order={order ?? null} onCancel={goToList} />
+        <OrderForm key={orderId ?? "create"} order={order ?? null} onCancel={goBack} />
       )}
     </div>
   );
