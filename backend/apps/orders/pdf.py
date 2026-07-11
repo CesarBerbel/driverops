@@ -167,17 +167,31 @@ def build_order_pdf_context(order, request=None):
     # seguido, indentado, das peças que o compõem; depois os pacotes; por fim as
     # peças avulsas. O nome do serviço vai junto na peça-filha para o vínculo
     # continuar claro mesmo se a tabela quebrar de página.
+    # Código sequencial (1, 2, ...) por serviço; suas peças herdam o código do
+    # serviço com um sufixo (1.1, 1.2, ...), deixando o vínculo explícito -- como
+    # no modelo de OS impresso da oficina.
     line_rows = []
+    service_no = 0
     for index, service in enumerate(services):
-        line_rows.append(_row(service, "service"))
+        service_no += 1
+        srow = _row(service, "service")
+        srow["code"] = str(service_no)
+        line_rows.append(srow)
+        part_no = 0
         for part in parts_by_service[index]:
+            part_no += 1
             row = _row(part, "part_child")
+            row["code"] = f"{service_no}.{part_no}"
             row["service_name"] = service["display_name"]
             line_rows.append(row)
     for package in packages:
-        line_rows.append(_row(package, "package"))
+        prow = _row(package, "package")
+        prow["code"] = ""
+        line_rows.append(prow)
     for part in orphan_parts:
-        line_rows.append(_row(part, "part"))
+        row = _row(part, "part")
+        row["code"] = ""
+        line_rows.append(row)
 
     technician = None
     if order.assigned_technician_id:
@@ -209,6 +223,21 @@ def build_order_pdf_context(order, request=None):
         ).strip(),
         "vehicle_year": year,
         "vehicle_mileage": f"{mileage:,}".replace(",", ".") if mileage else "",
+        # Ficha do veículo (grid tipo formulário, como no modelo impresso).
+        "vehicle_info": {
+            "model": " ".join(p for p in [vehicle.model, vehicle.version] if p),
+            "fuel": vehicle.get_fuel_type_display() if vehicle.fuel_type else "",
+            "transmission": (
+                vehicle.get_transmission_display() if vehicle.transmission else ""
+            ),
+            "steering": vehicle.get_steering_display() if vehicle.steering else "",
+            "doors": vehicle.doors or "",
+            "air": (
+                ""
+                if vehicle.air_conditioning is None
+                else ("Sim" if vehicle.air_conditioning else "Não")
+            ),
+        },
         "status_display": order.get_status_display(),
         "technician": technician,
         "opened_at": _fmt_date(order.opened_at),
