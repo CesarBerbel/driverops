@@ -51,6 +51,7 @@ import { VehicleFormSheet } from "@/features/vehicles/VehicleFormSheet";
 import { VehicleSelectorDialog } from "@/features/vehicles/VehicleSelectorDialog";
 import { getOrderSettings } from "@/features/settings/api";
 import { extractErrorMessage } from "@/lib/api-client";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import {
   formatCurrencyBRL,
   formatPhone,
@@ -136,6 +137,9 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
   const canViewFinancial = can("financial.view");
   const isEditMode = order !== null;
   const orderId = order?.id ?? null;
+  // No mobile (< sm) os botões da barra de ações viram só ícone (o rótulo fica
+  // no title/aria-label), para não estourar a largura da tela.
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   const [activeTab, setActiveTab] = useState("main");
 
@@ -402,19 +406,36 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
 
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
-      {/* Barra de ações persistente da OS */}
+      {/* Barra de ações persistente da OS. No mobile os botões ficam só com o
+          ícone; o rótulo vai para o title/aria-label (tooltip do que é). */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="outline"
+          size={isMobile ? "icon" : "default"}
+          onClick={onCancel}
+          title="Voltar"
+          aria-label="Voltar"
+        >
           <ArrowLeft className="size-4" />
-          Voltar
+          {!isMobile && "Voltar"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => navigate("/kanban")}>
+        <Button
+          type="button"
+          variant="outline"
+          size={isMobile ? "icon" : "default"}
+          onClick={() => navigate("/kanban")}
+          title="Kanban OS"
+          aria-label="Kanban OS"
+        >
           <KanbanSquare className="size-4" />
-          Kanban OS
+          {!isMobile && "Kanban OS"}
         </Button>
-        {isEditMode && orderId !== null && <OrderPdfButton orderId={orderId} />}
+        {isEditMode && orderId !== null && (
+          <OrderPdfButton orderId={orderId} iconOnly={isMobile} />
+        )}
         {isEditMode && orderId !== null && can("orders.edit") && (
-          <NotifyCustomerButton orderId={orderId} />
+          <NotifyCustomerButton orderId={orderId} iconOnly={isMobile} />
         )}
         {/* No mobile e no tablet a linha do tempo desce para a própria linha
             (w-full + order-last) e vira um carrossel horizontal deslizável; só no
@@ -423,9 +444,15 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
           <OrderStatusStepper status={statusValue} orderId={orderId} />
         </div>
         <div className="ml-auto flex gap-2">
-          <Button type="submit" disabled={saving}>
+          <Button
+            type="submit"
+            size={isMobile ? "icon" : "default"}
+            disabled={saving}
+            title="Salvar"
+            aria-label="Salvar"
+          >
             {saving ? <Loader2 className="animate-spin" /> : <Save className="size-4" />}
-            Salvar
+            {!isMobile && "Salvar"}
           </Button>
         </div>
       </div>

@@ -9,11 +9,11 @@ import { NotifyCustomerButton } from "@/features/orders/components/NotifyCustome
 
 vi.mock("@/features/orders/api");
 
-function renderButton() {
+function renderButton(iconOnly = false) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <NotifyCustomerButton orderId={7} />
+      <NotifyCustomerButton orderId={7} iconOnly={iconOnly} />
       <Toaster />
     </QueryClientProvider>,
   );
@@ -34,5 +34,13 @@ describe("NotifyCustomerButton", () => {
     expect(
       await screen.findByText(/E-mail enviado ao cliente \(cliente@example.com\)/),
     ).toBeInTheDocument();
+  });
+
+  it("in icon-only mode shows just the icon but keeps the label as tooltip/name", () => {
+    renderButton(true);
+    // Nome acessível preservado (aria-label), mas sem o rótulo visível.
+    const button = screen.getByRole("button", { name: "Notificar cliente" });
+    expect(button).toHaveAttribute("title", "Notificar cliente");
+    expect(button).toHaveTextContent("");
   });
 });
