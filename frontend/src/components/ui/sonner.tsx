@@ -1,10 +1,13 @@
 import type React from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
+import { useTheme } from "@/components/theme/theme-context";
+
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { resolvedTheme } = useTheme();
   return (
     <Sonner
-      theme="system"
+      theme={resolvedTheme}
       className="toaster group"
       richColors
       closeButton

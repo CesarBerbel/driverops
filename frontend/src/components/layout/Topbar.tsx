@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Inbox, KanbanSquare, LayoutDashboard, Plus, Sparkles, Truck } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/features/alerts/components/NotificationBell";
 import { usePermissionCheck } from "@/features/auth/usePermission";
@@ -93,6 +94,8 @@ export function Topbar() {
           </Link>
         </Button>
       )}
+
+      <ThemeToggle />
 
       {can("alerts.view") && <NotificationBell />}
 

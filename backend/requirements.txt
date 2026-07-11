@@ -3,10 +3,13 @@
 # resolução automática de um intervalo.
 Django==5.2.16
 djangorestframework==3.15.2
-djangorestframework-simplejwt==5.3.1
+# 5.5.1 corrige PYSEC-2026-1305 (pip-audit). Central para o auth JWT -- a suíte
+# de testes de auth cobre login/refresh/rotação/blacklist.
+djangorestframework-simplejwt==5.5.1
 django-cors-headers==4.6.0
 psycopg[binary]==3.2.13
-python-dotenv==1.0.1
+# 1.2.2 corrige CVE-2026-28684 (pip-audit).
+python-dotenv==1.2.2
 gunicorn==23.0.0
 # Serve os estáticos (admin/DRF) direto pelo backend em produção, sem depender
 # de um web server para /static/. Ver config/settings/prod.py.
@@ -18,6 +21,10 @@ xhtml2pdf==0.2.17
 pillow==12.3.0
 # Assistente de IA para textos da OS (provedor padrão: Anthropic/Claude).
 anthropic==0.116.0
+# Cliente HTTP usado pelos provedores de IA OpenAI/Gemini (apps/ai_assistant/
+# providers.py). Antes vinha só transitivamente (via anthropic/sentry-sdk);
+# fixado explicitamente por ser dependência efetiva do runtime.
+requests==2.34.2
 # Observabilidade opcional em produção: só é inicializado se SENTRY_DSN estiver
 # definido (ver config/settings/prod.py). Sem DSN/instalação, é um no-op.
 sentry-sdk==2.64.0

@@ -13,8 +13,12 @@ cada push em `main` e a cada pull request, e foi desenhado para ser rápido:
   commits já superados.
 - **Job de backend**: sobe um Postgres como *service container*, roda `pip-audit` (auditoria de
   vulnerabilidades nas dependências fixadas em `requirements.txt`, `--strict`), `ruff check`,
-  `black --check`, `manage.py migrate` e `pytest`.
-- **Job de frontend**: `oxlint`, `tsc -b` (typecheck), `vitest` e `vite build`.
+  `black --check`, `manage.py migrate` e `pytest` **com cobertura** (`--cov=apps`,
+  `--cov-fail-under=85` -- reprova se a cobertura cair abaixo de 85%; o `coverage.xml` é publicado
+  como artefato).
+- **Job de frontend**: `npm audit --omit=dev --audit-level=high` (auditoria das dependências de
+  produção), `oxlint`, `tsc -b` (typecheck), `vitest` **com cobertura** (artefato publicado) e
+  `vite build`.
 - **Job `ci`** (*fail-closed*): um único status obrigatório que agrega o resultado dos jobs acima. Ele
   só passa se **cada** job dependente terminou em `success` ou `skipped` (pulo legítimo do
   path-filter); qualquer outro resultado -- `failure`, `cancelled` ou vazio -- **reprova** o gate.

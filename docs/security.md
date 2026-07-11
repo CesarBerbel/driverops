@@ -59,6 +59,12 @@
 - **Limpeza de arquivos órfãos:** *signals* `post_delete` removem os arquivos físicos quando os
   registros de fotos de check-in/dano/pertences são apagados, evitando lixo acumulado no volume de
   mídia.
+- **Hardening na borda (nginx, produção):** além de HSTS/`X-Frame-Options`/`X-Content-Type-Options`/
+  `Referrer-Policy`, o nginx envia uma **Content-Security-Policy** (`default-src 'self'`, sem scripts
+  de terceiros; `connect-src` libera só a busca de CEP e `frame-src` só o mapa embutido do Google) e
+  uma **Permissions-Policy** negando câmera/microfone/geolocalização/pagamento. Há **rate limiting por
+  IP** em `/api/` e `/admin/` (`limit_req` 30 req/s, rajada 60; `limit_conn` 40) devolvendo `429`,
+  complementando o *throttle* do DRF. Ver [`nginx/prod.conf`](../nginx/prod.conf).
 
 ---
 Voltar para o [índice da documentação](README.md).
