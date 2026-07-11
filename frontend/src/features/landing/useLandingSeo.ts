@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import type { PublicWorkshop } from "./types";
 
 const DESCRIPTION =
-  "Oficina mecânica com diagnóstico técnico, revisão preventiva, manutenção automotiva, orçamento transparente e atendimento com agendamento.";
+  "Oficina mecânica com atendimento transparente, diagnóstico técnico, revisão preventiva, manutenção automotiva e acompanhamento seguro da ordem de serviço.";
 
 function upsertMeta(attr: "name" | "property", key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);

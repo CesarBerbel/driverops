@@ -37,6 +37,16 @@ export function PublicFooter({ workshop }: PublicFooterProps) {
                 </a>
               </li>
             ))}
+            <li>
+              <a href="#contato" className="font-medium text-white hover:text-white/80">
+                Pedir atendimento
+              </a>
+            </li>
+            <li>
+              <Link to="/veiculo" className="font-medium text-white hover:text-white/80">
+                Consultar meu veículo
+              </Link>
+            </li>
           </ul>
         </div>
 

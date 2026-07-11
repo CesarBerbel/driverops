@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarClock,
+  Car,
   CheckCircle2,
   ChevronRight,
   Clock,
-  FileText,
   Loader2,
   Mail,
   MapPin,
@@ -14,6 +14,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { formatPhone } from "@/lib/masks";
 
@@ -144,14 +145,13 @@ export function LandingPage() {
                 <CalendarClock className="size-5" />
                 Pedir marcação de horário
               </button>
-              <button
-                type="button"
-                onClick={() => openForm("quote")}
+              <Link
+                to="/veiculo"
                 className="inline-flex h-12 items-center gap-2 rounded-lg border border-white/20 px-6 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b8bff]"
               >
-                <FileText className="size-5" />
-                Pedir orçamento ou diagnóstico
-              </button>
+                <Car className="size-5" />
+                Consultar meu veículo
+              </Link>
               {workshop.whatsapp && (
                 <a
                   href={waHref}

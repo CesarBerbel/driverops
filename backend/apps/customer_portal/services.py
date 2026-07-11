@@ -219,7 +219,17 @@ def _order_detail(order, *, allow_pdf):
     }
 
 
-def build_portal_payload(token_obj):
+def _logo_url(profile, request):
+    """URL absoluta do logo da oficina, ou "" se não houver logo/contexto."""
+    if not getattr(profile, "logo", None):
+        return ""
+    url = profile.logo.url
+    if request is not None:
+        return request.build_absolute_uri(url)
+    return url
+
+
+def build_portal_payload(token_obj, request=None):
     conf = CustomerPortalSettings.get_solo()
     vehicle = token_obj.vehicle
     orders = list(
@@ -261,6 +271,7 @@ def build_portal_payload(token_obj):
             "name": profile.trade_name or profile.legal_name or "Oficina",
             "whatsapp": profile.whatsapp or profile.phone,
             "phone": profile.phone,
+            "logo": _logo_url(profile, request),
         },
         "options": {
             "allow_messages": conf.allow_messages,

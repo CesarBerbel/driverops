@@ -45,7 +45,7 @@ function portal(overrides: Partial<VehiclePortal> = {}): VehiclePortal {
     history: [
       { id: 3, number: 120, opened_at: "2026-01-01", status: "finished", status_display: "Finalizada", final_value: "300" },
     ],
-    workshop: { name: "Oficina Teste", whatsapp: "11999990000", phone: "1140028922" },
+    workshop: { name: "Oficina Teste", whatsapp: "11999990000", phone: "1140028922", logo: "" },
     options: { allow_messages: true, allow_pdf_download: true, show_history: true },
     ...overrides,
   };
@@ -68,11 +68,22 @@ describe("VehicleAccessRequestPage", () => {
     const user = userEvent.setup();
     wrap(<VehicleAccessRequestPage />, "/veiculo");
     await user.type(screen.getByLabelText("Placa / matrícula"), "ABC1D23");
-    await user.click(screen.getByRole("button", { name: /receber link/i }));
+    await user.click(screen.getByRole("button", { name: /enviar link de acesso/i }));
     expect(await screen.findByText(/Se encontrarmos um veículo/)).toBeInTheDocument();
     expect(api.requestVehicleAccess).toHaveBeenCalledWith(
       expect.objectContaining({ plate: "ABC1D23" }),
     );
+    // A tela de "link enviado" mantém um caminho de volta ao site.
+    expect(
+      screen.getAllByRole("link", { name: /voltar para/i }).length,
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it("has a link back to the main site on the request page", () => {
+    wrap(<VehicleAccessRequestPage />, "/veiculo");
+    const back = screen.getAllByRole("link", { name: /voltar para/i });
+    expect(back.length).toBeGreaterThanOrEqual(1);
+    expect(back[0]).toHaveAttribute("href", "/");
   });
 });
 
@@ -89,6 +100,18 @@ describe("VehiclePortalPage", () => {
     expect(screen.getByText("Barulho na frente")).toBeInTheDocument();
     // Histórico do veículo.
     expect(screen.getByText("OS 0120")).toBeInTheDocument();
+  });
+
+  it("shows the secure-area header (title, workshop, back-to-site)", async () => {
+    vi.mocked(api.getVehiclePortal).mockResolvedValue(portal());
+    wrap(routes);
+    expect(await screen.findByText("Acompanhamento do veículo")).toBeInTheDocument();
+    // Sem logo, o nome da oficina identifica o ambiente.
+    expect(screen.getByText("Oficina Teste")).toBeInTheDocument();
+    // Link de retorno ao site, presente no topo e no rodapé da área segura.
+    const back = screen.getAllByRole("link", { name: /voltar para o site/i });
+    expect(back.length).toBeGreaterThanOrEqual(2);
+    expect(back[0]).toHaveAttribute("href", "/");
   });
 
   it("shows an empty state when there is no current OS", async () => {

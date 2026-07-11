@@ -80,7 +80,7 @@ class VehicleAccessDetailView(_TokenBase):
             ]
         )
         logger.info("customer_portal: acesso ao veículo %s", obj.vehicle_id)
-        return Response(services.build_portal_payload(obj))
+        return Response(services.build_portal_payload(obj, request=request))
 
 
 class VehicleAccessMessageView(_TokenBase):

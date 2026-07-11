@@ -42,7 +42,7 @@ export interface VehiclePortal {
   customer_first_name: string;
   current_order: PortalOrderDetail | null;
   history: PortalOrderSummary[];
-  workshop: { name: string; whatsapp: string; phone: string };
+  workshop: { name: string; whatsapp: string; phone: string; logo: string };
   options: {
     allow_messages: boolean;
     allow_pdf_download: boolean;

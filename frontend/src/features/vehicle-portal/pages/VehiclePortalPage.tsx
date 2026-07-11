@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatCurrencyBRL } from "@/lib/masks";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
+import { BackToSite } from "../components/BackToSite";
 import { getVehiclePortal, portalOrderPdfUrl, sendPortalMessage } from "../api";
 import type {
   PortalMessageKind,
@@ -274,9 +275,12 @@ export function VehiclePortalPage() {
       return (
         <CenteredMessage icon={<Clock className="size-8 text-muted-foreground" />} title="Este link expirou">
           <p>Por segurança, solicite um novo acesso para consultar as informações do veículo.</p>
-          <Button asChild className="mt-3">
-            <Link to="/veiculo">Solicitar novo link</Link>
-          </Button>
+          <div className="mt-3 flex flex-col items-center gap-2">
+            <Button asChild>
+              <Link to="/veiculo">Solicitar novo link</Link>
+            </Button>
+            <BackToSite />
+          </div>
         </CenteredMessage>
       );
     }
@@ -286,9 +290,12 @@ export function VehiclePortalPage() {
           Não foi possível acessar a área do veículo com este link. Solicite um novo
           acesso ou entre em contato com a oficina.
         </p>
-        <Button asChild variant="outline" className="mt-3">
-          <Link to="/veiculo">Solicitar novo link</Link>
-        </Button>
+        <div className="mt-3 flex flex-col items-center gap-2">
+          <Button asChild variant="outline">
+            <Link to="/veiculo">Solicitar novo link</Link>
+          </Button>
+          <BackToSite />
+        </div>
       </CenteredMessage>
     );
   }
@@ -300,13 +307,32 @@ export function VehiclePortalPage() {
 
   return (
     <Shell>
+      {/* Barra da área segura: identifica a oficina e permite voltar ao site. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {workshop.logo ? (
+            <img
+              src={workshop.logo}
+              alt={workshop.name}
+              className="h-8 w-auto max-w-[140px] object-contain"
+            />
+          ) : (
+            <span className="text-sm font-semibold">{workshop.name}</span>
+          )}
+        </div>
+        <BackToSite label="Voltar para o site" />
+      </div>
+
       <Card>
         <CardHeader>
-          <p className="text-sm text-muted-foreground">{workshop.name}</p>
           <CardTitle className="flex items-center gap-2">
             <Car className="size-5 text-primary" />
             Acompanhamento do veículo
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Veja o andamento da ordem de serviço (OS) atual e o histórico de
+            atendimentos deste veículo.
+          </p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
@@ -397,6 +423,10 @@ export function VehiclePortalPage() {
       </Card>
 
       {options.allow_messages && <MessageForm token={token} />}
+
+      <div className="pb-2 pt-1 text-center">
+        <BackToSite label="Voltar para o site da oficina" />
+      </div>
     </Shell>
   );
 }

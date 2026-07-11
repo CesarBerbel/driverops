@@ -91,6 +91,17 @@ describe("LandingPage", () => {
     expect(screen.getByRole("link", { name: "Área da oficina" })).toBeInTheDocument();
   });
 
+  it("exposes the vehicle portal entry point (header, hero, footer)", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: /Cuidamos do seu carro/i });
+    const consultarLinks = screen
+      .getAllByRole("link", { name: /consultar meu veículo/i })
+      .map((a) => a.getAttribute("href"));
+    // Presente em pelo menos header, hero e rodapé, todos apontando para /veiculo.
+    expect(consultarLinks.length).toBeGreaterThanOrEqual(2);
+    expect(consultarLinks.every((h) => h === "/veiculo")).toBe(true);
+  });
+
   it("degrades gracefully when workshop data is missing", async () => {
     vi.mocked(api.getLandingData).mockResolvedValue({
       workshop: {
