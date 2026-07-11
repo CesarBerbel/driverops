@@ -20,6 +20,9 @@
   emitir novos access tokens. Tradeoff aceito: se duas requisições fizerem refresh exatamente ao mesmo
   tempo com o mesmo token (corrida de múltiplas abas), a segunda recebe 401 e precisa refazer o login
   -- preferimos esse custo raro à alternativa de deixar tokens rotacionados válidos após o logout.
+  O cookie de refresh tem `Path=/api/auth/` (restrito às rotas de auth, sem vazar para o resto da API)
+  -- amplo o suficiente para o navegador enviá-lo tanto ao `refresh` quanto ao `logout` (senão o
+  logout não receberia o cookie e não conseguiria revogar o token).
 - A sessão só é encerrada em falha de autenticação **definitiva** (401): a consulta `/users/me/` e o
   fluxo de refresh do `api-client` só deslogam o usuário quando a resposta é 401. Erros transitórios
   (rede instável, 5xx, o backend reiniciando durante uma requisição) **não** derrubam a sessão -- a
@@ -40,21 +43,24 @@
   (`secrets.token_urlsafe`, não sequencial) e é limitada àquele orçamento: sem login, sem edição de
   dados e sem acesso a outros orçamentos. Após a decisão (aprovar/recusar), o token não permite nova
   decisão. A aprovação por link registra IP e user agent.
-- **Mídia privada:** os uploads (`/media/`) **não** são mais servidos diretamente pelo nginx. Toda
-  requisição passa por `ProtectedMediaView`, que **exige autenticação** -- exceto um allowlist de
-  prefixos públicos de *branding* (`workshop/logos/`). Em produção a view não lê o disco: valida a
-  sessão e delega a entrega ao nginx via cabeçalho `X-Accel-Redirect` para uma *location* `internal;`
-  (`/internal-media/`), inacessível diretamente de fora. Em desenvolvimento (`DEBUG=True`) o arquivo é
-  devolvido via `FileResponse`. Tentativas de *path traversal* (`..`) resultam em **404**.
+- **Mídia privada, com autorização por objeto:** os uploads (`/media/`) **não** são servidos
+  diretamente pelo nginx. Toda requisição passa por `ProtectedMediaView`, que exige **a permissão do
+  módulo dono do arquivo** -- não basta estar autenticado: `orders/` exige `orders.view`, `checkin/`
+  exige `checkin.view`, `quotes/` exige `quotes.view`. Prefixo não mapeado (e não público) é **negado
+  por padrão** (*fail-closed*); superuser acessa tudo; só o *branding* (`workshop/logos/`) é público.
+  Em produção a view não lê o disco: valida e delega a entrega ao nginx via `X-Accel-Redirect` para
+  uma *location* `internal;` (`/internal-media/`), inacessível de fora. Em `DEBUG` usa `FileResponse`.
+  *Path traversal* (`..`) resulta em **404**.
 - **Uploads endurecidos (validação central em `apps/core/uploads.py`):** todo arquivo recebido
   (anexos de OS, fotos de check-in, documento assinado e assinatura de orçamento) passa por
-  `validate_upload`, que:
+  `sanitized_upload`, que:
   - confere o **tipo real** por *magic bytes* (assinatura binária do conteúdo), **ignorando** o
     `Content-Type` informado pelo cliente -- um `.exe` renomeado para `.pdf` é rejeitado;
+  - **re-codifica imagens** (decode → encode via Pillow): só os pixels decodificados são
+    re-serializados, descartando qualquer conteúdo não-imagem embutido (EXIF, apêndices, *polyglots*);
   - impõe **limite de tamanho** por campo (padrão 10 MB; assinatura 2 MB);
-  - **sanitiza o nome** do arquivo (`sanitize_filename`): remove componentes de caminho, normaliza para
-    ASCII, troca caracteres inseguros por `_` e limita o comprimento, preservando a extensão --
-    bloqueando *path traversal* e nomes maliciosos na gravação.
+  - **deriva a extensão e o `Content-Type` do conteúdo real** (nunca da extensão enviada pelo cliente)
+    e saneia o nome (sem *path traversal*).
   Uploads que substituem um arquivo anterior (ex.: documento assinado) **removem o antigo** do disco.
 - **Limpeza de arquivos órfãos:** *signals* `post_delete` removem os arquivos físicos quando os
   registros de fotos de check-in/dano/pertences são apagados, evitando lixo acumulado no volume de

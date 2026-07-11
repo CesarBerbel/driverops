@@ -10,15 +10,19 @@ notificações e backups do banco.
 | Serviço | Papel |
 |---|---|
 | `db` | PostgreSQL, **sem porta exposta** ao host, volume `pgdata`. |
-| `backend` | Gunicorn (target `prod`); roda migrations e `collectstatic` no boot; escreve estáticos no volume `static` e uploads no `media`. |
+| `backend-migrate` | Init **one-shot**: aplica migrations e `collectstatic` uma vez e sai. Separa a migração do boot das réplicas de app. |
+| `backend` | Gunicorn (target `prod`); sobe com `RUN_MIGRATIONS=0` (não migra — o `backend-migrate` já fez) e depende dele concluir. Escreve estáticos no volume `static` e uploads no `media`. |
 | `web` | nginx: serve o SPA (build do frontend) e `/static`, faz proxy de `/api`, `/admin` e `/media` para o gunicorn (mídia é **privada**, ver abaixo). Termina TLS na porta 443 e redireciona 80 → 443. |
-| `notifications-cron` | Loop idempotente de `sync_notifications` + `sync_crm` (ver [Notificações internas](notificacoes-internas.md)). |
-| `db-backup` | `pg_dump` **e** tar da mídia, periódicos (padrão diário), para o volume `backups`, mantendo os 14 mais recentes de cada tipo. |
+| `notifications-cron` | Loop idempotente de `sync_notifications` + `sync_crm` (ver [Notificações internas](notificacoes-internas.md)), com **log por ciclo** e **heartbeat** para o healthcheck. |
+| `db-backup` | Roda `scripts/backup.sh` periodicamente (padrão diário): `pg_dump` **e** tar da mídia para o volume `backups`, com retenção, **alerta em falha** e envio opcional a **S3 externo**. |
 
-Os serviços `db`, `backend` e `web` têm **healthchecks**: o `backend` só é
-considerado saudável quando `/api/health/` responde, e o `web`/`notifications-cron`
-dependem desse estado (`condition: service_healthy`), evitando servir tráfego
-antes do backend estar pronto.
+Os serviços `db`, `backend`, `web`, `notifications-cron` e `db-backup` têm
+**healthchecks**: o `backend` só é saudável quando `/api/health/` responde; o
+`web` depende disso; o `notifications-cron` e o `db-backup` reprovam o healthcheck
+se o ciclo/backup parar (heartbeat / dump recente). O boot da migração é feito
+**uma vez** pelo `backend-migrate` -- assim escalar `backend` (réplicas) não faz N
+containers rodarem `migrate` em paralelo. Para um app single-instance, dá para
+manter `RUN_MIGRATIONS=1` no `backend` e dispensar o init.
 
 O SPA é buildado com `VITE_API_URL=/api` (mesma origem), então o navegador
 nunca fala direto com o gunicorn — tudo passa pelo nginx.
@@ -60,9 +64,22 @@ privada, mas sem TLS) — apenas para *bootstrap*, não para exposição públic
 
 ## Backups e restauração
 
-O `db-backup` grava, no volume `backups`, tanto o dump do banco
-(`driverops-AAAAMMDD-HHMMSS.sql.gz`) quanto um tar da mídia
-(`media-AAAAMMDD-HHMMSS.tar.gz`). Para restaurar o banco:
+O `db-backup` roda [`scripts/backup.sh`](../scripts/backup.sh) periodicamente
+(`BACKUP_INTERVAL`, padrão diário) e grava no volume `backups` o dump do banco
+(`driverops-AAAAMMDD-HHMMSS.sql.gz`) e um tar da mídia
+(`media-AAAAMMDD-HHMMSS.tar.gz`), mantendo os `BACKUP_RETENTION` (14) mais
+recentes de cada tipo.
+
+- **Alerta em falha:** defina `BACKUP_ALERT_WEBHOOK` (URL de Slack/Discord/
+  Mattermost) e uma falha de dump/mídia/envio dispara um POST JSON de aviso.
+- **Armazenamento externo (recomendado):** defina `BACKUP_S3_BUCKET` (e
+  opcionalmente `BACKUP_S3_ENDPOINT` para S3-compatível como MinIO/Backblaze) e
+  cada arquivo é enviado ao bucket via `aws s3 cp` (o `aws-cli` é instalado sob
+  demanda no container). Sem isso o backup fica só no volume local, que **não**
+  protege contra perda do servidor.
+- **Healthcheck:** o serviço reprova se não houver um dump recente.
+
+Restaurar o banco:
 
 ```bash
 gunzip -c backups/driverops-XXXX.sql.gz | \
@@ -71,8 +88,14 @@ gunzip -c backups/driverops-XXXX.sql.gz | \
 ```
 
 Para restaurar a mídia, extraia o tar correspondente sobre o volume `media`.
-Recomenda-se **copiar os backups para fora do host** (S3/rsync) — o volume local
-não protege contra perda do servidor.
+
+**Teste de restauração (faça periodicamente):** um backup só vale se restaura.
+[`scripts/restore-test.sh`](../scripts/restore-test.sh) restaura o dump mais
+recente num banco **temporário** e valida (conta tabelas), sem tocar em produção:
+
+```bash
+docker compose -f docker-compose.prod.yml exec db-backup sh /app/scripts/restore-test.sh
+```
 
 ## Estáticos e mídia
 
