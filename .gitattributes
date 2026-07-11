@@ -1,0 +1,10 @@
+# Normalização de fins de linha.
+#
+# Scripts shell DEVEM usar LF: eles rodam em containers Linux (bash), e o CRLF
+# do Windows corrompe o shebang e diretivas como `set -euo pipefail` (o \r vira
+# parte do token -> "pipefail: invalid option name"). Forçar eol=lf evita que o
+# autocrlf do Git converta-os ao fazer checkout/commit no Windows.
+*.sh text eol=lf
+
+# Entrypoints/hooks sem extensão, se houver, também em LF.
+scripts/* text eol=lf
