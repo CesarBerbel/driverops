@@ -86,6 +86,44 @@ def test_logout_clears_cookies_and_revokes_refresh(auth_client):
     assert reuse.status_code == 401
 
 
+def test_logout_revokes_refresh_with_a_real_cookie_jar(live_server, user):
+    """Regressão do PATH do cookie de refresh, com um cookie jar REAL.
+
+    O test client do Django ignora o atributo Path dos cookies (envia todos em
+    toda requisição), então mascarava um bug: se o cookie de refresh não cobrir a
+    rota de logout, o navegador não o envia no logout e o token nunca vai para a
+    blacklist. Aqui usamos ``requests.Session`` (jar real, que respeita Path):
+    login + logout na mesma sessão e, então, provamos que o token capturado ANTES
+    do logout está revogado.
+    """
+    import requests
+    from django.core.cache import cache
+
+    cache.clear()  # zera o throttle de login (compartilhado por IP entre testes)
+    base = live_server.url
+    session = requests.Session()
+
+    login = session.post(
+        f"{base}/api/auth/login/",
+        json={"email": user.email, "password": "StrongPass123"},
+    )
+    assert login.status_code == 200, login.text
+    captured_refresh = session.cookies.get("refresh_token")
+    assert captured_refresh
+
+    # Logout na MESMA sessão: o jar só envia o refresh ao /api/auth/logout/ se o
+    # Path do cookie cobrir essa rota. Se não cobrir, o logout não revoga nada.
+    logout = session.post(f"{base}/api/auth/logout/")
+    assert logout.status_code == 204
+
+    # O token capturado antes do logout tem de estar na blacklist -> 401. Se o
+    # Path estivesse errado, o logout não teria revogado e isto daria 204.
+    reuse = requests.post(
+        f"{base}/api/auth/refresh/", cookies={"refresh_token": captured_refresh}
+    )
+    assert reuse.status_code == 401
+
+
 def test_login_is_throttled_after_repeated_failures(client, user):
     # Matches the "login": "5/min" DEFAULT_THROTTLE_RATES configured in settings/base.py.
     for _ in range(5):

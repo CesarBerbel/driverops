@@ -189,7 +189,11 @@ SIMPLE_JWT = {
 
 AUTH_COOKIE_ACCESS = "access_token"
 AUTH_COOKIE_REFRESH = "refresh_token"
-AUTH_COOKIE_REFRESH_PATH = "/api/auth/refresh/"
+# Escopo do cookie de refresh: DEVE cobrir tanto /api/auth/refresh/ quanto
+# /api/auth/logout/, senão o navegador não envia o cookie no logout e o token
+# nunca é revogado (blacklist). Por isso o path é /api/auth/ (e não só o refresh)
+# -- ainda restrito às rotas de auth, sem vazar para o resto da API.
+AUTH_COOKIE_REFRESH_PATH = "/api/auth/"
 AUTH_COOKIE_SAMESITE = "Lax"
 AUTH_COOKIE_SECURE = env_bool("DJANGO_COOKIE_SECURE", False)
 

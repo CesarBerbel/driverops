@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from apps.accounts.permissions import HasModulePermission
 from apps.core.periods import period_start_date
-from apps.core.uploads import sanitize_filename, validate_upload
+from apps.core.uploads import sanitized_upload
 
 from . import state_machine
 from .history import record_event, record_status_change
@@ -315,10 +315,14 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
             )
 
         upload = request.FILES.get("file")
-        # Valida tamanho e tipo REAL (magic bytes) -- não confia no content_type
-        # declarado pelo cliente. Levanta 400 amigável se inválido.
-        validate_upload(upload, max_bytes=MAX_ATTACHMENT_BYTES, field="file")
-        upload.name = sanitize_filename(upload.name, fallback="anexo")
+        # Nome original do cliente guardado só para exibição (o arquivo salvo usa
+        # nome/extensão derivados do conteúdo).
+        original_name = (getattr(upload, "name", "") or "")[:255]
+        # Valida (magic bytes, não o content_type do cliente), RE-CODIFICA a
+        # imagem e devolve um arquivo com nome/extensão seguros. 400 se inválido.
+        upload = sanitized_upload(
+            upload, max_bytes=MAX_ATTACHMENT_BYTES, field="file", fallback="anexo"
+        )
 
         category = request.data.get("category") or OrderAttachment.Category.OTHER
         if category not in OrderAttachment.Category.values:
@@ -327,7 +331,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         attachment = OrderAttachment.objects.create(
             order=order,
             file=upload,
-            original_name=upload.name[:255],
+            original_name=original_name or upload.name[:255],
             content_type=(upload.content_type or "")[:100],
             size=upload.size,
             category=category,

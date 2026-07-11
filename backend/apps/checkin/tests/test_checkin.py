@@ -8,11 +8,17 @@ from apps.checkin.models import VehicleCheckIn, VehicleDamage
 
 pytestmark = pytest.mark.django_db
 
-PNG = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
-
 
 def _png(name="foto.png"):
-    return SimpleUploadedFile(name, PNG, content_type="image/png")
+    # PNG REAL (decodificável): os uploads passam por re-codificação, então só os
+    # magic bytes não bastam mais.
+    from io import BytesIO
+
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buffer, format="PNG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
 
 
 def _start(client, order):

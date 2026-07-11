@@ -27,7 +27,15 @@ def order(db, customer, vehicle):
 
 
 def _png(name="foto.png"):
-    return SimpleUploadedFile(name, b"\x89PNG\r\n\x1a\nfake", content_type="image/png")
+    # PNG REAL (decodificável) -- os uploads agora são re-codificados, então um
+    # arquivo só com os magic bytes não passa mais.
+    from io import BytesIO
+
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buffer, format="PNG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
 
 
 def _client_for(email, password="StrongPass123"):
@@ -129,6 +137,33 @@ def test_disguised_file_is_rejected_by_magic_bytes(auth_client, order):
         f"/api/work-orders/{order.id}/attachments/", data={"file": evil}
     )
     assert response.status_code == 400
+
+
+def test_upload_reencodes_image_and_derives_extension(auth_client, order):
+    """A imagem é re-codificada (descarta bytes anexados) e a extensão vem do
+    CONTEÚDO real, nunca do nome enviado pelo cliente."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", (8, 8), "blue").save(buffer, format="PNG")
+    # Conteúdo PNG + lixo anexado; nome e content_type MENTEM (.jpg / jpeg).
+    payload = buffer.getvalue() + b"TRAILING-EVIL-BYTES" * 200
+    disguised = SimpleUploadedFile("foto.jpg", payload, content_type="image/jpeg")
+
+    resp = auth_client.post(
+        f"/api/work-orders/{order.id}/attachments/", data={"file": disguised}
+    )
+    assert resp.status_code == 201
+    att = OrderAttachment.objects.get(id=resp.json()["id"])
+    # Extensão e content_type vêm do conteúdo (png), não do nome/CT enviados.
+    assert att.file.name.endswith(".png")
+    assert att.content_type == "image/png"
+    # Re-codificado: o lixo anexado sumiu (arquivo bem menor que o payload).
+    assert att.file.size < len(payload)
+    # O nome original (só exibição) preserva o que o cliente mandou.
+    assert att.original_name == "foto.jpg"
 
 
 def test_list_attachments(auth_client, order):

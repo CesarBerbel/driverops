@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import HasModulePermission, require_permission
-from apps.core.uploads import sanitize_filename, validate_upload
+from apps.core.uploads import sanitized_upload
 from apps.orders.models import WorkOrder
 
 from . import services
@@ -29,12 +29,12 @@ from .serializers import (
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
-def _validate_upload(upload):
-    # Valida tamanho e tipo REAL (magic bytes), não o content_type do cliente,
-    # e saneia o nome do arquivo (sem path traversal).
-    validate_upload(upload, max_bytes=MAX_UPLOAD_BYTES, field="file")
-    upload.name = sanitize_filename(upload.name, fallback="foto")
-    return upload.content_type or ""
+def _process_upload(upload):
+    # Valida (magic bytes, não o content_type do cliente), RE-CODIFICA a imagem
+    # (descarta conteúdo embutido) e devolve um arquivo com nome/extensão seguros.
+    return sanitized_upload(
+        upload, max_bytes=MAX_UPLOAD_BYTES, field="file", fallback="foto"
+    )
 
 
 def _guard_editable(check_in):
@@ -154,8 +154,7 @@ class CheckInViewSet(
     def add_photo(self, request, pk=None):
         check_in = self.get_object()
         _guard_editable(check_in)
-        upload = request.FILES.get("file")
-        _validate_upload(upload)
+        upload = _process_upload(request.FILES.get("file"))
         from .models import PhotoCategory
 
         category = request.data.get("category")
@@ -182,7 +181,7 @@ class CheckInViewSet(
         serializer.is_valid(raise_exception=True)
         photo = request.FILES.get("photo")
         if photo is not None:
-            _validate_upload(photo)
+            photo = _process_upload(photo)
         serializer.save(check_in=check_in, photo=photo)
         services.touch(check_in, request.user)
         services.audit(request, "checkin.belonging_added", check_in)
@@ -261,8 +260,7 @@ class DamageViewSet(
     def add_photo(self, request, pk=None):
         damage = self.get_object()
         _guard_editable(damage.check_in)
-        upload = request.FILES.get("file")
-        _validate_upload(upload)
+        upload = _process_upload(request.FILES.get("file"))
         VehicleDamagePhoto.objects.create(
             damage=damage,
             file=upload,

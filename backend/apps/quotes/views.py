@@ -1,6 +1,6 @@
 import base64
+from io import BytesIO
 
-from django.core.files.base import ContentFile
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -8,13 +8,14 @@ from django.utils import timezone
 from rest_framework import status as http_status
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import HasModulePermission
-from apps.core.uploads import sanitize_filename, validate_upload
+from apps.core.uploads import sanitized_upload
 from apps.orders.history import record_event
 from apps.orders.models import OrderEvent, WorkOrder
 
@@ -63,7 +64,8 @@ def _record_quote_decision(quote, channel, actor=None):
 def _decode_signature(data_uri, name):
     """data:image/png;base64,... -> ContentFile. Retorna None se inválido.
 
-    Valida o conteúdo real (deve ser PNG) e o tamanho -- não confia no data URI.
+    Valida o conteúdo real (imagem) e o tamanho -- não confia no data URI -- e
+    RE-CODIFICA a imagem, descartando qualquer conteúdo embutido.
     """
     if not data_uri:
         return None
@@ -74,9 +76,18 @@ def _decode_signature(data_uri, name):
         return None
     if not raw or len(raw) > MAX_SIGNATURE_BYTES:
         return None
-    if not raw.startswith(b"\x89PNG\r\n\x1a\n"):  # assinatura PNG
+    buffer = BytesIO(raw)
+    buffer.name = name or "assinatura"
+    try:
+        return sanitized_upload(
+            buffer,
+            max_bytes=MAX_SIGNATURE_BYTES,
+            allow_pdf=False,
+            field="signature",
+            fallback="assinatura",
+        )
+    except ValidationError:
         return None
-    return ContentFile(raw, name=sanitize_filename(name, fallback="assinatura"))
 
 
 class QuoteViewSet(viewsets.ModelViewSet):
@@ -300,9 +311,14 @@ class QuoteViewSet(viewsets.ModelViewSet):
     def upload_signed(self, request, pk=None):
         quote = self.get_object()
         document = request.FILES.get("document")
-        # Valida tamanho e tipo real (imagem/PDF) e saneia o nome.
-        validate_upload(document, max_bytes=MAX_SIGNED_DOCUMENT_BYTES, field="document")
-        document.name = sanitize_filename(document.name, fallback="assinado")
+        # Valida (magic bytes), RE-CODIFICA imagens e força nome/extensão do
+        # conteúdo (imagem ou PDF). 400 amigável se inválido.
+        document = sanitized_upload(
+            document,
+            max_bytes=MAX_SIGNED_DOCUMENT_BYTES,
+            field="document",
+            fallback="assinado",
+        )
         # Remove a via anterior para não deixar arquivo órfão.
         if quote.signed_document:
             quote.signed_document.delete(save=False)
