@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/features/alerts/components/NotificationBell";
 import { usePermissionCheck } from "@/features/auth/usePermission";
+import { SmartSearchTrigger } from "@/features/smart-search/SmartSearchTrigger";
 import { getPendingCount as getCrmPending } from "@/features/crm/api";
 import { getLeadsPendingCount } from "@/features/leads/api";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,9 @@ export function Topbar() {
       )}
 
       <div className="flex-1" />
+
+      {/* Busca inteligente global (linguagem natural + atalho Ctrl/⌘K). */}
+      <SmartSearchTrigger />
 
       {/* Atalho para nova OS -- visível só com permissão de criar OS. */}
       {can("orders.create") && (

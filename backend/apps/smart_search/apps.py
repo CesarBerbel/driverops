@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class SmartSearchConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.smart_search"
+    verbose_name = "Busca Inteligente"

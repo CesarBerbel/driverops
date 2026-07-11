@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { Topbar } from "@/components/layout/Topbar";
+import { SmartSearchProvider } from "@/features/smart-search/SmartSearchProvider";
 
 vi.mock("@/features/auth/useAuth", () => ({
   useAuth: () => ({
@@ -38,7 +39,9 @@ function renderTopbar() {
   render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <Topbar />
+        <SmartSearchProvider>
+          <Topbar />
+        </SmartSearchProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   );

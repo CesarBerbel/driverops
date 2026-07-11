@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { NotificationBell } from "@/features/alerts/components/NotificationBell";
 import { usePermissionCheck } from "@/features/auth/usePermission";
+import { SmartSearchIconTrigger } from "@/features/smart-search/SmartSearchTrigger";
 import { getWorkshopProfile } from "@/features/settings/api";
 
 import { MobileUserMenu } from "./MobileUserMenu";
@@ -40,6 +41,7 @@ export function MobileHeader() {
       </Link>
 
       <div className="flex items-center gap-1">
+        <SmartSearchIconTrigger />
         {can("alerts.view") && <NotificationBell />}
         <MobileUserMenu />
       </div>

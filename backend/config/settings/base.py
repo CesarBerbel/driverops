@@ -57,7 +57,9 @@ INSTALLED_APPS = [
     "apps.alerts",
     "apps.checkin",
     "apps.crm",
+    "django.contrib.postgres",
     "apps.customer_portal",
+    "apps.smart_search",
 ]
 
 MIDDLEWARE = [
@@ -164,6 +166,8 @@ REST_FRAMEWORK = {
         "public_lead": "10/hour",
         # Solicitação de link do portal do cliente (anti-abuso/enumeração de placa).
         "vehicle_portal": "10/hour",
+        # Busca inteligente (uso autenticado; evita abuso/custo de IA).
+        "smart_search": "30/min",
     },
 }
 
