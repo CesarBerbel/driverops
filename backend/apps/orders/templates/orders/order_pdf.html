@@ -9,52 +9,64 @@
   .muted { color: #6b7280; }
   .small { font-size: 7.5pt; }
 
-  .header { width: 100%; border-bottom: 1.5px solid #111827; padding-bottom: 6px; }
+  /* Cabeçalho com um filete de destaque (accent) abaixo. */
+  .header { width: 100%; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
   .header td { vertical-align: top; }
+  .accent-bar { height: 3px; background: #2563eb; margin-bottom: 9px; font-size: 0; line-height: 0; }
   .logo { max-width: 90px; max-height: 45px; }
-  .brand { font-size: 12.5pt; font-weight: bold; color: #111827; }
+  .brand { font-size: 12.5pt; font-weight: bold; color: #0f172a; }
   .doc-box { text-align: right; }
-  .doc-title { font-size: 13pt; font-weight: bold; letter-spacing: 1px; color: #111827; }
+  .doc-title { font-size: 13pt; font-weight: bold; letter-spacing: 1px; color: #1e293b; }
   .doc-line { font-size: 8pt; }
   .status-chip {
-    display: inline-block; padding: 1px 6px; border: 1px solid #111827;
+    display: inline-block; padding: 1px 7px; background: #1e293b; color: #fff;
     border-radius: 3px; font-size: 7.5pt; font-weight: bold;
   }
 
   .section { margin-top: 9px; }
   .section-title {
     font-weight: bold; font-size: 8.5pt; text-transform: uppercase;
-    letter-spacing: 0.4px; color: #374151; border-bottom: 0.5px solid #d1d5db;
+    letter-spacing: 0.5px; color: #2563eb; border-bottom: 0.5px solid #cbd5e1;
     padding-bottom: 2px; margin-bottom: 4px;
   }
 
   table.info { width: 100%; }
   table.info td { vertical-align: top; padding-right: 8px; }
   .plate {
-    display: inline-block; border: 1.5px solid #111827; border-radius: 3px;
+    display: inline-block; border: 1.5px solid #1e293b; border-radius: 3px;
     padding: 1px 8px; font-weight: bold; font-size: 11pt; letter-spacing: 1px;
   }
   .block { white-space: pre-line; }
+  .card { background: #f8fafc; border: 0.5px solid #e2e8f0; border-radius: 4px; padding: 6px 8px; }
 
+  /* Tabela ÚNICA de itens (serviços + peças + pacotes, sem divisão). */
   table.items { width: 100%; border-collapse: collapse; margin-top: 3px; }
   table.items th {
-    background: #111827; color: #fff; text-align: left; padding: 3px 5px;
+    background: #1e293b; color: #fff; text-align: left; padding: 4px 6px;
     font-size: 7.5pt; font-weight: bold;
   }
-  table.items td { padding: 2.5px 5px; border-bottom: 0.5px solid #e5e7eb; font-size: 8pt; }
+  table.items td { padding: 3px 6px; border-bottom: 0.5px solid #e5e7eb; font-size: 8pt; }
   .right { text-align: right; }
   .center { text-align: center; }
-  .tag { font-size: 6.5pt; color: #6b7280; text-transform: uppercase; }
 
-  table.totals { width: 45%; margin-left: 55%; margin-top: 6px; }
-  table.totals td { padding: 2px 5px; font-size: 8pt; }
+  /* Linha de serviço: destacada (fundo claro + negrito). */
+  tr.row-service td { background: #eef2f6; font-weight: bold; color: #0f172a; }
+  /* Peça vinculada a um serviço: indentada logo abaixo dele. */
+  tr.row-child td.desc { padding-left: 16px; color: #334155; }
+  tr.row-package td { background: #eef2f6; font-weight: bold; color: #0f172a; }
+  .lead { color: #2563eb; font-weight: bold; }
+  /* Nota discreta do tipo da linha / serviço a que a peça pertence. */
+  .tag { font-size: 7pt; color: #64748b; }
+
+  table.totals { width: 46%; margin-left: 54%; margin-top: 8px;
+    border: 0.5px solid #e2e8f0; border-radius: 4px; }
+  table.totals td { padding: 3px 8px; font-size: 8pt; }
   table.totals tr.grand td {
-    border-top: 1px solid #111827; font-weight: bold; font-size: 9.5pt;
+    border-top: 1.5px solid #1e293b; font-weight: bold; font-size: 10pt; color: #0f172a;
   }
 
   .terms { margin-top: 10px; font-size: 7.5pt; color: #374151; white-space: pre-line; }
-  .terms .section-title { color: #374151; }
-  .footer { margin-top: 12px; border-top: 0.5px solid #d1d5db; padding-top: 4px;
+  .footer { margin-top: 12px; border-top: 0.5px solid #cbd5e1; padding-top: 4px;
     font-size: 7pt; color: #6b7280; white-space: pre-line; text-align: center; }
 </style>
 </head>
@@ -82,6 +94,7 @@
       </td>
     </tr>
   </table>
+  <div class="accent-bar">&nbsp;</div>
 
   <!-- Veículo + Cliente -->
   <div class="section">
@@ -135,10 +148,10 @@
   </div>
   {% endif %}
 
-  <!-- Itens -->
-  {% for group in groups %}
+  <!-- Itens: tabela ÚNICA (serviços com as peças aninhadas, pacotes e avulsas) -->
+  {% if has_items %}
   <div class="section">
-    <div class="section-title">{{ group.title }}</div>
+    <div class="section-title">Serviços e peças</div>
     <table class="items">
       <thead>
         <tr>
@@ -149,24 +162,26 @@
         </tr>
       </thead>
       <tbody>
-        {% for item in group.items %}
-        <tr>
-          <td>{{ item.description }}</td>
-          <td class="right">{{ item.quantity }}</td>
-          <td class="right">{{ item.unit_price }}</td>
-          <td class="right">{{ item.subtotal }}</td>
+        {% for row in line_rows %}
+        <tr class="row-{{ row.kind }}">
+          <td class="desc">
+            {% if row.kind == "part_child" %}<span class="lead">»</span> {{ row.description }} <span class="tag">— peça de {{ row.service_name }}</span>{% elif row.kind == "package" %}{{ row.description }} <span class="tag">— pacote</span>{% elif row.kind == "part" %}{{ row.description }} <span class="tag">— peça avulsa</span>{% else %}{{ row.description }}{% endif %}
+          </td>
+          <td class="right">{{ row.quantity }}</td>
+          <td class="right">{{ row.unit_price }}</td>
+          <td class="right">{{ row.subtotal }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  {% endfor %}
+  {% endif %}
 
   <!-- Totais -->
   <table class="totals">
-    <tr><td class="muted">Serviços</td><td class="right">{{ totals.services }}</td></tr>
-    <tr><td class="muted">Pacotes</td><td class="right">{{ totals.packages }}</td></tr>
-    <tr><td class="muted">Peças</td><td class="right">{{ totals.parts }}</td></tr>
+    {% if totals.show_services %}<tr><td class="muted">Serviços</td><td class="right">{{ totals.services }}</td></tr>{% endif %}
+    {% if totals.show_packages %}<tr><td class="muted">Pacotes</td><td class="right">{{ totals.packages }}</td></tr>{% endif %}
+    {% if totals.show_parts %}<tr><td class="muted">Peças</td><td class="right">{{ totals.parts }}</td></tr>{% endif %}
     {% if has_discount %}
     <tr><td class="muted">Total bruto</td><td class="right">{{ totals.gross }}</td></tr>
     <tr><td class="muted">Desconto</td><td class="right">- {{ discount }}</td></tr>

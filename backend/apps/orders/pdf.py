@@ -7,6 +7,7 @@ verdade no backend), então o PDF nunca diverge da tela.
 """
 
 import base64
+from collections import defaultdict
 from decimal import Decimal
 from io import BytesIO
 
@@ -89,23 +90,46 @@ def build_order_pdf_context(order, request=None):
         year = f"{vehicle.manufacture_year or ''}/{vehicle.model_year or ''}".strip("/")
     mileage = order.current_mileage or vehicle.mileage
 
-    def group(key):
-        return [
-            {
-                "description": item["display_name"],
-                "is_custom": item["is_custom"],
-                "quantity": _fmt_qty(item["quantity"]),
-                "unit_price": _brl(item["unit_price"]),
-                "subtotal": _brl(item["line_total"]),
-            }
-            for item in data[key]
-        ]
+    def _row(item, kind):
+        return {
+            "kind": kind,  # service | part_child | part | package
+            "description": item["display_name"],
+            "is_custom": item["is_custom"],
+            "quantity": _fmt_qty(item["quantity"]),
+            "unit_price": _brl(item["unit_price"]),
+            "subtotal": _brl(item["line_total"]),
+        }
 
-    groups = [
-        {"title": "Serviços", "items": group("service_items")},
-        {"title": "Pacotes", "items": group("package_items")},
-        {"title": "Peças", "items": group("part_items")},
-    ]
+    services = data["service_items"]
+    packages = data["package_items"]
+    parts = data["part_items"]
+
+    # Peças agrupadas pelo serviço a que pertencem (linked_service_index = posição
+    # na lista de serviços da OS). Peças sem vínculo entram como "avulsas".
+    parts_by_service = defaultdict(list)
+    orphan_parts = []
+    for part in parts:
+        index = part.get("linked_service_index")
+        if isinstance(index, int) and 0 <= index < len(services):
+            parts_by_service[index].append(part)
+        else:
+            orphan_parts.append(part)
+
+    # Lista ÚNICA de itens (sem separar serviços x peças): cada serviço vem
+    # seguido, indentado, das peças que o compõem; depois os pacotes; por fim as
+    # peças avulsas. O nome do serviço vai junto na peça-filha para o vínculo
+    # continuar claro mesmo se a tabela quebrar de página.
+    line_rows = []
+    for index, service in enumerate(services):
+        line_rows.append(_row(service, "service"))
+        for part in parts_by_service[index]:
+            row = _row(part, "part_child")
+            row["service_name"] = service["display_name"]
+            line_rows.append(row)
+    for package in packages:
+        line_rows.append(_row(package, "package"))
+    for part in orphan_parts:
+        line_rows.append(_row(part, "part"))
 
     technician = None
     if order.assigned_technician_id:
@@ -130,13 +154,17 @@ def build_order_pdf_context(order, request=None):
         "emitted_at": _fmt_datetime(timezone.now()),
         "customer_report": order.customer_report,
         "diagnosis": order.diagnosis,
-        "groups": [g for g in groups if g["items"]],
+        "line_rows": line_rows,
+        "has_items": bool(line_rows),
         "totals": {
             "services": _brl(data["services_total"]),
             "packages": _brl(data["packages_total"]),
             "parts": _brl(data["parts_total"]),
             "gross": _brl(data["gross_total"]),
             "final": _brl(data["final_value"]),
+            "show_services": Decimal(data["services_total"]) > 0,
+            "show_packages": Decimal(data["packages_total"]) > 0,
+            "show_parts": Decimal(data["parts_total"]) > 0,
         },
         "has_discount": Decimal(data["final_value"]) < Decimal(data["gross_total"]),
         "discount": _brl(Decimal(data["gross_total"]) - Decimal(data["final_value"])),
