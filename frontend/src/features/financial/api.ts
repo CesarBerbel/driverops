@@ -32,6 +32,8 @@ export async function deletePayment(id: number): Promise<void> {
 export interface ReceivablesParams {
   search?: string;
   status?: string;
+  overdue?: boolean;
+  aging?: string;
 }
 
 export async function listReceivables(
@@ -39,7 +41,14 @@ export async function listReceivables(
 ): Promise<ReceivablesResponse> {
   const { data } = await apiClient.get<ReceivablesResponse>(
     "/payments/receivables/",
-    { params: { search: params.search || undefined, status: params.status } },
+    {
+      params: {
+        search: params.search || undefined,
+        status: params.status,
+        overdue: params.overdue ? 1 : undefined,
+        aging: params.aging || undefined,
+      },
+    },
   );
   return data;
 }

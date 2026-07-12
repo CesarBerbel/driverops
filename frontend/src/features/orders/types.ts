@@ -71,6 +71,7 @@ export interface WorkOrder {
   assigned_technician_name: string | null;
   opened_at: string;
   expected_delivery: string | null;
+  payment_due_date: string | null;
   current_mileage: number | null;
   customer_report: string;
   diagnosis: string;
@@ -88,6 +89,11 @@ export interface WorkOrder {
   amount_paid: string;
   balance_due: string;
   payment_status: PaymentStatus;
+  // Aging do saldo devedor (contas a receber). null quando a OS está quitada.
+  aging_bucket: string | null;
+  aging_bucket_display: string | null;
+  days_overdue: number;
+  is_overdue: boolean;
   // Resumo do orçamento da OS (o orçamento é parte da OS). null quando a OS não
   // tem orçamento ativo.
   quote_status: string | null;
@@ -111,6 +117,7 @@ export interface WorkOrderPayload {
   assigned_technician: number | null;
   opened_at: string;
   expected_delivery: string | null;
+  payment_due_date: string | null;
   current_mileage: number | null;
   customer_report: string;
   diagnosis: string;

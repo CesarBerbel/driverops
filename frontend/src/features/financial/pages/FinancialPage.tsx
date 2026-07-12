@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Search, Wallet, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, Search, Wallet, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -39,20 +39,49 @@ const RECEIVABLE_STATUS_OPTIONS = ORDER_STATUS_OPTIONS.filter(
   (option) => option.value !== "canceled",
 );
 
+// "YYYY-MM-DD" -> "DD/MM/YYYY" (sem passar por Date, evita desvio de fuso).
+function fmtDueDate(iso: string | null): string {
+  if (!iso) return "Sem vencimento";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function agingBadge(order: WorkOrder) {
+  if (!order.aging_bucket || order.aging_bucket === "no_due_date") return null;
+  const overdue = order.is_overdue;
+  const label = overdue
+    ? `Vencido há ${order.days_overdue} ${order.days_overdue === 1 ? "dia" : "dias"}`
+    : "A vencer";
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium",
+        overdue
+          ? "bg-destructive/10 text-destructive"
+          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function FinancialPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 300);
   const effectiveSearch = searchInput === "" ? "" : debouncedSearch;
   const [status, setStatus] = useState<string>(STATUS_ALL);
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [selected, setSelected] = useState<WorkOrder | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["receivables", effectiveSearch, status],
+    queryKey: ["receivables", effectiveSearch, status, overdueOnly],
     queryFn: () =>
       listReceivables({
         search: effectiveSearch || undefined,
         status: status === STATUS_ALL ? undefined : (status as OrderStatus),
+        overdue: overdueOnly || undefined,
       }),
   });
 
@@ -75,17 +104,30 @@ export function FinancialPage() {
           </div>
           <FinancialNav />
         </div>
-        <Card className="w-full sm:w-auto">
-          <CardContent className="flex items-center gap-3 px-4 py-3">
-            <Wallet className="size-5 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total a receber</p>
-              <p className="text-lg font-semibold">
-                {formatCurrencyBRL(Number(data?.total_receivable ?? 0))}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex gap-3">
+          <Card className="flex-1 sm:w-auto">
+            <CardContent className="flex items-center gap-3 px-4 py-3">
+              <Wallet className="size-5 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">Total a receber</p>
+                <p className="text-lg font-semibold">
+                  {formatCurrencyBRL(Number(data?.total_receivable ?? 0))}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="flex-1 sm:w-auto">
+            <CardContent className="flex items-center gap-3 px-4 py-3">
+              <AlertTriangle className="size-5 text-destructive" />
+              <div>
+                <p className="text-xs text-muted-foreground">Vencido</p>
+                <p className="text-lg font-semibold text-destructive">
+                  {formatCurrencyBRL(Number(data?.total_overdue ?? 0))}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -117,6 +159,15 @@ export function FinancialPage() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant={overdueOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setOverdueOnly((v) => !v)}
+          aria-pressed={overdueOnly}
+        >
+          <AlertTriangle className="size-4" />
+          Só vencidas
+        </Button>
       </div>
 
       {isLoading ? (
@@ -159,6 +210,7 @@ export function FinancialPage() {
                 <TableHead className="text-right">Valor final</TableHead>
                 <TableHead className="text-right">Pago</TableHead>
                 <TableHead className="text-right">Saldo</TableHead>
+                <TableHead>Vencimento</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-0 text-right">Ações</TableHead>
               </TableRow>
@@ -183,6 +235,14 @@ export function FinancialPage() {
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrencyBRL(Number(order.balance_due))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm text-muted-foreground">
+                        {fmtDueDate(order.payment_due_date)}
+                      </span>
+                      {agingBadge(order)}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span

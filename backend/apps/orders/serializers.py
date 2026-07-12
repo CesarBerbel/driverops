@@ -2,10 +2,12 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.core.money import apply_discount
 from apps.customers.models import Customer
+from apps.financial import aging
 from apps.parts.models import Part
 from apps.services.models import Service, ServicePackage
 from apps.vehicles.models import Vehicle
@@ -212,6 +214,11 @@ class WorkOrderSerializer(serializers.ModelSerializer):
     amount_paid = serializers.SerializerMethodField()
     balance_due = serializers.SerializerMethodField()
     payment_status = serializers.SerializerMethodField()
+    # Aging do saldo devedor (contas a receber): a vencer / vencido.
+    aging_bucket = serializers.SerializerMethodField()
+    aging_bucket_display = serializers.SerializerMethodField()
+    days_overdue = serializers.SerializerMethodField()
+    is_overdue = serializers.SerializerMethodField()
     # Resumo do orçamento da OS (o orçamento é parte da OS, não módulo à parte).
     quote_status = serializers.SerializerMethodField()
     quote_status_display = serializers.SerializerMethodField()
@@ -260,6 +267,7 @@ class WorkOrderSerializer(serializers.ModelSerializer):
             "assigned_technician_name",
             "opened_at",
             "expected_delivery",
+            "payment_due_date",
             "current_mileage",
             "customer_report",
             "diagnosis",
@@ -277,6 +285,10 @@ class WorkOrderSerializer(serializers.ModelSerializer):
             "amount_paid",
             "balance_due",
             "payment_status",
+            "aging_bucket",
+            "aging_bucket_display",
+            "days_overdue",
+            "is_overdue",
             "quote_status",
             "quote_status_display",
             "stock_deducted",
@@ -364,6 +376,33 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         if paid < final:
             return "partial"
         return "paid"
+
+    # --- aging do saldo devedor (só faz sentido com saldo > 0) ---
+
+    def _aging(self, obj):
+        balance = self._final_value(obj) - self._amount_paid(obj)
+        if balance <= 0:
+            return {"bucket": None, "display": None, "days": 0, "overdue": False}
+        today = timezone.localdate()
+        bucket = aging.bucket_for(obj.payment_due_date, today)
+        return {
+            "bucket": bucket,
+            "display": aging.BUCKET_LABELS.get(bucket),
+            "days": aging.days_overdue(obj.payment_due_date, today),
+            "overdue": aging.is_overdue(bucket),
+        }
+
+    def get_aging_bucket(self, obj):
+        return self._aging(obj)["bucket"]
+
+    def get_aging_bucket_display(self, obj):
+        return self._aging(obj)["display"]
+
+    def get_days_overdue(self, obj):
+        return self._aging(obj)["days"]
+
+    def get_is_overdue(self, obj):
+        return self._aging(obj)["overdue"]
 
     # --- validation ---
 

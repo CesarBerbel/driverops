@@ -14,6 +14,7 @@ from apps.orders.models import OrderEvent, WorkOrder
 from apps.orders.notifications import maybe_notify_payment
 from apps.orders.serializers import WorkOrderSerializer
 
+from . import aging
 from .models import Expense, Payment
 from .serializers import ExpenseSerializer, PaymentSerializer
 
@@ -113,13 +114,51 @@ class PaymentViewSet(viewsets.ModelViewSet):
         # Só as OS com saldo devedor (o valor final/saldo é calculado no serializer).
         rows = [row for row in serializer.data if Decimal(row["balance_due"]) > 0]
 
+        # O total a receber e o resumo de aging refletem TODAS as contas em aberto
+        # (antes de qualquer filtro de faixa), para os cartões do topo baterem.
         total_receivable = sum(
             (Decimal(row["balance_due"]) for row in rows), Decimal("0")
         )
+        total_overdue = sum(
+            (Decimal(row["balance_due"]) for row in rows if row["is_overdue"]),
+            Decimal("0"),
+        )
+        summary_map = {}
+        for row in rows:
+            entry = summary_map.setdefault(
+                row["aging_bucket"], {"count": 0, "total": Decimal("0")}
+            )
+            entry["count"] += 1
+            entry["total"] += Decimal(row["balance_due"])
+        aging_summary = [
+            {
+                "bucket": bucket,
+                "bucket_display": label,
+                "count": summary_map[bucket]["count"],
+                "total": str(summary_map[bucket]["total"]),
+            }
+            for bucket, label in aging.BUCKETS
+            if bucket in summary_map
+        ]
+
+        # Filtros de faixa (aplicados só à listagem): ?overdue=1 ou ?aging=<bucket>.
+        overdue_only = request.query_params.get("overdue", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        aging_param = request.query_params.get("aging")
+        if overdue_only:
+            rows = [row for row in rows if row["is_overdue"]]
+        elif aging_param in aging.BUCKET_LABELS:
+            rows = [row for row in rows if row["aging_bucket"] == aging_param]
+
         return Response(
             {
                 "count": len(rows),
                 "total_receivable": str(total_receivable),
+                "total_overdue": str(total_overdue),
+                "aging_summary": aging_summary,
                 "results": rows,
             }
         )

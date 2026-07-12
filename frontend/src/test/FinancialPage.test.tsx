@@ -17,7 +17,7 @@ vi.mock("@/features/auth/useAuth", () => ({
   useAuth: () => ({ user: auth.user }),
 }));
 
-function receivable(): WorkOrder {
+function receivable(over: Partial<WorkOrder> = {}): WorkOrder {
   return {
     id: 7,
     number: 7,
@@ -27,6 +27,12 @@ function receivable(): WorkOrder {
     amount_paid: "100.00",
     balance_due: "60.00",
     payment_status: "partial",
+    payment_due_date: null,
+    aging_bucket: "no_due_date",
+    aging_bucket_display: "Sem vencimento",
+    days_overdue: 0,
+    is_overdue: false,
+    ...over,
   } as unknown as WorkOrder;
 }
 
@@ -47,6 +53,8 @@ describe("FinancialPage", () => {
     vi.mocked(financialApi.listReceivables).mockResolvedValue({
       count: 1,
       total_receivable: "60.00",
+      total_overdue: "0.00",
+      aging_summary: [],
       results: [receivable()],
     });
     vi.mocked(financialApi.listPayments).mockResolvedValue([]);
@@ -67,5 +75,38 @@ describe("FinancialPage", () => {
     await user.click(screen.getByRole("button", { name: "Pagamentos" }));
     // O diálogo mostra o número da OS e o cliente/placa.
     expect(await screen.findByText(/Maria Silva · ABC1234/)).toBeInTheDocument();
+  });
+
+  it("shows the overdue badge, the due date and the total overdue card", async () => {
+    vi.mocked(financialApi.listReceivables).mockResolvedValue({
+      count: 1,
+      total_receivable: "60.00",
+      total_overdue: "60.00",
+      aging_summary: [],
+      results: [
+        receivable({
+          payment_due_date: "2026-01-10",
+          aging_bucket: "overdue_31_60",
+          aging_bucket_display: "Vencido (31–60 dias)",
+          days_overdue: 40,
+          is_overdue: true,
+        }),
+      ],
+    });
+    renderPage();
+    expect(await screen.findByText("Vencido há 40 dias")).toBeInTheDocument();
+    expect(screen.getByText("10/01/2026")).toBeInTheDocument();
+    // Card "Vencido" no topo com o valor.
+    expect(screen.getByText("Vencido")).toBeInTheDocument();
+  });
+
+  it("filters by overdue only", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Maria Silva");
+    await user.click(screen.getByRole("button", { name: /só vencidas/i }));
+    expect(financialApi.listReceivables).toHaveBeenCalledWith(
+      expect.objectContaining({ overdue: true }),
+    );
   });
 });

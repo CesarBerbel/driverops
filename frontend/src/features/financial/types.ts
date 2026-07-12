@@ -30,9 +30,18 @@ export interface PaymentPayload {
   note?: string;
 }
 
+export interface AgingSummaryRow {
+  bucket: string;
+  bucket_display: string;
+  count: number;
+  total: string;
+}
+
 export interface ReceivablesResponse {
   count: number;
   total_receivable: string;
+  total_overdue: string;
+  aging_summary: AgingSummaryRow[];
   results: WorkOrder[];
 }
 

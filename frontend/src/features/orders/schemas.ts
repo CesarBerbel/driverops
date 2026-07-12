@@ -45,6 +45,7 @@ export const orderSchema = z
     assigned_technician_id: z.number().nullable(),
     opened_at: z.string().min(1, "Informe a data de abertura."),
     expected_delivery: z.string().optional(),
+    payment_due_date: z.string().optional(),
     current_mileage: z.string().optional(),
     customer_report: z.string().trim().min(1, "O relato do cliente é obrigatório."),
     diagnosis: z.string().optional(),

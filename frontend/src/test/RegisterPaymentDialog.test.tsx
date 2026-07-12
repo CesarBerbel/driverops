@@ -27,6 +27,11 @@ function order(): WorkOrder {
     amount_paid: "0.00",
     balance_due: "160.00",
     payment_status: "open",
+    payment_due_date: null,
+    aging_bucket: null,
+    aging_bucket_display: null,
+    days_overdue: 0,
+    is_overdue: false,
   } as unknown as WorkOrder;
 }
 

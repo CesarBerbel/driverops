@@ -54,6 +54,9 @@ class WorkOrder(models.Model):
     )
     opened_at = models.DateField()
     expected_delivery = models.DateField(null=True, blank=True)
+    # Vencimento do pagamento (contas a receber). Usado para calcular o aging
+    # (a vencer / vencido) do saldo devedor da OS. Opcional.
+    payment_due_date = models.DateField(null=True, blank=True)
     current_mileage = models.PositiveIntegerField(null=True, blank=True)
     customer_report = models.TextField()
     diagnosis = models.TextField(blank=True)

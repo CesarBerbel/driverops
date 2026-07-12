@@ -659,6 +659,10 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="payment_due_date">Vencimento do pagamento</Label>
+                  <Input id="payment_due_date" type="date" {...register("payment_due_date")} />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="current_mileage">Quilometragem atual</Label>
                   <Controller
                     control={control}
