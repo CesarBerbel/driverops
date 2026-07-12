@@ -2,12 +2,14 @@ import {
   Bell,
   BellRing,
   Building2,
+  Car,
   ChevronRight,
   ClipboardList,
   Inbox,
   KanbanSquare,
   Package,
   ScrollText,
+  Search,
   Sparkles,
   Tag,
   Users,
@@ -81,6 +83,22 @@ const SETTINGS_CARDS = [
     description:
       "Ative as sugestões de relacionamento, ajuste os prazos das regras e o comportamento da IA (mensagens, campanhas sazonais).",
     permission: "crm.view",
+  },
+  {
+    to: "/settings/customer-portal",
+    icon: Car,
+    title: "Portal do Cliente",
+    description:
+      "Controle o acesso do cliente ao acompanhamento do veículo pelo link enviado por e-mail (validade, histórico, mensagens, PDF).",
+    permission: "settings.view",
+  },
+  {
+    to: "/settings/smart-search",
+    icon: Search,
+    title: "Busca Inteligente",
+    description:
+      "Ajuste o uso de IA na busca, o que pode ser pesquisado (observações internas, financeiro) e a retenção de histórico e logs.",
+    permission: "settings.view",
   },
   {
     to: "/users",

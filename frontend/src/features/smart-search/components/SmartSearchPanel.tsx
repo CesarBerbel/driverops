@@ -1,11 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Loader2, Search, SearchX } from "lucide-react";
+import { AlertCircle, Bookmark, Loader2, Search, SearchX } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { extractErrorMessage } from "@/lib/api-client";
 
-import { getRecentSearches, getSearchSuggestions, smartSearch } from "../api";
+import {
+  deleteSavedSearch,
+  getRecentSearches,
+  getSearchSuggestions,
+  saveSearch,
+  smartSearch,
+} from "../api";
 import type { SearchResult } from "../types";
 import { SearchAppliedFilters } from "./SearchAppliedFilters";
 import { SearchResultGroup } from "./SearchResultGroup";
@@ -32,6 +41,20 @@ export function SmartSearchPanel({ onClose }: { onClose: () => void }) {
     staleTime: 60 * 1000,
   });
 
+  const saveMutation = useMutation({
+    mutationFn: (q: string) => saveSearch({ label: q, query: q }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["smart-search", "suggestions"] });
+      toast.success("Busca salva.");
+    },
+    onError: (e) => toast.error(extractErrorMessage(e, "Não foi possível salvar a busca.")),
+  });
+
+  const deleteSavedMutation = useMutation({
+    mutationFn: (id: number) => deleteSavedSearch(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["smart-search", "suggestions"] }),
+  });
+
   function runSearch(q: string) {
     const trimmed = q.trim();
     if (trimmed) search.mutate(trimmed);
@@ -53,6 +76,9 @@ export function SmartSearchPanel({ onClose }: { onClose: () => void }) {
   }
 
   const data = search.data;
+  const lastQuery = search.variables ?? "";
+  const savedSearches = suggestions.data?.saved ?? [];
+  const alreadySaved = savedSearches.some((s) => s.query === lastQuery);
 
   return (
     <div className="flex max-h-[80svh] flex-col">
@@ -100,12 +126,28 @@ export function SmartSearchPanel({ onClose }: { onClose: () => void }) {
               </div>
             ) : (
               <>
-                <p className="text-xs text-muted-foreground">
-                  {data.total} resultado{data.total === 1 ? "" : "s"} encontrado
-                  {data.total === 1 ? "" : "s"}
-                  {data.truncated && " (mostrando os mais relevantes)"}
-                  {data.truncated && ". Refine por período, status ou tipo."}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {data.total} resultado{data.total === 1 ? "" : "s"} encontrado
+                    {data.total === 1 ? "" : "s"}
+                    {data.truncated && " (mostrando os mais relevantes)"}
+                  </p>
+                  {alreadySaved ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Bookmark className="size-3.5 text-primary" /> Salva
+                    </span>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={saveMutation.isPending || !lastQuery}
+                      onClick={() => lastQuery && saveMutation.mutate(lastQuery)}
+                    >
+                      <Bookmark className="size-3.5" /> Salvar busca
+                    </Button>
+                  )}
+                </div>
                 {data.groups.map((group) => (
                   <SearchResultGroup key={group.type} group={group} onSelect={select} />
                 ))}
@@ -123,7 +165,9 @@ export function SmartSearchPanel({ onClose }: { onClose: () => void }) {
             <SearchSuggestionChips
               starters={suggestions.data?.starters ?? []}
               recent={(recent.data ?? []).map((r) => r.query)}
+              saved={savedSearches}
               onPick={pick}
+              onDeleteSaved={(id) => deleteSavedMutation.mutate(id)}
             />
           </div>
         )}

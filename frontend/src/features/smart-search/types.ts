@@ -63,3 +63,14 @@ export interface SearchSuggestions {
   starters: string[];
   saved: SavedSearch[];
 }
+
+export interface SmartSearchSettings {
+  use_ai: boolean;
+  include_internal_notes: boolean;
+  include_financial: boolean;
+  result_limit: number;
+  store_history: boolean;
+  log_queries: boolean;
+  retention_days: number;
+  updated_at?: string;
+}

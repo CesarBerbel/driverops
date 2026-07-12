@@ -5,6 +5,7 @@ import type {
   SavedSearch,
   SearchSuggestions,
   SmartSearchResponse,
+  SmartSearchSettings,
 } from "./types";
 
 export async function smartSearch(query: string, limit?: number): Promise<SmartSearchResponse> {
@@ -41,4 +42,19 @@ export async function saveSearch(payload: { label: string; query: string }): Pro
 
 export async function deleteSavedSearch(id: number): Promise<void> {
   await apiClient.delete(`/search/saved/${id}/`);
+}
+
+export async function getSmartSearchSettings(): Promise<SmartSearchSettings> {
+  const { data } = await apiClient.get<SmartSearchSettings>("/settings/smart-search/");
+  return data;
+}
+
+export async function updateSmartSearchSettings(
+  payload: Partial<SmartSearchSettings>,
+): Promise<SmartSearchSettings> {
+  const { data } = await apiClient.patch<SmartSearchSettings>(
+    "/settings/smart-search/",
+    payload,
+  );
+  return data;
 }

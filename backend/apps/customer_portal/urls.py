@@ -1,8 +1,15 @@
 from django.urls import path
 
 from . import views
+from .settings_views import CustomerPortalSettingsView
 
 urlpatterns = [
+    # Configuração interna (autenticada) do portal.
+    path(
+        "settings/customer-portal/",
+        CustomerPortalSettingsView.as_view(),
+        name="customer_portal_settings",
+    ),
     # `request/` antes do <token> genérico (senão "request" cairia como token).
     path(
         "public/vehicle-access/request/",

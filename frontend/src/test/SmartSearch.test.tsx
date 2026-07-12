@@ -148,4 +148,38 @@ describe("SmartSearch", () => {
       await screen.findByText(/Não foi possível concluir a busca/i),
     ).toBeInTheDocument();
   });
+
+  it("lists saved searches in the initial state", async () => {
+    vi.mocked(api.getSearchSuggestions).mockResolvedValue({
+      starters: ["OS aguardando aprovação"],
+      saved: [
+        { id: 3, label: "OS atrasadas", query: "OS atrasadas", filters: {}, created_at: "2026-07-01" },
+      ],
+    });
+    const user = userEvent.setup();
+    wrap(<SmartSearchTrigger />);
+    await user.click(screen.getByRole("button", { name: /busca inteligente/i }));
+    expect(await screen.findByText("Pesquisas salvas")).toBeInTheDocument();
+    expect(screen.getByText("OS atrasadas")).toBeInTheDocument();
+  });
+
+  it("saves the current search", async () => {
+    vi.mocked(api.smartSearch).mockResolvedValue(response());
+    vi.mocked(api.saveSearch).mockResolvedValue({
+      id: 9,
+      label: "OS com luz de freio",
+      query: "OS com luz de freio",
+      filters: {},
+      created_at: "2026-07-01",
+    });
+    const user = userEvent.setup();
+    wrap(<SmartSearchTrigger />);
+    await openAndSearch(user, "OS com luz de freio");
+    const saveBtn = await screen.findByRole("button", { name: /salvar busca/i });
+    await user.click(saveBtn);
+    expect(api.saveSearch).toHaveBeenCalledWith({
+      label: "OS com luz de freio",
+      query: "OS com luz de freio",
+    });
+  });
 });

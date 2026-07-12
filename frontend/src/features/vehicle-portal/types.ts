@@ -56,3 +56,17 @@ export type PortalMessageKind =
   | "callback"
   | "pickup"
   | "other";
+
+export interface PortalSettings {
+  enabled: boolean;
+  require_email: boolean;
+  link_validity_hours: number;
+  single_use_token: boolean;
+  resend_cooldown_seconds: number;
+  show_history: boolean;
+  allow_messages: boolean;
+  allow_pdf_download: boolean;
+  notify_on_access: boolean;
+  notify_on_message: boolean;
+  updated_at?: string;
+}

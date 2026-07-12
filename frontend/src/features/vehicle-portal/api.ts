@@ -1,6 +1,21 @@
 import { apiClient } from "@/lib/api-client";
 
-import type { PortalMessageKind, VehiclePortal } from "./types";
+import type { PortalMessageKind, PortalSettings, VehiclePortal } from "./types";
+
+export async function getPortalSettings(): Promise<PortalSettings> {
+  const { data } = await apiClient.get<PortalSettings>("/settings/customer-portal/");
+  return data;
+}
+
+export async function updatePortalSettings(
+  payload: Partial<PortalSettings>,
+): Promise<PortalSettings> {
+  const { data } = await apiClient.patch<PortalSettings>(
+    "/settings/customer-portal/",
+    payload,
+  );
+  return data;
+}
 
 export async function requestVehicleAccess(payload: {
   plate: string;
