@@ -402,12 +402,19 @@ def _vehicle_label(vehicle):
 
 
 def _resolve_entities(intent, *, user, settings_obj):
-    """Decide quais entidades buscar, respeitando permissões e configuração."""
-    requested = intent.get("entities") or []
-    if requested:
-        candidates = [e for e in requested if e in _SEARCHERS]
-    else:
-        candidates = list(DEFAULT_ENTITIES)
+    """Decide quais entidades buscar, respeitando permissões e configuração.
+
+    A busca é GLOBAL: sempre inclui OS, clientes, veículos e pedidos do site.
+    Uma palavra genérica como "carro" ou "cliente" não deve restringir o escopo
+    (ex.: "carro em revisão" precisa achar a OS pelo relato/diagnóstico/serviço).
+    Entidades detectadas só ADICIONAM (o caso do financeiro, que fica fora do
+    padrão por privacidade e só entra quando a pergunta é claramente financeira).
+    """
+    detected = intent.get("entities") or []
+    candidates = list(DEFAULT_ENTITIES)
+    for entity in detected:
+        if entity in _SEARCHERS and entity not in candidates:
+            candidates.append(entity)
 
     resolved = []
     for entity in candidates:
@@ -420,11 +427,9 @@ def _resolve_entities(intent, *, user, settings_obj):
 
 
 def _applied_filters(intent, entities):
+    # Não exibimos "Tipo" como filtro: a busca é sempre global entre entidades,
+    # então mostrar um tipo seria enganoso (os resultados já vêm agrupados).
     filters = []
-    if intent.get("entities"):
-        labels = [_GROUP_LABELS[e] for e in intent["entities"] if e in _GROUP_LABELS]
-        if labels:
-            filters.append({"label": "Tipo", "value": ", ".join(labels)})
     if intent.get("date_range"):
         filters.append({"label": "Período", "value": intent["date_range"]["label"]})
     if intent.get("statuses"):

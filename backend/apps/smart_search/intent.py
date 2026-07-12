@@ -261,6 +261,12 @@ _STOPWORDS = {
     "dezembro",
 }
 
+# Palavras estruturais (nomes de entidade) também não são termos de conteúdo:
+# "carro em revisão" deve buscar por "revisão", não virar o termo "carro". Elas
+# continuam servindo à detecção de entidade via ENTITY_KEYWORDS.
+for _words in ENTITY_KEYWORDS.values():
+    _STOPWORDS.update(w for w in _words if " " not in w)
+
 
 def deaccent(text):
     """Remove acentos e normaliza para minúsculas (para comparação tolerante)."""

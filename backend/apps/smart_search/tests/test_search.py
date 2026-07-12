@@ -123,6 +123,24 @@ def test_search_by_customer(full_client, customer):
     assert customer.id in _ids(payload, "customer")
 
 
+def test_generic_car_word_does_not_restrict_to_vehicles(full_client, work_order):
+    # Bug relatado: "carro em revisão" buscava só em veículos. A palavra "carro"
+    # não pode restringir -- a OS precisa aparecer pelo serviço/relato/diagnóstico.
+    payload = _post(full_client, "carro em revisão").json()
+    assert work_order.id in _ids(payload, "work_order")
+
+
+def test_customer_report_searched_even_with_entity_word(full_client, work_order):
+    # "carro com luz de freio acesa" deve casar no RELATO DO CLIENTE, não só em veículos.
+    payload = _post(full_client, "carro com luz de freio acesa").json()
+    wo = next(
+        x
+        for x in payload["results"]
+        if x["type"] == "work_order" and x["id"] == work_order.id
+    )
+    assert "relato do cliente" in wo["reason"].lower()
+
+
 def test_no_results(full_client, work_order):
     payload = _post(full_client, "helicóptero movido a energia solar").json()
     assert payload["total"] == 0
