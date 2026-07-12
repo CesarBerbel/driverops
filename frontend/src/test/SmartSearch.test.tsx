@@ -34,6 +34,7 @@ function response(overrides: Partial<SmartSearchResponse> = {}): SmartSearchResp
     interpreted: { entities: [], period: null, statuses: [], terms: ["freio"] },
     applied_filters: [{ label: "Texto", value: "freio" }],
     used_ai: false,
+    used_semantic: false,
     total: 2,
     truncated: false,
     results: [],
@@ -116,6 +117,14 @@ describe("SmartSearch", () => {
     expect(screen.getByText(/luz de freio permanece acesa/)).toBeInTheDocument();
     // Filtros aplicados exibidos.
     expect(screen.getByText("freio")).toBeInTheDocument();
+  });
+
+  it("shows the semantic badge when the search used embeddings", async () => {
+    vi.mocked(api.smartSearch).mockResolvedValue(response({ used_semantic: true }));
+    const user = userEvent.setup();
+    wrap(<SmartSearchTrigger />);
+    await openAndSearch(user, "OS com luz de freio");
+    expect(await screen.findByText("Semântica")).toBeInTheDocument();
   });
 
   it("navigates to the result url on click", async () => {

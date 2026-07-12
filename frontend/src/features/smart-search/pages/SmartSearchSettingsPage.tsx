@@ -156,6 +156,77 @@ export function SmartSearchSettingsPage() {
               </fieldset>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Busca semântica (embeddings)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <fieldset disabled={!canEdit} className="space-y-3">
+                <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
+                  <div>
+                    <Label>Ativar busca semântica</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Encontra OS por significado (ex.: “luz do freio acesa” acha “lâmpada de stop
+                      acesa”). Requer um provedor de embeddings e rodar o comando de indexação.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={Boolean(form.semantic_enabled)}
+                    onCheckedChange={(v) => set("semantic_enabled", v)}
+                    aria-label="Ativar busca semântica"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="emb-model">Modelo de embeddings</Label>
+                  <Input
+                    id="emb-model"
+                    value={form.embedding_model}
+                    onChange={(e) => set("embedding_model", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="emb-url">Endpoint (compatível com OpenAI)</Label>
+                  <Input
+                    id="emb-url"
+                    value={form.embedding_base_url}
+                    onChange={(e) => set("embedding_base_url", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="emb-key">Variável de ambiente com a chave de API</Label>
+                  <Input
+                    id="emb-key"
+                    value={form.embedding_api_key_env}
+                    onChange={(e) => set("embedding_api_key_env", e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    A chave nunca é salva no banco — apenas o nome da variável de ambiente.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                  <Label className="flex-1">Dimensão do vetor</Label>
+                  <Input
+                    type="number"
+                    className="w-24"
+                    value={String(form.embedding_dimensions)}
+                    onChange={(e) => set("embedding_dimensions", Number(e.target.value))}
+                  />
+                </div>
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+                  <Label className="flex-1">Similaridade mínima (0–1)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    className="w-24"
+                    value={String(form.similarity_threshold)}
+                    onChange={(e) => set("similarity_threshold", Number(e.target.value))}
+                  />
+                </div>
+              </fieldset>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

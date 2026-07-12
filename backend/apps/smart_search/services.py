@@ -20,6 +20,7 @@ from apps.vehicles.models import Vehicle
 from .ai import enhance_intent
 from .intent import deaccent, interpret
 from .models import RecentSearch, SearchLog
+from .semantic import semantic_work_order_scores
 
 # Entidade -> permissão necessária para aparecer nos resultados.
 ENTITY_PERMISSION = {
@@ -103,20 +104,21 @@ def _score(blob, concepts):
 # --------------------------------------------------------------------------- #
 # Buscas por entidade
 # --------------------------------------------------------------------------- #
-def _search_work_orders(intent, *, user, settings_obj):
+def _search_work_orders(intent, *, user, settings_obj, semantic_scores=None):
     concepts = intent["concepts"]
     statuses = intent["statuses"]
     date_range = intent["date_range"]
     allow_internal = _can_see_internal(user, settings_obj)
+    semantic_scores = semantic_scores or {}
 
-    if not concepts and not statuses and not date_range:
+    if not concepts and not statuses and not date_range and not semantic_scores:
         return []
 
-    qs = WorkOrder.objects.filter(is_active=True).select_related("customer", "vehicle")
+    base = WorkOrder.objects.filter(is_active=True)
     if statuses:
-        qs = qs.filter(status__in=statuses)
+        base = base.filter(status__in=statuses)
     if date_range:
-        qs = qs.filter(
+        base = base.filter(
             opened_at__gte=date_range["start"], opened_at__lte=date_range["end"]
         )
 
@@ -139,17 +141,42 @@ def _search_work_orders(intent, *, user, settings_obj):
     if allow_internal:
         text_fields.append("internal_notes")
 
+    # Híbrido: com termos de conteúdo, o conjunto é (lexical ∪ semântico); a busca
+    # semântica só entra quando há texto real (não em consultas só de status/data).
+    # Os IDs semânticos ainda passam pelo filtro de data/status, para não furar o
+    # período/estado pedido.
     if concepts:
-        qs = qs.filter(_concepts_q(text_fields, concepts)).distinct()
+        lexical_ids = set(
+            base.filter(_concepts_q(text_fields, concepts))
+            .values_list("id", flat=True)
+            .distinct()
+        )
+        sem_ids = set()
+        if semantic_scores:
+            sem_ids = set(
+                base.filter(id__in=list(semantic_scores)).values_list("id", flat=True)
+            )
+        ids = lexical_ids | sem_ids
+        if not ids:
+            return []
+        qs = base.filter(id__in=ids)
+    else:
+        qs = base  # só status/data -- comportamento original
+        semantic_scores = {}  # sem termos, similaridade não se aplica
 
-    qs = qs.prefetch_related(
-        "service_items__service", "part_items__part", "package_items", "quotes"
-    ).order_by("-opened_at", "-id")[:60]
+    qs = (
+        qs.select_related("customer", "vehicle")
+        .prefetch_related(
+            "service_items__service", "part_items__part", "package_items", "quotes"
+        )
+        .order_by("-opened_at", "-id")[:60]
+    )
 
     results = []
     for order in qs:
+        sim = semantic_scores.get(order.id)
         reason, snippet = _work_order_reason(
-            order, concepts, statuses, date_range, allow_internal
+            order, concepts, statuses, date_range, allow_internal, sim
         )
         blob = " ".join(
             filter(
@@ -167,6 +194,9 @@ def _search_work_orders(intent, *, user, settings_obj):
                 ],
             )
         )
+        score = _score(blob, concepts) + (1 if statuses or date_range else 0)
+        if sim is not None:
+            score += 1 + round(sim)  # dá relevância ao match semântico
         results.append(
             {
                 "type": "work_order",
@@ -178,13 +208,13 @@ def _search_work_orders(intent, *, user, settings_obj):
                 "snippet": snippet,
                 "reason": reason,
                 "url": f"/orders/{order.id}",
-                "score": _score(blob, concepts) + (1 if statuses or date_range else 0),
+                "score": score,
             }
         )
     return results
 
 
-def _work_order_reason(order, concepts, statuses, date_range, allow_internal):
+def _work_order_reason(order, concepts, statuses, date_range, allow_internal, sim=None):
     priority = [
         (order.customer_report, "Encontrado no relato do cliente."),
         (order.diagnosis, "Encontrado no diagnóstico técnico."),
@@ -216,6 +246,11 @@ def _work_order_reason(order, concepts, statuses, date_range, allow_internal):
         return "Encontrado pelos dados do veículo.", ""
     if _field_match(order.customer.name, concepts):
         return "Encontrado pelo nome do cliente.", ""
+
+    # Sem correspondência literal, mas próximo por significado (busca semântica).
+    if sim is not None:
+        snippet = _excerpt(order.customer_report or order.diagnosis, "")
+        return "Correspondência por semelhança de significado.", snippet
 
     if statuses:
         return f"Status: {_STATUS_LABELS.get(order.status, order.status)}.", ""
@@ -451,9 +486,28 @@ def run_search(query, *, user, settings_obj, limit=None):
 
     entities = _resolve_entities(intent, user=user, settings_obj=settings_obj)
 
+    # Busca semântica só faz sentido com texto real e sobre as OS (onde há relato/
+    # diagnóstico). Devolve {} quando desligada/indisponível (fallback lexical).
+    semantic_scores = {}
+    if "work_order" in entities and intent["concepts"]:
+        semantic_scores = semantic_work_order_scores(query, settings_obj)
+    used_semantic = bool(semantic_scores)
+
     results = []
     for entity in entities:
-        results.extend(_SEARCHERS[entity](intent, user=user, settings_obj=settings_obj))
+        if entity == "work_order":
+            results.extend(
+                _search_work_orders(
+                    intent,
+                    user=user,
+                    settings_obj=settings_obj,
+                    semantic_scores=semantic_scores,
+                )
+            )
+        else:
+            results.extend(
+                _SEARCHERS[entity](intent, user=user, settings_obj=settings_obj)
+            )
 
     results.sort(key=lambda r: (r["score"], r["date"] or ""), reverse=True)
     total = len(results)
@@ -483,6 +537,7 @@ def run_search(query, *, user, settings_obj, limit=None):
         "total": total,
         "truncated": total > len(results),
         "used_ai": used_ai,
+        "used_semantic": used_semantic,
     }
 
     duration_ms = int((time.monotonic() - started) * 1000)

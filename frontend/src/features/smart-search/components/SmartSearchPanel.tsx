@@ -115,7 +115,11 @@ export function SmartSearchPanel({ onClose }: { onClose: () => void }) {
 
         {!search.isPending && !search.isError && data && (
           <>
-            <SearchAppliedFilters filters={data.applied_filters} usedAi={data.used_ai} />
+            <SearchAppliedFilters
+              filters={data.applied_filters}
+              usedAi={data.used_ai}
+              usedSemantic={data.used_semantic}
+            />
             {data.total === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center">
                 <SearchX className="size-7 text-muted-foreground" />

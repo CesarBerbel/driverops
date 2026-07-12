@@ -28,6 +28,26 @@ class SmartSearchSettings(SingletonModel):
     # Retenção de logs/histórico em dias (0 = sem expurgo automático).
     retention_days = models.PositiveIntegerField(default=90)
 
+    # --- Busca semântica (embeddings) -----------------------------------
+    # Combina a busca lexical com similaridade vetorial: encontra OS por
+    # SIGNIFICADO ("luz do freio acesa" acha "lâmpada de stop acesa"). Desligada
+    # por padrão -- precisa de um provedor de embeddings configurado. Quando
+    # indisponível, a busca cai no modo lexical (fallback), sem falhar.
+    semantic_enabled = models.BooleanField(default=False)
+    embedding_provider = models.CharField(max_length=20, default="openai")
+    embedding_model = models.CharField(max_length=100, default="text-embedding-3-small")
+    embedding_base_url = models.CharField(
+        max_length=300, default="https://api.openai.com/v1"
+    )
+    # Nome da variável de ambiente com a chave (a chave NUNCA fica no banco).
+    embedding_api_key_env = models.CharField(
+        max_length=100, default="SMART_SEARCH_EMBEDDING_KEY"
+    )
+    # Dimensão do vetor (menor = mais rápido; text-embedding-3-* aceita reduzir).
+    embedding_dimensions = models.PositiveSmallIntegerField(default=512)
+    # Similaridade mínima (cosseno, 0-1) para um resultado semântico entrar.
+    similarity_threshold = models.FloatField(default=0.78)
+
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -112,3 +132,25 @@ class SavedSearch(models.Model):
 
     def __str__(self):
         return self.label
+
+
+class WorkOrderEmbedding(models.Model):
+    """Embedding vetorial do texto (visível ao cliente) de uma OS.
+
+    Guardado como lista de floats (JSON) -- sem depender de extensão do banco.
+    ``source_hash`` permite recomputar só quando o texto muda. Observações
+    internas NÃO entram no texto embutido, para não vazar por similaridade.
+    """
+
+    order = models.OneToOneField(
+        "orders.WorkOrder",
+        on_delete=models.CASCADE,
+        related_name="search_embedding",
+    )
+    embedding = models.JSONField(default=list)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    model = models.CharField(max_length=100, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Embedding OS {self.order_id}"

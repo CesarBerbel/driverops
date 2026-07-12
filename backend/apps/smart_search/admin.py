@@ -1,6 +1,18 @@
 from django.contrib import admin
 
-from .models import RecentSearch, SavedSearch, SearchLog, SmartSearchSettings
+from .models import (
+    RecentSearch,
+    SavedSearch,
+    SearchLog,
+    SmartSearchSettings,
+    WorkOrderEmbedding,
+)
+
+
+@admin.register(WorkOrderEmbedding)
+class WorkOrderEmbeddingAdmin(admin.ModelAdmin):
+    list_display = ["order", "model", "updated_at"]
+    search_fields = ["order__number"]
 
 
 @admin.register(SmartSearchSettings)

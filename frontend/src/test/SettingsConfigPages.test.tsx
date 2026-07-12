@@ -41,6 +41,13 @@ describe("SmartSearchSettingsPage", () => {
       store_history: true,
       log_queries: true,
       retention_days: 90,
+      semantic_enabled: false,
+      embedding_provider: "openai",
+      embedding_model: "text-embedding-3-small",
+      embedding_base_url: "https://api.openai.com/v1",
+      embedding_api_key_env: "SMART_SEARCH_EMBEDDING_KEY",
+      embedding_dimensions: 512,
+      similarity_threshold: 0.78,
     });
     vi.mocked(ssApi.updateSmartSearchSettings).mockResolvedValue({
       use_ai: false,
@@ -50,6 +57,13 @@ describe("SmartSearchSettingsPage", () => {
       store_history: true,
       log_queries: true,
       retention_days: 90,
+      semantic_enabled: false,
+      embedding_provider: "openai",
+      embedding_model: "text-embedding-3-small",
+      embedding_base_url: "https://api.openai.com/v1",
+      embedding_api_key_env: "SMART_SEARCH_EMBEDDING_KEY",
+      embedding_dimensions: 512,
+      similarity_threshold: 0.78,
     });
   });
 

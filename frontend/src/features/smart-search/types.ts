@@ -43,6 +43,7 @@ export interface SmartSearchResponse {
   total: number;
   truncated: boolean;
   used_ai: boolean;
+  used_semantic: boolean;
 }
 
 export interface RecentSearch {
@@ -72,5 +73,12 @@ export interface SmartSearchSettings {
   store_history: boolean;
   log_queries: boolean;
   retention_days: number;
+  semantic_enabled: boolean;
+  embedding_provider: string;
+  embedding_model: string;
+  embedding_base_url: string;
+  embedding_api_key_env: string;
+  embedding_dimensions: number;
+  similarity_threshold: number;
   updated_at?: string;
 }
