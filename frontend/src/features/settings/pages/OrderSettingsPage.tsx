@@ -91,6 +91,7 @@ const POLICY_FIELDS: { name: keyof OrderSettingsFormValues; label: string }[] = 
 function toFormValues(settings: OrderSettings): OrderSettingsFormValues {
   return {
     default_delivery_days: String(settings.default_delivery_days),
+    default_payment_due_days: String(settings.default_payment_due_days),
     warranty_terms: settings.warranty_terms,
     quote_terms: settings.quote_terms,
     service_authorization_terms: settings.service_authorization_terms,
@@ -209,6 +210,7 @@ function OrderSettingsForm({
     mutation.mutate({
       ...values,
       default_delivery_days: Number(values.default_delivery_days),
+      default_payment_due_days: Number(values.default_payment_due_days),
     });
   }
 
@@ -246,6 +248,43 @@ function OrderSettingsForm({
               <p className="text-xs text-muted-foreground">
                 Aplicado automaticamente à previsão de entrega de novas OS (data de abertura +
                 prazo). Alterar aqui não afeta OS já criadas. Use 0 para entrega no mesmo dia.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Prazo padrão de pagamento</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="default_payment_due_days">Vencimento após finalizar a OS</Label>
+            <div className="flex items-center gap-2">
+              <Controller
+                control={control}
+                name="default_payment_due_days"
+                render={({ field }) => (
+                  <Input
+                    id="default_payment_due_days"
+                    inputMode="numeric"
+                    className="w-24"
+                    value={field.value}
+                    onChange={(event) => field.onChange(onlyDigits(event.target.value))}
+                    aria-invalid={Boolean(errors.default_payment_due_days)}
+                  />
+                )}
+              />
+              <span className="text-sm text-muted-foreground">dias</span>
+            </div>
+            {errors.default_payment_due_days ? (
+              <p className="text-sm text-destructive">
+                {errors.default_payment_due_days.message}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Ao finalizar uma OS sem vencimento definido, o vencimento do pagamento vira
+                (data de finalização + estes dias) — alimenta as contas a receber e o aging.
+                Use 0 para não definir vencimento automaticamente.
               </p>
             )}
           </CardContent>

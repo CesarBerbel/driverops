@@ -362,8 +362,30 @@ def _run_side_effects(order, old_status, action, actor):
     # Baixa de estoque ao finalizar (idempotente via WorkOrder.stock_deducted).
     if order.status == S.FINISHED and old_status != S.FINISHED:
         deduct_stock_for_order(order, actor)
+        _set_default_payment_due(order)
     # E-mail automático ao cliente nos marcos configurados (pronta/finalizada/...).
     maybe_notify_status_change(order, actor=actor)
+
+
+def _set_default_payment_due(order):
+    """Ao finalizar sem vencimento definido, aplica o prazo padrão de pagamento.
+
+    Vencimento = data de finalização + ``OrderSettings.default_payment_due_days``.
+    Desligado quando o prazo é 0 ou quando a OS já tem um vencimento manual.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.workshop.models import OrderSettings
+
+    if order.payment_due_date is not None:
+        return
+    days = OrderSettings.get_solo().default_payment_due_days
+    if not days:
+        return
+    order.payment_due_date = timezone.localdate() + timedelta(days=days)
+    order.save(update_fields=["payment_due_date", "updated_at"])
 
 
 def system_advance_to_approved(order, actor=None):

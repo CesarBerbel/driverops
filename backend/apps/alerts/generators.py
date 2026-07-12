@@ -306,6 +306,46 @@ def check_payments_pending():
     )
 
 
+def check_receivables_overdue():
+    """OS com saldo em aberto e vencimento do pagamento já passado (contas vencidas)."""
+    from apps.orders.models import WorkOrder
+
+    today = _today()
+    qs = (
+        WorkOrder.objects.filter(
+            is_active=True,
+            payment_due_date__isnull=False,
+            payment_due_date__lt=today,
+        )
+        .exclude(status=WorkOrder.Status.CANCELED)
+        .prefetch_related("service_items", "package_items", "part_items", "payments")
+    )
+    overdue = []
+    total = Decimal("0")
+    for order in qs:
+        paid = sum((p.amount for p in order.payments.all()), Decimal("0"))
+        balance = _order_final_value(order) - paid
+        if balance > 0:
+            overdue.append(order)
+            total += balance
+    if not overdue:
+        return []
+    numbers = ", ".join(f"#{o.number}" for o in overdue[:10])
+    money = f"R$ {total:.2f}".replace(".", ",")
+    return emit(
+        NotifType.RECEIVABLES_OVERDUE,
+        title=f"{len(overdue)} conta(s) a receber vencida(s)",
+        message=(
+            f"Total vencido: {money}. OS: {numbers}."
+            + (" ..." if len(overdue) > 10 else "")
+        ),
+        url="/financial",
+        action_label="Ver contas a receber",
+        dedup_key=f"receivables_overdue:summary:{today}",
+        data={"count": len(overdue), "total": str(total)},
+    )
+
+
 def check_stock_low():
     from django.db.models import F
 
@@ -361,6 +401,7 @@ PERIODIC_CHECKS = [
     check_quotes_decided,
     check_payments_today,
     check_payments_pending,
+    check_receivables_overdue,
     check_stock_low,
 ]
 

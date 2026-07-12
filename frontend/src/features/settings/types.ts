@@ -37,6 +37,7 @@ export type WorkshopProfilePayload = Omit<WorkshopProfile, "updated_at" | "logo"
 
 export interface OrderSettings {
   default_delivery_days: number;
+  default_payment_due_days: number;
   warranty_terms: string;
   quote_terms: string;
   service_authorization_terms: string;

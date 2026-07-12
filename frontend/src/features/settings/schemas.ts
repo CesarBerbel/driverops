@@ -50,6 +50,13 @@ export const orderSettingsSchema = z.object({
     .refine((value) => value !== "" && Number.isInteger(Number(value)) && Number(value) >= 0, {
       message: "Informe um número de dias válido (não negativo).",
     }),
+  default_payment_due_days: z
+    .string()
+    .refine(
+      (value) =>
+        value !== "" && Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 365,
+      { message: "Informe de 0 a 365 dias (0 = sem vencimento automático)." },
+    ),
   warranty_terms: z.string().optional(),
   quote_terms: z.string().optional(),
   service_authorization_terms: z.string().optional(),

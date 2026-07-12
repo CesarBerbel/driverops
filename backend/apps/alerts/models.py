@@ -26,6 +26,7 @@ class NotifType(models.TextChoices):
     QUOTE_REJECTED = "quote_rejected", "Orçamento recusado"
     PAYMENTS_TODAY = "payments_today", "Pagamentos registrados hoje"
     PAYMENTS_PENDING = "payments_pending", "OS com pagamento pendente"
+    RECEIVABLES_OVERDUE = "receivables_overdue", "Contas a receber vencidas"
     STOCK_LOW = "stock_low", "Estoque abaixo do mínimo"
     CRM_SUGGESTION = "crm_suggestion", "Sugestão do CRM inteligente"
     MANUAL = "manual", "Aviso manual"
@@ -85,6 +86,7 @@ TYPE_MODULE = {
     NotifType.QUOTE_REJECTED: NotifModule.QUOTES,
     NotifType.PAYMENTS_TODAY: NotifModule.FINANCIAL,
     NotifType.PAYMENTS_PENDING: NotifModule.FINANCIAL,
+    NotifType.RECEIVABLES_OVERDUE: NotifModule.FINANCIAL,
     NotifType.STOCK_LOW: NotifModule.PARTS,
     NotifType.CRM_SUGGESTION: NotifModule.CRM,
     NotifType.MANUAL: NotifModule.SYSTEM,
@@ -103,6 +105,7 @@ DEFAULT_PRIORITY = {
     NotifType.QUOTE_REJECTED: NotifPriority.ATTENTION,
     NotifType.PAYMENTS_TODAY: NotifPriority.INFO,
     NotifType.PAYMENTS_PENDING: NotifPriority.ATTENTION,
+    NotifType.RECEIVABLES_OVERDUE: NotifPriority.URGENT,
     NotifType.STOCK_LOW: NotifPriority.IMPORTANT,
     NotifType.CRM_SUGGESTION: NotifPriority.IMPORTANT,
     NotifType.MANUAL: NotifPriority.IMPORTANT,

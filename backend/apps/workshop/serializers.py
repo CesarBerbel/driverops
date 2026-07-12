@@ -120,6 +120,7 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
         model = OrderSettings
         fields = [
             "default_delivery_days",
+            "default_payment_due_days",
             "warranty_terms",
             "quote_terms",
             "service_authorization_terms",
@@ -146,6 +147,13 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
         valid = set(WorkOrder.Status.values)
         if not isinstance(value, list) or any(s not in valid for s in value):
             raise serializers.ValidationError("Lista de status inválida.")
+        return value
+
+    def validate_default_payment_due_days(self, value):
+        if value is None or value < 0 or value > 365:
+            raise serializers.ValidationError(
+                "O prazo de pagamento deve estar entre 0 e 365 dias."
+            )
         return value
 
     def validate_default_delivery_days(self, value):

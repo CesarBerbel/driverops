@@ -133,6 +133,9 @@ class OrderSettings(SingletonModel):
     """
 
     default_delivery_days = models.PositiveIntegerField(default=7)
+    # Prazo padrão de pagamento: ao finalizar a OS sem vencimento definido, o
+    # vencimento vira (data de finalização + N dias). 0 = não define automático.
+    default_payment_due_days = models.PositiveIntegerField(default=0)
     warranty_terms = models.TextField(blank=True, default=DEFAULT_WARRANTY_TERMS)
     quote_terms = models.TextField(blank=True, default=DEFAULT_QUOTE_TERMS)
     service_authorization_terms = models.TextField(

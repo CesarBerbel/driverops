@@ -17,6 +17,7 @@ vi.mock("@/features/auth/useAuth", () => ({ useAuth: () => ({ user: auth.user })
 function settings(overrides: Partial<OrderSettings> = {}): OrderSettings {
   return {
     default_delivery_days: 7,
+    default_payment_due_days: 0,
     warranty_terms: "Garantia padrão",
     quote_terms: "Orçamento padrão",
     service_authorization_terms: "Autorização padrão",

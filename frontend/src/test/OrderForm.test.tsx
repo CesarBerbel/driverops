@@ -31,6 +31,7 @@ vi.mock("@/features/settings/api");
 function orderSettings(days: number): OrderSettings {
   return {
     default_delivery_days: days,
+    default_payment_due_days: 0,
     warranty_terms: "",
     quote_terms: "",
     service_authorization_terms: "",
