@@ -80,7 +80,7 @@ import type { OrderDiscountType, WorkOrder } from "../types";
 import { NotifyCustomerButton } from "./NotifyCustomerButton";
 import { OrderPdfButton } from "./OrderPdfButton";
 import { VehicleCheckInTab } from "@/features/checkin/VehicleCheckInTab";
-import { CrmSuggestionsPanel } from "@/features/crm/CrmSuggestionsPanel";
+import { OrderCrmTab } from "@/features/crm/OrderCrmTab";
 import { OrderEventTimeline } from "./OrderEventTimeline";
 import { OrderLineList } from "./OrderLineList";
 import { OrderStatusActions } from "./OrderStatusActions";
@@ -135,6 +135,7 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
   const navigate = useNavigate();
   const can = usePermissionCheck();
   const canViewFinancial = can("financial.view");
+  const canCrm = can("crm.view");
   const isEditMode = order !== null;
   const orderId = order?.id ?? null;
   // No mobile (< sm) os botões da barra de ações viram só ícone (o rótulo fica
@@ -303,6 +304,16 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         ]
       : []),
     { key: "summary", label: "Resumo e valores", hasError: tabHasError("summary") },
+    ...(canCrm
+      ? [
+          {
+            key: "crm",
+            label: "CRM",
+            disabled: !isEditMode,
+            disabledHint: "Salve a OS para ver as sugestões do CRM.",
+          },
+        ]
+      : []),
     {
       key: "history",
       label: "Histórico",
@@ -702,7 +713,6 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
         {/* Aba 2 -- Relato, diagnóstico e observações internas. */}
         {activeTab === "report" && (
           <div className="space-y-6">
-            {orderId !== null && <CrmSuggestionsPanel workOrderId={orderId} />}
             <Card>
               <CardHeader className="flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base">Relato do cliente</CardTitle>
@@ -891,6 +901,9 @@ export function OrderForm({ order, onCancel }: OrderFormProps) {
 
         {/* Aba 5 -- Orçamento (apenas em OS já salva). */}
         {activeTab === "budget" && orderId !== null && <QuotePanel orderId={orderId} />}
+
+        {/* Aba CRM -- próximas ações sugeridas pelo CRM para esta OS. */}
+        {activeTab === "crm" && orderId !== null && <OrderCrmTab workOrderId={orderId} />}
 
         {/* Aba Pagamentos -- registrar pagamento da OS (apenas em OS já salva). */}
         {activeTab === "payments" && order && (
