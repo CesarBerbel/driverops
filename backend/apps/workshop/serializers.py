@@ -7,7 +7,14 @@ from .models import (
     KANBAN_STATUS_ORDER,
     KanbanSettings,
     OrderSettings,
+    PdfLayoutSettings,
     WorkshopProfile,
+)
+from .pdf_blocks import (
+    BLOCK_CATALOG,
+    normalize_accent_color,
+    normalize_base_font_size,
+    normalize_blocks,
 )
 
 
@@ -165,6 +172,35 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
                 "O prazo padrão de entrega não pode ser negativo."
             )
         return value
+
+
+class PdfLayoutSettingsSerializer(serializers.ModelSerializer):
+    # Lista ordenada de blocos {type, options, id?}. A validação delega para
+    # normalize_blocks (descarta tipos inválidos e saneia opções por tipo).
+    blocks = serializers.ListField(child=serializers.DictField(), required=False)
+    # Sem max_length aqui: qualquer valor inválido é saneado por normalize_accent_color
+    # (que sempre devolve um hex curto), em vez de estourar um 400.
+    accent_color = serializers.CharField(required=False, allow_blank=True)
+    base_font_size = serializers.FloatField(required=False)
+    # Catálogo de blocos disponíveis (somente leitura), para o editor montar a UI.
+    catalog = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PdfLayoutSettings
+        fields = ["blocks", "accent_color", "base_font_size", "catalog", "updated_at"]
+        read_only_fields = ["catalog", "updated_at"]
+
+    def get_catalog(self, obj):
+        return BLOCK_CATALOG
+
+    def validate_blocks(self, value):
+        return normalize_blocks(value)
+
+    def validate_accent_color(self, value):
+        return normalize_accent_color(value)
+
+    def validate_base_font_size(self, value):
+        return normalize_base_font_size(value)
 
 
 class KanbanSettingsSerializer(serializers.ModelSerializer):

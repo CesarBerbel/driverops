@@ -73,3 +73,48 @@ export interface KanbanSettings {
 }
 
 export type KanbanSettingsPayload = { columns: KanbanColumnConfig[] };
+
+// ---- Construtor de PDF da OS (layout por blocos) -------------------------
+
+export type PdfOptionKind = "bool" | "text" | "textarea" | "number" | "select" | "multi";
+
+// Especificação de uma opção de bloco (vem do catálogo do backend). O editor usa
+// `kind` para escolher o controle e `default`/`choices`/`min`/`max` para o valor.
+export interface PdfCatalogOption {
+  key: string;
+  kind: PdfOptionKind;
+  label: string;
+  default: unknown;
+  choices?: [string, string][];
+  min?: number;
+  max?: number;
+}
+
+export interface PdfCatalogEntry {
+  type: string;
+  label: string;
+  description: string;
+  options: PdfCatalogOption[];
+}
+
+// Um bloco do documento: tipo + opções. `id` é uma chave estável local (para o
+// editor); o backend a preserva mas não depende dela.
+export interface PdfBlock {
+  type: string;
+  options: Record<string, unknown>;
+  id?: string;
+}
+
+export interface PdfLayoutSettings {
+  blocks: PdfBlock[];
+  accent_color: string;
+  base_font_size: number;
+  catalog: PdfCatalogEntry[];
+  updated_at: string;
+}
+
+export type PdfLayoutPayload = {
+  blocks: PdfBlock[];
+  accent_color: string;
+  base_font_size: number;
+};

@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -7,10 +8,17 @@ from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsSuperUser
 
-from .models import LOGO_EXTENSIONS, KanbanSettings, OrderSettings, WorkshopProfile
+from .models import (
+    LOGO_EXTENSIONS,
+    KanbanSettings,
+    OrderSettings,
+    PdfLayoutSettings,
+    WorkshopProfile,
+)
 from .serializers import (
     KanbanSettingsSerializer,
     OrderSettingsSerializer,
+    PdfLayoutSettingsSerializer,
     WorkshopProfileSerializer,
 )
 
@@ -45,6 +53,53 @@ class OrderSettingsView(_SoloSettingsView):
 class KanbanSettingsView(_SoloSettingsView):
     model = KanbanSettings
     serializer_class = KanbanSettingsSerializer
+
+
+class PdfLayoutSettingsView(_SoloSettingsView):
+    model = PdfLayoutSettings
+    serializer_class = PdfLayoutSettingsSerializer
+
+
+class PdfLayoutPreviewView(APIView):
+    """Pré-visualização do PDF da OS com o layout enviado (sem salvar).
+
+    Renderiza a OS mais recente usando os blocos/opções do corpo da requisição
+    (ou o layout salvo, para os campos omitidos), devolvendo o PDF inline. Assim
+    o editor mostra o resultado real das alterações antes de salvar.
+    """
+
+    permission_classes = [IsSuperUser]
+
+    def post(self, request):
+        from apps.orders.models import WorkOrder
+        from apps.orders.pdf import render_order_pdf
+
+        order = (
+            WorkOrder.objects.select_related("customer", "vehicle")
+            .order_by("-id")
+            .first()
+        )
+        if order is None:
+            return Response(
+                {"detail": "Crie ao menos uma OS para pré-visualizar o PDF."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = PdfLayoutSettingsSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        saved = PdfLayoutSettings.get_solo()
+        layout = {
+            "blocks": serializer.validated_data.get("blocks", saved.blocks),
+            "accent_color": serializer.validated_data.get(
+                "accent_color", saved.accent_color
+            ),
+            "base_font_size": serializer.validated_data.get(
+                "base_font_size", saved.base_font_size
+            ),
+        }
+        pdf = render_order_pdf(order, request=request, layout=layout)
+        response = HttpResponse(pdf, content_type="application/pdf")
+        response["Content-Disposition"] = 'inline; filename="previa-os.pdf"'
+        return response
 
 
 def _looks_like_supported_image(file):

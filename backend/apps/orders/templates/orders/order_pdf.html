@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+{% load l10n %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="utf-8" />
 <style>
   @page { size: A4; margin: 1.2cm 1.2cm 1.5cm 1.2cm; }
-  body { font-family: Helvetica, Arial, sans-serif; font-size: 8.5pt; color: #111827; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: {{ page.base_font_size|unlocalize }}pt; color: #111827; }
   h1, h2, h3 { margin: 0; }
   .muted { color: #6b7280; }
   .small { font-size: 7.5pt; }
@@ -22,7 +22,7 @@
 
   /* Barra da OS. */
   table.osbar { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  table.osbar td { background: #e5e7eb; padding: 3px 8px; font-size: 8.5pt; font-weight: bold; }
+  table.osbar td { padding: 3px 8px; font-size: 8.5pt; font-weight: bold; }
 
   /* Grid tipo formulário (cliente/veículo): rótulo pequeno + valor por célula. */
   table.grid { width: 100%; border-collapse: collapse; }
@@ -31,9 +31,9 @@
   .grid .val { font-size: 8.5pt; color: #111827; }
   .plate { font-weight: bold; letter-spacing: 1px; }
 
-  /* Faixa de seção (banda cinza, centralizada). */
+  /* Faixa de seção (banda, centralizada). */
   .band {
-    background: #e5e7eb; color: #111827; font-weight: bold; font-size: 8pt;
+    color: #111827; font-weight: bold; font-size: 8pt;
     text-transform: uppercase; letter-spacing: 0.5px; text-align: center;
     padding: 3px; margin-top: 9px;
   }
@@ -57,7 +57,7 @@
   table.totals-line td { padding: 5px 4px 0; font-size: 8.5pt; vertical-align: top; }
   .grand-total { text-align: right; font-size: 12pt; font-weight: bold; white-space: nowrap; }
 
-  .terms { margin-top: 8px; font-size: 7.5pt; color: #374151; white-space: pre-line; }
+  .terms { margin-top: 8px; font-size: 7.5pt; color: #374151; }
   .terms-title { font-weight: bold; text-transform: uppercase; font-size: 7.5pt; color: #374151;
     border-bottom: 0.5px solid #d1d5db; padding-bottom: 1px; margin-bottom: 2px; }
 
@@ -68,9 +68,12 @@
 
   .footer { margin-top: 12px; border-top: 0.5px solid #d1d5db; padding-top: 4px;
     font-size: 7pt; color: #6b7280; white-space: pre-line; text-align: center; }
+  .free-text { margin-top: 6px; }
 </style>
 </head>
 <body>
+  {% for block in layout_blocks %}
+  {% if block.type == "header" %}
   <!-- Cabeçalho -->
   <table class="header">
     <tr>
@@ -89,49 +92,46 @@
     </tr>
   </table>
 
+  {% elif block.type == "os_bar" %}
   <!-- Barra da OS -->
   <table class="osbar">
     <tr>
-      <td style="width: 34%;">OS: {{ order.number|stringformat:"04d" }}</td>
-      <td class="center" style="width: 33%;">VIA DO CLIENTE</td>
-      <td class="right" style="width: 33%;">Emissão: {{ emitted_at }}</td>
+      <td width="34%" style="background: {{ page.accent_color }};">{% if block.options.show_number %}OS: {{ order.number|stringformat:"04d" }}{% endif %}</td>
+      <td width="33%" class="center" style="background: {{ page.accent_color }};">{{ block.options.label }}</td>
+      <td width="33%" class="right" style="background: {{ page.accent_color }};">{% if block.options.show_emission %}Emissão: {{ emitted_at }}{% endif %}</td>
     </tr>
   </table>
 
+  {% elif block.type == "customer" %}
+  {% if block.cells %}
   <!-- Cliente -->
-  <table class="grid">
-    <tr>
-      <td style="width: 34%;"><div class="lbl">Nome do cliente</div><div class="val">{{ customer.name|default:"—" }}</div></td>
-      <td style="width: 22%;"><div class="lbl">Telefone</div><div class="val">{{ customer_phone|default:"—" }}</div></td>
-      <td style="width: 26%;"><div class="lbl">E-mail</div><div class="val">{{ customer.email|default:"—" }}</div></td>
-      <td style="width: 18%;"><div class="lbl">CPF/CNPJ</div><div class="val">{{ customer_document|default:"—" }}</div></td>
-    </tr>
-  </table>
+  <table class="grid"><tr>{% for cell in block.cells %}<td width="{{ cell.width }}"><div class="lbl">{{ cell.label }}</div><div class="val">{{ cell.value }}</div></td>{% endfor %}</tr></table>
+  {% endif %}
 
+  {% elif block.type == "vehicle" %}
   <!-- Veículo (só campos preenchidos; 5 colunas por linha) -->
   <table class="grid">
     {% for row in vehicle_field_rows %}<tr>{% for cell in row %}<td width="20%">{% if cell %}<div class="lbl">{{ cell.label }}</div><div class="val{% if cell.plate %} plate{% endif %}">{{ cell.value }}</div>{% endif %}</td>{% endfor %}</tr>{% endfor %}
   </table>
 
+  {% elif block.type == "dates" %}
+  {% if block.cells %}
   <!-- Datas / técnico -->
-  <table class="grid">
-    <tr>
-      <td style="width: 33%;"><div class="lbl">Data de abertura</div><div class="val">{{ opened_at|default:"—" }}</div></td>
-      <td style="width: 34%;"><div class="lbl">Previsão de entrega</div><div class="val">{{ expected_delivery|default:"—" }}</div></td>
-      <td style="width: 33%;"><div class="lbl">Técnico responsável</div><div class="val">{{ technician|default:"—" }}</div></td>
-    </tr>
-  </table>
-
-  <!-- Relato / diagnóstico -->
-  {% if customer_report or diagnosis %}
-  <div class="band">Diagnóstico</div>
-  {% if customer_report %}<div class="field-line small"><strong>Relato do cliente:</strong> <span class="block">{{ customer_report }}</span></div>{% endif %}
-  {% if diagnosis %}<div class="field-line small"><strong>Diagnóstico técnico:</strong> <span class="block">{{ diagnosis }}</span></div>{% endif %}
+  <table class="grid"><tr>{% for cell in block.cells %}<td width="{{ cell.width }}"><div class="lbl">{{ cell.label }}</div><div class="val">{{ cell.value }}</div></td>{% endfor %}</tr></table>
   {% endif %}
 
+  {% elif block.type == "diagnosis" %}
+  <!-- Relato / diagnóstico -->
+  {% if customer_report and block.options.show_report or diagnosis and block.options.show_diagnosis %}
+  <div class="band" style="background: {{ page.accent_color }};">Diagnóstico</div>
+  {% if customer_report and block.options.show_report %}<div class="field-line small"><strong>Relato do cliente:</strong> <span class="block">{{ customer_report }}</span></div>{% endif %}
+  {% if diagnosis and block.options.show_diagnosis %}<div class="field-line small"><strong>Diagnóstico técnico:</strong> <span class="block">{{ diagnosis }}</span></div>{% endif %}
+  {% endif %}
+
+  {% elif block.type == "items" %}
   <!-- Serviços e peças -->
   {% if has_items %}
-  <div class="band">Serviços e peças</div>
+  <div class="band" style="background: {{ page.accent_color }};">Serviços e peças</div>
   <table class="items">
     <thead>
       <tr>
@@ -155,7 +155,7 @@
     </tbody>
   </table>
 
-  <!-- Totais -->
+  {% if block.options.show_totals %}
   <table class="totals-line">
     <tr>
       <td>
@@ -168,23 +168,40 @@
     </tr>
   </table>
   {% endif %}
+  {% if block.options.show_payment %}<div class="field-line small muted">Pago: {{ payment.paid }} &nbsp;·&nbsp; Saldo: {{ payment.balance }} &nbsp;·&nbsp; {{ payment.status_display }}</div>{% endif %}
+  {% endif %}
 
+  {% elif block.type == "terms" %}
   <!-- Termos -->
-  {% for term in terms %}
+  {% for term in block.terms %}
   <div class="terms">
     <div class="terms-title">{{ term.title }}</div>
     {{ term.html|safe }}
   </div>
   {% endfor %}
 
+  {% elif block.type == "signature" %}
   <!-- Assinatura do cliente -->
   <table class="sign">
     <tr>
-      <td style="width: 42%;">Assinatura do cliente na retirada do veículo:</td>
+      <td style="width: 42%;">{{ block.options.label }}</td>
       <td class="sign-blank">&nbsp;</td>
     </tr>
   </table>
 
+  {% elif block.type == "footer" %}
   {% if footer_text %}<div class="footer">{{ footer_text }}</div>{% endif %}
+
+  {% elif block.type == "band" %}
+  <div class="band" style="background: {{ page.accent_color }};">{{ block.options.label }}</div>
+
+  {% elif block.type == "text" %}
+  <div class="free-text" style="text-align: {{ block.options.align }}; font-size: {{ block.options.size|unlocalize }}pt;{% if block.options.bold %} font-weight: bold;{% endif %}{% if block.options.muted %} color: #6b7280;{% endif %}">{{ block.options.content|linebreaksbr }}</div>
+
+  {% elif block.type == "spacer" %}
+  <div style="padding-top: {{ block.options.height|unlocalize }}px;"></div>
+
+  {% endif %}
+  {% endfor %}
 </body>
 </html>

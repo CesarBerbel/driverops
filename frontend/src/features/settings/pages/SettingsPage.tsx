@@ -5,6 +5,7 @@ import {
   Car,
   ChevronRight,
   ClipboardList,
+  FileText,
   Inbox,
   KanbanSquare,
   Package,
@@ -42,6 +43,14 @@ const SETTINGS_CARDS = [
     icon: KanbanSquare,
     title: "Kanban OS",
     description: "Escolha quais colunas de status aparecem no Kanban e em que ordem.",
+    permission: "settings.view",
+  },
+  {
+    to: "/settings/pdf-builder",
+    icon: FileText,
+    title: "Construtor de PDF da OS",
+    description:
+      "Monte o PDF da Ordem de Serviço bloco a bloco: escolha o que aparece, em que ordem e com quais opções, com pré-visualização.",
     permission: "settings.view",
   },
   {

@@ -17,9 +17,55 @@ from django.utils import timezone
 from django.utils.html import escape
 from xhtml2pdf import pisa
 
-from apps.workshop.models import OrderSettings, WorkshopProfile
+from apps.workshop.models import OrderSettings, PdfLayoutSettings, WorkshopProfile
+from apps.workshop.pdf_blocks import (
+    normalize_accent_color,
+    normalize_base_font_size,
+    normalize_blocks,
+)
 
 PAYMENT_STATUS_LABEL = {"open": "Em aberto", "partial": "Parcial", "paid": "Pago"}
+
+
+def _even_widths(cells):
+    """Distribui a largura das células igualmente (para tabelas tipo formulário
+    com um número variável de colunas). Devolve as células com `width` definido."""
+    if cells:
+        width = f"{100 // len(cells)}%"
+        for cell in cells:
+            cell["width"] = width
+    return cells
+
+
+def _resolve_layout_blocks(blocks, data):
+    """Transforma os blocos salvos (type + options) em blocos "prontos para
+    renderizar", anexando os dados que cada tipo precisa (células do cliente,
+    termos filtrados, etc.). O template apenas percorre a lista e imprime."""
+    resolved = []
+    for block in blocks:
+        block_type = block["type"]
+        options = block.get("options", {})
+        rb = {"type": block_type, "options": options}
+        if block_type == "customer":
+            fields = options.get("fields") or []
+            cells = [
+                dict(data["customer_fields"][key], key=key)
+                for key in fields
+                if key in data["customer_fields"]
+            ]
+            rb["cells"] = _even_widths(cells)
+        elif block_type == "dates":
+            cells = [
+                dict(cell)
+                for flag, cell in data["dates_all"]
+                if options.get(flag, True)
+            ]
+            rb["cells"] = _even_widths(cells)
+        elif block_type == "terms":
+            include = options.get("include") or []
+            rb["terms"] = [t for t in data["terms"] if t["key"] in include]
+        resolved.append(rb)
+    return resolved
 
 
 def _read_bytes(filefield):
@@ -146,11 +192,22 @@ def _term_html(text):
     return "<br/>".join(parts)
 
 
-def build_order_pdf_context(order, request=None):
+def build_order_pdf_context(order, request=None, layout=None):
     from .serializers import WorkOrderSerializer
 
     profile = WorkshopProfile.get_solo()
     os_settings = OrderSettings.get_solo()
+    # Layout do PDF (blocos). `layout` (dict) permite pré-visualizar alterações
+    # ainda não salvas; sem ele, usa o layout persistido. Sempre normalizado.
+    if layout is not None:
+        blocks = normalize_blocks(layout.get("blocks"))
+        accent_color = normalize_accent_color(layout.get("accent_color"))
+        base_font_size = normalize_base_font_size(layout.get("base_font_size"))
+    else:
+        pdf_layout = PdfLayoutSettings.get_solo()
+        blocks = normalize_blocks(pdf_layout.blocks)
+        accent_color = normalize_accent_color(pdf_layout.accent_color)
+        base_font_size = normalize_base_font_size(pdf_layout.base_font_size)
     data = WorkOrderSerializer(
         order, context={"request": request} if request else {}
     ).data
@@ -265,10 +322,77 @@ def build_order_pdf_context(order, request=None):
         while len(vehicle_field_rows[-1]) < _cols:
             vehicle_field_rows[-1].append(None)
 
+    customer_document = _fmt_cnpj_cpf(order.customer.document)
+    customer_phone = _fmt_phone(order.customer.phone or order.customer.whatsapp)
+    # Campos do cliente disponíveis para o bloco "Cliente" escolher quais mostrar.
+    customer_fields = {
+        "name": {"label": "Nome do cliente", "value": order.customer.name or "—"},
+        "phone": {"label": "Telefone", "value": customer_phone or "—"},
+        "email": {"label": "E-mail", "value": order.customer.email or "—"},
+        "document": {"label": "CPF/CNPJ", "value": customer_document or "—"},
+    }
+    # Campos de data/técnico, cada um com o flag que o liga/desliga no bloco.
+    dates_all = [
+        (
+            "show_opened",
+            {"label": "Data de abertura", "value": _fmt_date(order.opened_at) or "—"},
+        ),
+        (
+            "show_expected",
+            {
+                "label": "Previsão de entrega",
+                "value": _fmt_date(order.expected_delivery) or "—",
+            },
+        ),
+        (
+            "show_technician",
+            {"label": "Técnico responsável", "value": technician or "—"},
+        ),
+    ]
+    # Termos com chave estável (o bloco "Termos" filtra por essas chaves).
+    terms = [
+        {"key": term["key"], "title": term["title"], "html": _term_html(term["text"])}
+        for term in [
+            {
+                "key": "authorization",
+                "title": "Autorização de serviço",
+                "text": os_settings.service_authorization_terms,
+            },
+            {
+                "key": "warranty",
+                "title": "Garantia",
+                "text": os_settings.warranty_terms,
+            },
+            {
+                "key": "general",
+                "title": "Condições gerais",
+                "text": os_settings.general_conditions,
+            },
+            {
+                "key": "acknowledgment",
+                "title": "Ciência do cliente",
+                "text": os_settings.customer_acknowledgment_terms,
+            },
+        ]
+        if (term["text"] or "").strip()
+    ]
+
+    layout_blocks = _resolve_layout_blocks(
+        blocks,
+        {
+            "customer_fields": customer_fields,
+            "dates_all": dates_all,
+            "terms": terms,
+        },
+    )
+
     return {
         "order": order,
         "profile": profile,
         "logo": _logo(profile.logo),
+        # Layout por blocos e aparência (cor de destaque, corpo do texto).
+        "layout_blocks": layout_blocks,
+        "page": {"accent_color": accent_color, "base_font_size": base_font_size},
         # Dados institucionais da oficina, já formatados para o cabeçalho.
         "workshop": {
             "cnpj": _fmt_cnpj_cpf(profile.cnpj),
@@ -282,8 +406,8 @@ def build_order_pdf_context(order, request=None):
             "business_hours": profile.business_hours,
         },
         "customer": order.customer,
-        "customer_document": _fmt_cnpj_cpf(order.customer.document),
-        "customer_phone": _fmt_phone(order.customer.phone or order.customer.whatsapp),
+        "customer_document": customer_document,
+        "customer_phone": customer_phone,
         "vehicle": vehicle,
         "vehicle_description": " ".join(
             p for p in [vehicle.brand, vehicle.model] if p
@@ -319,33 +443,21 @@ def build_order_pdf_context(order, request=None):
             "balance": _brl(data["balance_due"]),
             "status_display": PAYMENT_STATUS_LABEL.get(data["payment_status"], ""),
         },
-        # Todos os termos aplicáveis à OS (só entram os preenchidos), na ordem em
-        # que devem aparecer no rodapé. Antes o PDF só mostrava autorização +
-        # condições gerais, deixando de fora garantia e ciência do cliente.
-        "terms": [
-            {"title": term["title"], "html": _term_html(term["text"])}
-            for term in [
-                {
-                    "title": "Autorização de serviço",
-                    "text": os_settings.service_authorization_terms,
-                },
-                {"title": "Garantia", "text": os_settings.warranty_terms},
-                {"title": "Condições gerais", "text": os_settings.general_conditions},
-                {
-                    "title": "Ciência do cliente",
-                    "text": os_settings.customer_acknowledgment_terms,
-                },
-            ]
-            if (term["text"] or "").strip()
-        ],
+        # Todos os termos aplicáveis à OS (só entram os preenchidos). O bloco
+        # "Termos" do layout escolhe quais destes de fato aparecem.
+        "terms": terms,
         "footer_text": os_settings.pdf_footer_text,
     }
 
 
-def render_order_pdf(order, request=None):
-    """Gera o PDF da OS (bytes). Nunca quebra por termo/logo ausente."""
+def render_order_pdf(order, request=None, layout=None):
+    """Gera o PDF da OS (bytes). Nunca quebra por termo/logo ausente.
+
+    `layout` (dict opcional) permite renderizar com um layout ainda não salvo,
+    usado pela pré-visualização do construtor de PDF.
+    """
     html = render_to_string(
-        "orders/order_pdf.html", build_order_pdf_context(order, request)
+        "orders/order_pdf.html", build_order_pdf_context(order, request, layout=layout)
     )
     buffer = BytesIO()
     pisa.CreatePDF(src=html, dest=buffer, encoding="utf-8")

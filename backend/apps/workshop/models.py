@@ -3,6 +3,12 @@ from django.db import models
 
 from apps.core.models import SingletonModel
 
+from .pdf_blocks import (
+    DEFAULT_ACCENT_COLOR,
+    DEFAULT_BASE_FONT_SIZE,
+    default_pdf_blocks,
+)
+
 # Raster formats only -- SVG is intentionally excluded because it can carry
 # scripts and is served from the backend origin.
 LOGO_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif"]
@@ -169,3 +175,21 @@ class OrderSettings(SingletonModel):
 
     def __str__(self):
         return "Configurações da OS"
+
+
+class PdfLayoutSettings(SingletonModel):
+    """Layout do PDF da OS montado por blocos (registro único, pk=1).
+
+    O PDF é uma lista ORDENADA de blocos (ver ``pdf_blocks.BLOCK_CATALOG``): a
+    oficina escolhe o que aparece, em que ordem e com quais opções, direto na
+    área administrativa. ``accent_color`` tinge as faixas/barra e
+    ``base_font_size`` define o corpo do texto. O padrão reproduz o PDF atual.
+    """
+
+    blocks = models.JSONField(default=default_pdf_blocks)
+    accent_color = models.CharField(max_length=7, default=DEFAULT_ACCENT_COLOR)
+    base_font_size = models.FloatField(default=DEFAULT_BASE_FONT_SIZE)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Layout do PDF da OS"

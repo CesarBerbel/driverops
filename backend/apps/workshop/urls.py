@@ -4,6 +4,8 @@ from .public_views import PublicLandingView
 from .views import (
     KanbanSettingsView,
     OrderSettingsView,
+    PdfLayoutPreviewView,
+    PdfLayoutSettingsView,
     WorkshopLogoView,
     WorkshopProfileView,
 )
@@ -18,4 +20,10 @@ urlpatterns = [
     ),
     path("order-settings/", OrderSettingsView.as_view(), name="order-settings"),
     path("kanban-settings/", KanbanSettingsView.as_view(), name="kanban-settings"),
+    path("pdf-layout/", PdfLayoutSettingsView.as_view(), name="pdf-layout"),
+    path(
+        "pdf-layout/preview/",
+        PdfLayoutPreviewView.as_view(),
+        name="pdf-layout-preview",
+    ),
 ]

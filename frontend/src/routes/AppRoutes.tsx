@@ -29,6 +29,7 @@ const SettingsPage = named(() => import("@/features/settings/pages/SettingsPage"
 const WorkshopProfilePage = named(() => import("@/features/settings/pages/WorkshopProfilePage"), "WorkshopProfilePage");
 const OrderSettingsPage = named(() => import("@/features/settings/pages/OrderSettingsPage"), "OrderSettingsPage");
 const KanbanSettingsPage = named(() => import("@/features/settings/pages/KanbanSettingsPage"), "KanbanSettingsPage");
+const PdfBuilderPage = named(() => import("@/features/settings/pages/PdfBuilderPage"), "PdfBuilderPage");
 const SmartSearchSettingsPage = named(() => import("@/features/smart-search/pages/SmartSearchSettingsPage"), "SmartSearchSettingsPage");
 const CustomerPortalSettingsPage = named(() => import("@/features/vehicle-portal/pages/CustomerPortalSettingsPage"), "CustomerPortalSettingsPage");
 const NotificationTemplatesPage = named(() => import("@/features/notifications/pages/NotificationTemplatesPage"), "NotificationTemplatesPage");
@@ -90,6 +91,7 @@ export function AppRoutes() {
               <Route path="/settings/orders" element={<OrderSettingsPage />} />
               <Route path="/settings/kanban" element={<KanbanSettingsPage />} />
               <Route element={<RequirePermission code="settings.view" />}>
+                <Route path="/settings/pdf-builder" element={<PdfBuilderPage />} />
                 <Route path="/settings/smart-search" element={<SmartSearchSettingsPage />} />
                 <Route path="/settings/customer-portal" element={<CustomerPortalSettingsPage />} />
               </Route>

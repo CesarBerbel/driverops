@@ -109,7 +109,9 @@ def test_vehicle_fields_hide_empty(db, customer):
     v = Vehicle.objects.create(
         customer=customer, license_plate="XYZ9K88", brand="Fiat", model="Uno"
     )
-    order = WorkOrder.objects.create(customer=customer, vehicle=v, opened_at="2026-07-04")
+    order = WorkOrder.objects.create(
+        customer=customer, vehicle=v, opened_at="2026-07-04"
+    )
     order.refresh_from_db()
 
     ctx = build_order_pdf_context(order)
@@ -139,6 +141,49 @@ def test_pdf_shows_client_copy_and_no_status(db, customer, vehicle):
     assert "Pago:" not in html
     assert "Saldo:" not in html
     assert "Valor total" in html  # o total continua
+
+
+def test_layout_blocks_follow_default_order(db, customer, vehicle):
+    """O contexto expõe os blocos do layout na ordem padrão (base do construtor)."""
+    order = WorkOrder.objects.create(
+        customer=customer, vehicle=vehicle, opened_at="2026-07-04"
+    )
+    order.refresh_from_db()
+    ctx = build_order_pdf_context(order)
+    assert [b["type"] for b in ctx["layout_blocks"]][:3] == [
+        "header",
+        "os_bar",
+        "customer",
+    ]
+    assert ctx["page"]["accent_color"] == "#e5e7eb"
+
+
+def test_custom_layout_reorders_hides_and_adds_free_text(db, customer, vehicle):
+    """Um layout custom (texto livre no topo, sem veículo, reordenado) reflete no
+    PDF: o texto aparece e a ficha do veículo some."""
+    order = WorkOrder.objects.create(
+        customer=customer, vehicle=vehicle, opened_at="2026-07-04"
+    )
+    order.refresh_from_db()
+    layout = {
+        "blocks": [
+            {"type": "text", "options": {"content": "MINHA OFICINA LTDA", "size": 12}},
+            {"type": "customer", "options": {"fields": ["name"]}},
+        ],
+        "accent_color": "#123456",
+        "base_font_size": 9.0,
+    }
+    pdf = render_order_pdf(order, layout=layout)
+    assert pdf[:5] == b"%PDF-"
+
+    from io import BytesIO
+
+    from pypdf import PdfReader
+
+    text = "".join(p.extract_text() or "" for p in PdfReader(BytesIO(pdf)).pages)
+    assert "MINHA OFICINA LTDA" in text
+    # Sem bloco de veículo => a placa não aparece.
+    assert vehicle.license_plate not in text
 
 
 def test_term_html_formats_bullets():

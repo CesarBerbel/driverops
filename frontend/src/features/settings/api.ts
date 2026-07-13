@@ -5,6 +5,8 @@ import type {
   KanbanSettingsPayload,
   OrderSettings,
   OrderSettingsPayload,
+  PdfLayoutPayload,
+  PdfLayoutSettings,
   WorkshopProfile,
   WorkshopProfilePayload,
 } from "./types";
@@ -46,6 +48,29 @@ export async function updateOrderSettings(
 ): Promise<OrderSettings> {
   const { data } = await apiClient.patch<OrderSettings>("/order-settings/", payload);
   return data;
+}
+
+export async function getPdfLayout(): Promise<PdfLayoutSettings> {
+  const { data } = await apiClient.get<PdfLayoutSettings>("/pdf-layout/");
+  return data;
+}
+
+export async function updatePdfLayout(
+  payload: PdfLayoutPayload,
+): Promise<PdfLayoutSettings> {
+  const { data } = await apiClient.patch<PdfLayoutSettings>("/pdf-layout/", payload);
+  return data;
+}
+
+// Pré-visualização: renderiza a OS mais recente com o layout enviado (sem salvar)
+// e abre o PDF numa nova aba.
+export async function previewPdfLayout(payload: PdfLayoutPayload): Promise<void> {
+  const response = await apiClient.post("/pdf-layout/preview/", payload, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(response.data as Blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export async function getKanbanSettings(): Promise<KanbanSettings> {
