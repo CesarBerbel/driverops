@@ -81,7 +81,8 @@ SERVICE_CATEGORIES = [
     "Diagnóstico",
 ]
 
-# code, name, brand, part-category, unit, cost, sale, current, min
+# code, name, brand, part-category, unit, cost, sale, (estoque ref.; ignorado), min
+# Todas as peças entram com estoque ZERO -- ver Command._seed_parts.
 PARTS = [
     # Filtros
     (
@@ -2010,23 +2011,28 @@ class Command(BaseCommand):
         return cats
 
     def _seed_parts(self, cats):
+        # As peças entram com ESTOQUE ZERADO (current_quantity = 0); a oficina
+        # lança as entradas reais depois. O 8º campo da tupla (estoque de
+        # referência) é intencionalmente ignorado. `min_quantity` (ponto de
+        # reposição) é mantido. Os campos do catálogo são atualizados a cada
+        # execução para o seed continuar autoritativo.
         parts = {}
-        for code, name, brand, cat, unit, cost, sale, cur, minimum in PARTS:
-            obj = first_or_create(
-                Part,
-                {"internal_code": code},
-                {
-                    "name": name,
-                    "brand": brand,
-                    "category": cats["part"][cat],
-                    "unit_of_measure": unit,
-                    "cost_price": money(cost),
-                    "sale_price": money(sale),
-                    "current_quantity": money(cur),
-                    "min_quantity": money(minimum),
-                    "is_active": True,
-                },
+        for code, name, brand, cat, unit, cost, sale, _ref_stock, minimum in PARTS:
+            # Reaproveita a peça existente (por código) ou instancia uma nova;
+            # os campos obrigatórios (categoria) são definidos antes do save.
+            obj = Part.objects.filter(internal_code=code).first() or Part(
+                internal_code=code
             )
+            obj.name = name
+            obj.brand = brand
+            obj.category = cats["part"][cat]
+            obj.unit_of_measure = unit
+            obj.cost_price = money(cost)
+            obj.sale_price = money(sale)
+            obj.current_quantity = money(0)
+            obj.min_quantity = money(minimum)
+            obj.is_active = True
+            obj.save()
             parts[code] = obj
         return parts
 

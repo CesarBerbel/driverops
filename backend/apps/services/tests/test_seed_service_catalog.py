@@ -25,6 +25,8 @@ def test_seed_creates_100_services_with_parts_and_combos():
     assert ServicePackage.objects.count() == 14
     assert PackageService.objects.exists()
     assert Part.objects.count() == 97
+    # Todas as peças entram com estoque zerado.
+    assert not Part.objects.exclude(current_quantity=0).exists()
 
     # Há peças padrão obrigatórias E opcionais (o vínculo carrega a exigência).
     assert ServicePart.objects.filter(is_required=True).exists()
