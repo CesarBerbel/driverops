@@ -135,3 +135,18 @@ def test_pdf_shows_client_copy_and_no_status(db, customer, vehicle):
     html = render_to_string("orders/order_pdf.html", build_order_pdf_context(order))
     assert "VIA DO CLIENTE" in html
     assert order.get_status_display() not in html  # "Em execução" não aparece
+    # Via do cliente não mostra pago/saldo/status de pagamento.
+    assert "Pago:" not in html
+    assert "Saldo:" not in html
+    assert "Valor total" in html  # o total continua
+
+
+def test_term_html_formats_bullets():
+    from apps.orders.pdf import _term_html
+
+    out = _term_html("Intro: - primeiro item; - segundo item.")
+    assert out.count("•") == 2
+    assert "<br/>" in out
+    # Termo sem lista fica como parágrafo simples (sem marcador).
+    assert "•" not in _term_html("Autorizo a execução dos serviços.")
+    assert _term_html("") == ""

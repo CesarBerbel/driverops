@@ -7,12 +7,14 @@ verdade no backend), então o PDF nunca diverge da tela.
 """
 
 import base64
+import re
 from collections import defaultdict
 from decimal import Decimal
 from io import BytesIO
 
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.html import escape
 from xhtml2pdf import pisa
 
 from apps.workshop.models import OrderSettings, WorkshopProfile
@@ -121,6 +123,27 @@ def _workshop_address(profile):
     if profile.zip_code:
         parts.append(f"CEP {_fmt_cep(profile.zip_code)}")
     return " - ".join(p for p in parts if p)
+
+
+def _term_html(text):
+    """Formata um termo para o PDF: quebra em linhas (respeita quebras reais e
+    listas escritas em uma linha só, com " - ") e transforma cada item de lista
+    em marcador "•". Escapa HTML e devolve seguro para inserir no template."""
+    text = (text or "").strip()
+    if not text:
+        return ""
+    # Listas escritas numa linha só: " - " vira quebra de linha antes do item.
+    text = re.sub(r"\s+[-–]\s+", "\n- ", text.replace("\r\n", "\n"))
+    parts = []
+    for line in text.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if line[0] in "-–":
+            parts.append("• " + escape(line.lstrip("-– ").strip()))
+        else:
+            parts.append(escape(line))
+    return "<br/>".join(parts)
 
 
 def build_order_pdf_context(order, request=None):
@@ -300,7 +323,7 @@ def build_order_pdf_context(order, request=None):
         # que devem aparecer no rodapé. Antes o PDF só mostrava autorização +
         # condições gerais, deixando de fora garantia e ciência do cliente.
         "terms": [
-            term
+            {"title": term["title"], "html": _term_html(term["text"])}
             for term in [
                 {
                     "title": "Autorização de serviço",

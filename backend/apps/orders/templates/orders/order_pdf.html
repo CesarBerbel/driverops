@@ -110,15 +110,7 @@
 
   <!-- Veículo (só campos preenchidos; 5 colunas por linha) -->
   <table class="grid">
-    {% for row in vehicle_field_rows %}
-    <tr>
-      {% for cell in row %}
-      <td style="width: 20%;">
-        {% if cell %}<div class="lbl">{{ cell.label }}</div><div class="val{% if cell.plate %} plate{% endif %}">{{ cell.value }}</div>{% endif %}
-      </td>
-      {% endfor %}
-    </tr>
-    {% endfor %}
+    {% for row in vehicle_field_rows %}<tr>{% for cell in row %}<td width="20%">{% if cell %}<div class="lbl">{{ cell.label }}</div><div class="val{% if cell.plate %} plate{% endif %}">{{ cell.value }}</div>{% endif %}</td>{% endfor %}</tr>{% endfor %}
   </table>
 
   <!-- Datas / técnico -->
@@ -171,7 +163,6 @@
         {% if totals.show_packages %}<strong>Total Pacotes:</strong> {{ totals.packages }}&nbsp;&nbsp;&nbsp;{% endif %}
         {% if totals.show_parts %}<strong>Total Peças:</strong> {{ totals.parts }}{% endif %}
         {% if has_discount %}<br /><span class="muted">Total bruto: {{ totals.gross }} &nbsp;·&nbsp; Desconto: - {{ discount }}</span>{% endif %}
-        <br /><span class="muted">Pago: {{ payment.paid }} &nbsp;·&nbsp; Saldo: {{ payment.balance }} &nbsp;·&nbsp; {{ payment.status_display }}</span>
       </td>
       <td class="grand-total">Valor total: {{ totals.final }}</td>
     </tr>
@@ -182,7 +173,7 @@
   {% for term in terms %}
   <div class="terms">
     <div class="terms-title">{{ term.title }}</div>
-    {{ term.text }}
+    {{ term.html|safe }}
   </div>
   {% endfor %}
 
