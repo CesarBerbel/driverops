@@ -198,6 +198,50 @@ def build_order_pdf_context(order, request=None):
         tech = order.assigned_technician
         technician = tech.full_name or tech.email
 
+    vehicle_info = {
+        "model": " ".join(p for p in [vehicle.model, vehicle.version] if p),
+        "fuel": vehicle.get_fuel_type_display() if vehicle.fuel_type else "",
+        "transmission": (
+            vehicle.get_transmission_display() if vehicle.transmission else ""
+        ),
+        "steering": vehicle.get_steering_display() if vehicle.steering else "",
+        "doors": vehicle.doors or "",
+        "air": (
+            ""
+            if vehicle.air_conditioning is None
+            else ("Sim" if vehicle.air_conditioning else "Não")
+        ),
+    }
+    vehicle_mileage = f"{mileage:,}".replace(",", ".") if mileage else ""
+
+    # Ficha do veículo: só os campos PREENCHIDOS aparecem (campos vazios são
+    # omitidos, em vez de virar "—"). A placa é a âncora e vem sempre.
+    _vfields = [
+        ("Placa", vehicle.license_plate, True),
+        ("Fabricante", vehicle.brand, False),
+        ("Modelo", vehicle_info["model"], False),
+        ("Ano", year, False),
+        ("KM", vehicle_mileage, False),
+        ("Cor", vehicle.color, False),
+        ("Combustível", vehicle_info["fuel"], False),
+        ("Câmbio", vehicle_info["transmission"], False),
+        ("Direção", vehicle_info["steering"], False),
+        ("Portas", vehicle_info["doors"], False),
+        ("Ar-cond.", vehicle_info["air"], False),
+    ]
+    vehicle_fields = [
+        {"label": label, "value": str(value).strip(), "plate": is_plate}
+        for label, value, is_plate in _vfields
+        if value not in (None, "") and str(value).strip()
+    ]
+    _cols = 5
+    vehicle_field_rows = [
+        vehicle_fields[i : i + _cols] for i in range(0, len(vehicle_fields), _cols)
+    ]
+    if vehicle_field_rows:
+        while len(vehicle_field_rows[-1]) < _cols:
+            vehicle_field_rows[-1].append(None)
+
     return {
         "order": order,
         "profile": profile,
@@ -222,22 +266,10 @@ def build_order_pdf_context(order, request=None):
             p for p in [vehicle.brand, vehicle.model] if p
         ).strip(),
         "vehicle_year": year,
-        "vehicle_mileage": f"{mileage:,}".replace(",", ".") if mileage else "",
-        # Ficha do veículo (grid tipo formulário, como no modelo impresso).
-        "vehicle_info": {
-            "model": " ".join(p for p in [vehicle.model, vehicle.version] if p),
-            "fuel": vehicle.get_fuel_type_display() if vehicle.fuel_type else "",
-            "transmission": (
-                vehicle.get_transmission_display() if vehicle.transmission else ""
-            ),
-            "steering": vehicle.get_steering_display() if vehicle.steering else "",
-            "doors": vehicle.doors or "",
-            "air": (
-                ""
-                if vehicle.air_conditioning is None
-                else ("Sim" if vehicle.air_conditioning else "Não")
-            ),
-        },
+        "vehicle_mileage": vehicle_mileage,
+        # Ficha do veículo (só campos preenchidos), já em linhas de 5 colunas.
+        "vehicle_info": vehicle_info,
+        "vehicle_field_rows": vehicle_field_rows,
         "status_display": order.get_status_display(),
         "technician": technician,
         "opened_at": _fmt_date(order.opened_at),

@@ -93,7 +93,7 @@
   <table class="osbar">
     <tr>
       <td style="width: 34%;">OS: {{ order.number|stringformat:"04d" }}</td>
-      <td class="center" style="width: 33%;">{{ status_display|upper }}</td>
+      <td class="center" style="width: 33%;">VIA DO CLIENTE</td>
       <td class="right" style="width: 33%;">Emissão: {{ emitted_at }}</td>
     </tr>
   </table>
@@ -108,22 +108,17 @@
     </tr>
   </table>
 
-  <!-- Veículo -->
+  <!-- Veículo (só campos preenchidos; 5 colunas por linha) -->
   <table class="grid">
+    {% for row in vehicle_field_rows %}
     <tr>
-      <td style="width: 16%;"><div class="lbl">Placa</div><div class="val plate">{{ vehicle.license_plate|default:"—" }}</div></td>
-      <td style="width: 20%;"><div class="lbl">Fabricante</div><div class="val">{{ vehicle.brand|default:"—" }}</div></td>
-      <td style="width: 30%;"><div class="lbl">Modelo</div><div class="val">{{ vehicle_info.model|default:"—" }}</div></td>
-      <td style="width: 16%;"><div class="lbl">Ano</div><div class="val">{{ vehicle_year|default:"—" }}</div></td>
-      <td style="width: 18%;"><div class="lbl">Combustível</div><div class="val">{{ vehicle_info.fuel|default:"—" }}</div></td>
+      {% for cell in row %}
+      <td style="width: 20%;">
+        {% if cell %}<div class="lbl">{{ cell.label }}</div><div class="val{% if cell.plate %} plate{% endif %}">{{ cell.value }}</div>{% endif %}
+      </td>
+      {% endfor %}
     </tr>
-    <tr>
-      <td><div class="lbl">KM</div><div class="val">{{ vehicle_mileage|default:"—" }}</div></td>
-      <td><div class="lbl">Câmbio</div><div class="val">{{ vehicle_info.transmission|default:"—" }}</div></td>
-      <td><div class="lbl">Direção</div><div class="val">{{ vehicle_info.steering|default:"—" }}</div></td>
-      <td><div class="lbl">Portas</div><div class="val">{{ vehicle_info.doors|default:"—" }}</div></td>
-      <td><div class="lbl">Cor</div><div class="val">{{ vehicle.color|default:"—" }}</div></td>
-    </tr>
+    {% endfor %}
   </table>
 
   <!-- Datas / técnico -->

@@ -100,3 +100,38 @@ def test_context_formats_workshop_and_includes_all_terms(db, customer, vehicle):
         "Garantia",
         "Ciência do cliente",
     ]
+
+
+def test_vehicle_fields_hide_empty(db, customer):
+    """Só campos de veículo preenchidos entram na ficha (o resto some)."""
+    from apps.vehicles.models import Vehicle
+
+    v = Vehicle.objects.create(
+        customer=customer, license_plate="XYZ9K88", brand="Fiat", model="Uno"
+    )
+    order = WorkOrder.objects.create(customer=customer, vehicle=v, opened_at="2026-07-04")
+    order.refresh_from_db()
+
+    ctx = build_order_pdf_context(order)
+    labels = [c["label"] for row in ctx["vehicle_field_rows"] for c in row if c]
+
+    assert labels == ["Placa", "Fabricante", "Modelo"]
+    for empty in ["Combustível", "Câmbio", "Direção", "Portas", "Cor", "KM", "Ano"]:
+        assert empty not in labels
+
+
+def test_pdf_shows_client_copy_and_no_status(db, customer, vehicle):
+    """O PDF traz 'VIA DO CLIENTE' e NÃO mostra mais o status da OS."""
+    from django.template.loader import render_to_string
+
+    order = WorkOrder.objects.create(
+        customer=customer,
+        vehicle=vehicle,
+        opened_at="2026-07-04",
+        status="in_progress",
+    )
+    order.refresh_from_db()
+
+    html = render_to_string("orders/order_pdf.html", build_order_pdf_context(order))
+    assert "VIA DO CLIENTE" in html
+    assert order.get_status_display() not in html  # "Em execução" não aparece
