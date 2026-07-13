@@ -21,7 +21,7 @@ function layout(): PdfLayoutSettings {
     base_font_size: 8.5,
     blocks: [
       { type: "header", options: {} },
-      { type: "os_bar", options: { label: "VIA DO CLIENTE", show_number: true, show_emission: true } },
+      { type: "os_bar", options: { show_number: true, show_emission: true } },
       { type: "customer", options: { fields: ["name", "phone", "email", "document"] } },
     ],
     catalog: [
@@ -30,7 +30,9 @@ function layout(): PdfLayoutSettings {
         type: "os_bar",
         label: "Barra da OS",
         description: "Número e via.",
-        options: [{ key: "label", kind: "text", label: "Texto central", default: "VIA DO CLIENTE" }],
+        options: [
+          { key: "show_number", kind: "bool", label: "Mostrar número da OS", default: true },
+        ],
       },
       {
         type: "customer",
@@ -51,7 +53,7 @@ function layout(): PdfLayoutSettings {
           },
         ],
       },
-      { type: "text", label: "Texto livre", description: "Parágrafo fixo.", options: [] },
+      { type: "spacer", label: "Espaçador", description: "Espaço vertical.", options: [] },
     ],
   };
 }
@@ -136,7 +138,7 @@ describe("PdfBuilderPage", () => {
 
   it("restores the default layout from the catalog (drops extra blocks)", async () => {
     const withExtra = layout();
-    withExtra.blocks = [...withExtra.blocks, { type: "text", options: {} }];
+    withExtra.blocks = [...withExtra.blocks, { type: "spacer", options: {} }];
     vi.mocked(settingsApi.getPdfLayout).mockResolvedValue(withExtra);
     const user = userEvent.setup();
     renderPage();
@@ -145,9 +147,9 @@ describe("PdfBuilderPage", () => {
       expect(screen.getByText(/Blocos do documento \(4\)/)).toBeInTheDocument(),
     );
     await user.click(screen.getByRole("button", { name: /Restaurar padrão/i }));
-    // O padrão do catálogo tem header/os_bar/customer (sem o "text" extra).
+    // O padrão do catálogo tem header/os_bar/customer (sem o "spacer" extra).
     expect(screen.getByText(/Blocos do documento \(3\)/)).toBeInTheDocument();
     const region = screen.getByText(/Blocos do documento/).closest("div")!;
-    expect(within(region).queryByText("Texto livre")).not.toBeInTheDocument();
+    expect(within(region).queryByText("Espaçador")).not.toBeInTheDocument();
   });
 });

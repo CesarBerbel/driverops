@@ -35,9 +35,9 @@ import { extractErrorMessage } from "@/lib/api-client";
 import { getPdfLayout, previewPdfLayout, updatePdfLayout } from "../api";
 import type { PdfBlock, PdfCatalogEntry, PdfCatalogOption } from "../types";
 
-// Blocos "extras" (não pertencem ao layout padrão da OS): podem ser adicionados
-// livremente para montar o documento.
-const EXTRA_TYPES = new Set(["text", "band", "spacer"]);
+// Blocos "extras" (estruturais, fora do layout padrão): podem ser adicionados
+// livremente. Os textos do PDF são editados em Configurações da OS.
+const EXTRA_TYPES = new Set(["spacer"]);
 
 let blockCounter = 0;
 function newId(): string {
@@ -281,8 +281,13 @@ export function PdfBuilderPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Construtor de PDF da OS</h1>
         <p className="text-muted-foreground">
           Monte o PDF da Ordem de Serviço bloco a bloco: escolha o que aparece, em que
-          ordem e com quais opções. Use "Pré-visualizar" para ver o resultado com a OS
-          mais recente antes de salvar.
+          ordem e com quais opções. Os <strong>textos</strong> do PDF (termos, rodapé,
+          via, assinatura) são editados em{" "}
+          <Link to="/settings/orders" className="underline">
+            Configurações da OS
+          </Link>
+          . Use "Pré-visualizar" para ver o resultado com a OS mais recente antes de
+          salvar.
         </p>
       </div>
 

@@ -49,19 +49,31 @@ def test_normalize_drops_unknown_types_and_sanitizes_options():
     raw = [
         {"type": "customer", "options": {"fields": ["email", "name", "bogus"]}},
         {"type": "not_a_block", "options": {}},
-        {
-            "type": "text",
-            "options": {"size": 999, "align": "diagonal", "content": "oi"},
-        },
+        {"type": "text", "options": {"content": "oi"}},  # bloco removido -> descartado
+        {"type": "spacer", "options": {"height": 999}},  # fora do limite -> fixado
         "garbage",
     ]
     blocks = normalize_blocks(raw)
-    assert [b["type"] for b in blocks] == ["customer", "text"]
+    assert [b["type"] for b in blocks] == ["customer", "spacer"]
     # Campos filtrados aos válidos e em ordem canônica; desconhecido descartado.
     assert blocks[0]["options"]["fields"] == ["name", "email"]
-    # size fora do limite é fixado; align inválido cai no default.
-    assert blocks[1]["options"]["size"] == 24
-    assert blocks[1]["options"]["align"] == "left"
+    # height fora do limite é fixado ao teto (120).
+    assert blocks[1]["options"]["height"] == 120
+
+
+def test_text_blocks_are_no_longer_available():
+    """Os blocos de texto (texto livre / faixa) saíram do construtor: o texto do
+    PDF passa a ser editado em Configurações da OS."""
+    from apps.workshop.pdf_blocks import BLOCK_TYPES
+
+    assert "text" not in BLOCK_TYPES
+    assert "band" not in BLOCK_TYPES
+    # A barra e a assinatura não têm mais campo de texto no construtor.
+    assert [o["key"] for o in BLOCK_TYPES["os_bar"]["options"]] == [
+        "show_number",
+        "show_emission",
+    ]
+    assert BLOCK_TYPES["signature"]["options"] == []
 
 
 def test_get_returns_defaults_and_catalog(auth_client):
@@ -78,7 +90,7 @@ def test_get_returns_defaults_and_catalog(auth_client):
 def test_patch_persists_reorder_and_normalizes(super_client):
     payload = {
         "blocks": [
-            {"type": "os_bar", "options": {"label": "VIA DA OFICINA"}},
+            {"type": "os_bar", "options": {"show_number": False, "label": "ignorado"}},
             {"type": "items", "options": {"show_payment": True}},
             {"type": "zzz", "options": {}},  # descartado
         ],
@@ -91,7 +103,8 @@ def test_patch_persists_reorder_and_normalizes(super_client):
     assert response.status_code == 200
     saved = PdfLayoutSettings.get_solo()
     assert [b["type"] for b in saved.blocks] == ["os_bar", "items"]
-    assert saved.blocks[0]["options"]["label"] == "VIA DA OFICINA"
+    # A barra só guarda os toggles; o campo de texto "label" foi descartado.
+    assert saved.blocks[0]["options"] == {"show_number": False, "show_emission": True}
     assert saved.accent_color == "#e5e7eb"
     assert saved.base_font_size == 14.0
 
@@ -106,7 +119,7 @@ def test_patch_requires_superuser(auth_client):
 def test_preview_renders_pdf_with_unsaved_layout(super_client):
     _make_order()
     payload = {
-        "blocks": [{"type": "text", "options": {"content": "PREVIA X", "size": 14}}],
+        "blocks": [{"type": "os_bar", "options": {"show_emission": False}}],
         "accent_color": "#2a4fd6",
     }
     response = super_client.post(

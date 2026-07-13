@@ -36,6 +36,8 @@ DEFAULT_CUSTOMER_ACKNOWLEDGMENT_TERMS = (
     "serviços realizados e das condições de garantia aplicáveis."
 )
 DEFAULT_PDF_FOOTER_TEXT = "Documento gerado eletronicamente pelo sistema DriverOps."
+DEFAULT_PDF_CLIENT_COPY_LABEL = "VIA DO CLIENTE"
+DEFAULT_PDF_SIGNATURE_LABEL = "Assinatura do cliente na retirada do veículo:"
 
 
 class WorkshopProfile(SingletonModel):
@@ -154,6 +156,14 @@ class OrderSettings(SingletonModel):
     pdf_footer_text = models.TextField(blank=True, default=DEFAULT_PDF_FOOTER_TEXT)
     print_instructions = models.TextField(blank=True)
     general_conditions = models.TextField(blank=True)
+    # Textos curtos do PDF da OS antes editados dentro do construtor de PDF;
+    # centralizados aqui junto dos demais textos do documento.
+    pdf_client_copy_label = models.CharField(
+        max_length=60, blank=True, default=DEFAULT_PDF_CLIENT_COPY_LABEL
+    )
+    pdf_signature_label = models.CharField(
+        max_length=120, blank=True, default=DEFAULT_PDF_SIGNATURE_LABEL
+    )
     # Notificações ao cliente por e-mail. `notify_customer_by_email` é o
     # interruptor geral dos envios automáticos; os demais escolhem os gatilhos.
     notify_customer_by_email = models.BooleanField(default=True)

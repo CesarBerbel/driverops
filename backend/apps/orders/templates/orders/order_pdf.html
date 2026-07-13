@@ -68,7 +68,6 @@
 
   .footer { margin-top: 12px; border-top: 0.5px solid #d1d5db; padding-top: 4px;
     font-size: 7pt; color: #6b7280; white-space: pre-line; text-align: center; }
-  .free-text { margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -97,7 +96,7 @@
   <table class="osbar">
     <tr>
       <td width="34%" style="background: {{ page.accent_color }};">{% if block.options.show_number %}OS: {{ order.number|stringformat:"04d" }}{% endif %}</td>
-      <td width="33%" class="center" style="background: {{ page.accent_color }};">{{ block.options.label }}</td>
+      <td width="33%" class="center" style="background: {{ page.accent_color }};">{{ client_copy_label }}</td>
       <td width="33%" class="right" style="background: {{ page.accent_color }};">{% if block.options.show_emission %}Emissão: {{ emitted_at }}{% endif %}</td>
     </tr>
   </table>
@@ -184,19 +183,13 @@
   <!-- Assinatura do cliente -->
   <table class="sign">
     <tr>
-      <td style="width: 42%;">{{ block.options.label }}</td>
+      <td style="width: 42%;">{{ signature_label }}</td>
       <td class="sign-blank">&nbsp;</td>
     </tr>
   </table>
 
   {% elif block.type == "footer" %}
   {% if footer_text %}<div class="footer">{{ footer_text }}</div>{% endif %}
-
-  {% elif block.type == "band" %}
-  <div class="band" style="background: {{ page.accent_color }};">{{ block.options.label }}</div>
-
-  {% elif block.type == "text" %}
-  <div class="free-text" style="text-align: {{ block.options.align }}; font-size: {{ block.options.size|unlocalize }}pt;{% if block.options.bold %} font-weight: bold;{% endif %}{% if block.options.muted %} color: #6b7280;{% endif %}">{{ block.options.content|linebreaksbr }}</div>
 
   {% elif block.type == "spacer" %}
   <div style="padding-top: {{ block.options.height|unlocalize }}px;"></div>

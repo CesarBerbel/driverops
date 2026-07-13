@@ -46,6 +46,8 @@ export interface OrderSettings {
   pdf_footer_text: string;
   print_instructions: string;
   general_conditions: string;
+  pdf_client_copy_label: string;
+  pdf_signature_label: string;
   notify_customer_by_email: boolean;
   notify_statuses: string[];
   notify_on_creation: boolean;

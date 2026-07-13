@@ -158,16 +158,16 @@ def test_layout_blocks_follow_default_order(db, customer, vehicle):
     assert ctx["page"]["accent_color"] == "#e5e7eb"
 
 
-def test_custom_layout_reorders_hides_and_adds_free_text(db, customer, vehicle):
-    """Um layout custom (texto livre no topo, sem veículo, reordenado) reflete no
-    PDF: o texto aparece e a ficha do veículo some."""
+def test_custom_layout_reorders_and_hides_blocks(db, customer, vehicle):
+    """Um layout custom (só barra + cliente, sem veículo) reflete no PDF: a ficha
+    do veículo some."""
     order = WorkOrder.objects.create(
         customer=customer, vehicle=vehicle, opened_at="2026-07-04"
     )
     order.refresh_from_db()
     layout = {
         "blocks": [
-            {"type": "text", "options": {"content": "MINHA OFICINA LTDA", "size": 12}},
+            {"type": "os_bar", "options": {"show_number": True, "show_emission": True}},
             {"type": "customer", "options": {"fields": ["name"]}},
         ],
         "accent_color": "#123456",
@@ -181,9 +181,36 @@ def test_custom_layout_reorders_hides_and_adds_free_text(db, customer, vehicle):
     from pypdf import PdfReader
 
     text = "".join(p.extract_text() or "" for p in PdfReader(BytesIO(pdf)).pages)
-    assert "MINHA OFICINA LTDA" in text
     # Sem bloco de veículo => a placa não aparece.
     assert vehicle.license_plate not in text
+
+
+def test_pdf_texts_come_from_order_settings(db, customer, vehicle):
+    """O texto da via (barra) e o da assinatura vêm de Configurações da OS, não
+    mais do construtor de PDF."""
+    from io import BytesIO
+
+    from pypdf import PdfReader
+
+    s = OrderSettings.get_solo()
+    s.pdf_client_copy_label = "VIA DA OFICINA (TESTE)"
+    s.pdf_signature_label = "Assine na linha de teste:"
+    s.save()
+
+    order = WorkOrder.objects.create(
+        customer=customer, vehicle=vehicle, opened_at="2026-07-04"
+    )
+    order.refresh_from_db()
+    ctx = build_order_pdf_context(order)
+    assert ctx["client_copy_label"] == "VIA DA OFICINA (TESTE)"
+    assert ctx["signature_label"] == "Assine na linha de teste:"
+
+    text = "".join(
+        p.extract_text() or ""
+        for p in PdfReader(BytesIO(render_order_pdf(order))).pages
+    )
+    assert "VIA DA OFICINA (TESTE)" in text
+    assert "Assine na linha de teste:" in text
 
 
 def test_term_html_formats_bullets():

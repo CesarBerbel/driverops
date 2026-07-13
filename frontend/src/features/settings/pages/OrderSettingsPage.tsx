@@ -69,6 +69,28 @@ const TERM_FIELDS: {
   },
 ];
 
+// Textos curtos do PDF antes editados dentro do construtor de PDF; agora ficam
+// aqui, junto dos demais textos do documento (um lugar só para o texto do PDF).
+const PDF_LABEL_FIELDS: {
+  name: keyof OrderSettingsFormValues;
+  label: string;
+  description: string;
+  placeholder: string;
+}[] = [
+  {
+    name: "pdf_client_copy_label",
+    label: "Texto da via (barra da OS)",
+    description: 'Texto central da barra no topo do PDF (ex.: "VIA DO CLIENTE").',
+    placeholder: "VIA DO CLIENTE",
+  },
+  {
+    name: "pdf_signature_label",
+    label: "Texto da linha de assinatura",
+    description: "Rótulo ao lado da linha de assinatura, no rodapé do PDF.",
+    placeholder: "Assinatura do cliente na retirada do veículo:",
+  },
+];
+
 const POLICY_FIELDS: { name: keyof OrderSettingsFormValues; label: string }[] = [
   {
     name: "require_diagnosis_before_approval",
@@ -100,6 +122,8 @@ function toFormValues(settings: OrderSettings): OrderSettingsFormValues {
     pdf_footer_text: settings.pdf_footer_text,
     print_instructions: settings.print_instructions,
     general_conditions: settings.general_conditions,
+    pdf_client_copy_label: settings.pdf_client_copy_label,
+    pdf_signature_label: settings.pdf_signature_label,
     notify_customer_by_email: settings.notify_customer_by_email,
     notify_statuses: settings.notify_statuses,
     notify_on_creation: settings.notify_on_creation,
@@ -428,6 +452,29 @@ function OrderSettingsForm({
                     />
                   )}
                 />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Textos do PDF da OS</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <p className="text-xs text-muted-foreground">
+              Textos curtos que aparecem no PDF da OS. A ordem e quais blocos aparecem
+              são definidos no{" "}
+              <Link to="/settings/pdf-builder" className="underline">
+                Construtor de PDF da OS
+              </Link>
+              .
+            </p>
+            {PDF_LABEL_FIELDS.map((field) => (
+              <div key={field.name} className="space-y-2">
+                <Label htmlFor={field.name}>{field.label}</Label>
+                <Input id={field.name} placeholder={field.placeholder} {...register(field.name)} />
+                <p className="text-xs text-muted-foreground">{field.description}</p>
               </div>
             ))}
           </CardContent>

@@ -447,6 +447,9 @@ def build_order_pdf_context(order, request=None, layout=None):
         # "Termos" do layout escolhe quais destes de fato aparecem.
         "terms": terms,
         "footer_text": os_settings.pdf_footer_text,
+        # Textos curtos do PDF, editados em Configurações da OS (não no construtor).
+        "client_copy_label": os_settings.pdf_client_copy_label,
+        "signature_label": os_settings.pdf_signature_label,
     }
 
 

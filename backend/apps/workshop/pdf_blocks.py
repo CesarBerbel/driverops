@@ -20,14 +20,11 @@ BLOCK_CATALOG = [
     {
         "type": "os_bar",
         "label": "Barra da OS",
-        "description": "Número da OS, texto central (via) e data de emissão.",
+        "description": (
+            "Número da OS, texto central (via) e emissão. O texto da via é "
+            'editado em Configurações da OS ("Textos do PDF").'
+        ),
         "options": [
-            {
-                "key": "label",
-                "kind": "text",
-                "label": "Texto central",
-                "default": "VIA DO CLIENTE",
-            },
             {
                 "key": "show_number",
                 "kind": "bool",
@@ -152,58 +149,17 @@ BLOCK_CATALOG = [
     {
         "type": "signature",
         "label": "Assinatura",
-        "description": "Linha de assinatura do cliente.",
-        "options": [
-            {
-                "key": "label",
-                "kind": "text",
-                "label": "Texto",
-                "default": "Assinatura do cliente na retirada do veículo:",
-            },
-        ],
+        "description": (
+            "Linha de assinatura do cliente. O texto é editado em "
+            'Configurações da OS ("Textos do PDF").'
+        ),
+        "options": [],
     },
     {
         "type": "footer",
         "label": "Rodapé",
         "description": "Texto de rodapé configurado nas Configurações da OS.",
         "options": [],
-    },
-    {
-        "type": "text",
-        "label": "Texto livre",
-        "description": "Um parágrafo com texto fixo à sua escolha.",
-        "options": [
-            {"key": "content", "kind": "textarea", "label": "Conteúdo", "default": ""},
-            {
-                "key": "align",
-                "kind": "select",
-                "label": "Alinhamento",
-                "default": "left",
-                "choices": [
-                    ["left", "Esquerda"],
-                    ["center", "Centro"],
-                    ["right", "Direita"],
-                ],
-            },
-            {
-                "key": "size",
-                "kind": "number",
-                "label": "Tamanho (pt)",
-                "default": 9,
-                "min": 6,
-                "max": 24,
-            },
-            {"key": "bold", "kind": "bool", "label": "Negrito", "default": False},
-            {"key": "muted", "kind": "bool", "label": "Cor suave", "default": False},
-        ],
-    },
-    {
-        "type": "band",
-        "label": "Faixa de seção",
-        "description": "Uma faixa/título para separar partes do documento.",
-        "options": [
-            {"key": "label", "kind": "text", "label": "Título", "default": "Seção"},
-        ],
     },
     {
         "type": "spacer",
@@ -231,8 +187,8 @@ BLOCK_TYPES = {b["type"]: b for b in BLOCK_CATALOG}
 def default_pdf_blocks():
     blocks = []
     for entry in BLOCK_CATALOG:
-        if entry["type"] in ("text", "band", "spacer"):
-            continue  # blocos "extras" não entram no layout padrão
+        if entry["type"] in ("spacer",):
+            continue  # blocos "extras" (estruturais) não entram no padrão
         options = {opt["key"]: opt["default"] for opt in entry["options"]}
         blocks.append({"type": entry["type"], "options": options})
     return blocks

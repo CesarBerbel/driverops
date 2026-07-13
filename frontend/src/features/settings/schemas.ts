@@ -65,6 +65,8 @@ export const orderSettingsSchema = z.object({
   pdf_footer_text: z.string().optional(),
   print_instructions: z.string().optional(),
   general_conditions: z.string().optional(),
+  pdf_client_copy_label: z.string().max(60).optional(),
+  pdf_signature_label: z.string().max(120).optional(),
   notify_customer_by_email: z.boolean(),
   notify_statuses: z.array(z.string()),
   notify_on_creation: z.boolean(),

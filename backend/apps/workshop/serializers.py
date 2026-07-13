@@ -136,6 +136,8 @@ class OrderSettingsSerializer(serializers.ModelSerializer):
             "pdf_footer_text",
             "print_instructions",
             "general_conditions",
+            "pdf_client_copy_label",
+            "pdf_signature_label",
             "notify_customer_by_email",
             "notify_statuses",
             "notify_on_creation",
