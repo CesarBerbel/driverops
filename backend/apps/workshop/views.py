@@ -74,6 +74,8 @@ class PdfLayoutPreviewView(APIView):
         from apps.orders.models import WorkOrder
         from apps.orders.pdf import render_order_pdf
 
+        from .pdf_blocks import PDF_TEXT_FIELDS
+
         order = (
             WorkOrder.objects.select_related("customer", "vehicle")
             .order_by("-id")
@@ -96,7 +98,15 @@ class PdfLayoutPreviewView(APIView):
                 "base_font_size", saved.base_font_size
             ),
         }
-        pdf = render_order_pdf(order, request=request, layout=layout)
+        # Textos do PDF ainda não salvos (editados no construtor): só as chaves
+        # conhecidas, como texto, para a prévia refletir o que está na tela.
+        raw_texts = request.data.get("texts") or {}
+        texts = {
+            field: str(raw_texts[field])
+            for field in PDF_TEXT_FIELDS
+            if isinstance(raw_texts, dict) and field in raw_texts
+        }
+        pdf = render_order_pdf(order, request=request, layout=layout, texts=texts)
         response = HttpResponse(pdf, content_type="application/pdf")
         response["Content-Disposition"] = 'inline; filename="previa-os.pdf"'
         return response

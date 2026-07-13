@@ -7,6 +7,7 @@ import type {
   OrderSettingsPayload,
   PdfLayoutPayload,
   PdfLayoutSettings,
+  PdfTexts,
   WorkshopProfile,
   WorkshopProfilePayload,
 } from "./types";
@@ -62,15 +63,16 @@ export async function updatePdfLayout(
   return data;
 }
 
-// Pré-visualização: renderiza a OS mais recente com o layout enviado (sem salvar)
-// e abre o PDF numa nova aba.
-export async function previewPdfLayout(payload: PdfLayoutPayload): Promise<void> {
+// Pré-visualização: renderiza a OS mais recente com o layout + textos enviados
+// (sem salvar) e devolve uma object URL do PDF (para exibir num iframe ou abrir
+// em nova aba). O chamador é responsável por revogar a URL quando trocá-la.
+export async function fetchPdfLayoutPreviewUrl(
+  payload: PdfLayoutPayload & { texts?: Partial<PdfTexts> },
+): Promise<string> {
   const response = await apiClient.post("/pdf-layout/preview/", payload, {
     responseType: "blob",
   });
-  const url = URL.createObjectURL(response.data as Blob);
-  window.open(url, "_blank", "noopener,noreferrer");
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  return URL.createObjectURL(response.data as Blob);
 }
 
 export async function getKanbanSettings(): Promise<KanbanSettings> {

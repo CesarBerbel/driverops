@@ -120,3 +120,14 @@ export type PdfLayoutPayload = {
   accent_color: string;
   base_font_size: number;
 };
+
+// Textos do PDF da OS: armazenados em OrderSettings, mas editados no construtor.
+export interface PdfTexts {
+  pdf_client_copy_label: string;
+  pdf_signature_label: string;
+  warranty_terms: string;
+  service_authorization_terms: string;
+  customer_acknowledgment_terms: string;
+  general_conditions: string;
+  pdf_footer_text: string;
+}

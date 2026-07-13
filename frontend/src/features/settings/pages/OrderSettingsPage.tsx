@@ -28,24 +28,9 @@ const TERM_FIELDS: {
   description: string;
 }[] = [
   {
-    name: "warranty_terms",
-    label: "Termo de garantia",
-    description: "Usado no PDF e na página de aprovação do orçamento.",
-  },
-  {
     name: "quote_terms",
     label: "Termo de orçamento",
-    description: "Usado no PDF e na página de aprovação do orçamento.",
-  },
-  {
-    name: "service_authorization_terms",
-    label: "Termo de autorização de serviço",
-    description: "Usado no orçamento, quando o cliente autoriza a execução dos serviços.",
-  },
-  {
-    name: "customer_acknowledgment_terms",
-    label: "Termo de ciência do cliente",
-    description: "Usado em documentos de aceite, retirada ou entrega do veículo.",
+    description: "Usado no orçamento e na página de aprovação do orçamento.",
   },
   {
     name: "default_os_notes",
@@ -53,41 +38,9 @@ const TERM_FIELDS: {
     description: "Sugestão de observações padrão ao abrir uma nova OS.",
   },
   {
-    name: "pdf_footer_text",
-    label: "Texto padrão do rodapé dos PDFs",
-    description: "Reutilizado no rodapé dos documentos gerados pelo sistema.",
-  },
-  {
     name: "print_instructions",
     label: "Instruções para documentos impressos",
     description: "Mensagens padrão exibidas nos documentos impressos.",
-  },
-  {
-    name: "general_conditions",
-    label: "Condições gerais de atendimento",
-    description: "Condições gerais reutilizadas nos documentos, se aplicável.",
-  },
-];
-
-// Textos curtos do PDF antes editados dentro do construtor de PDF; agora ficam
-// aqui, junto dos demais textos do documento (um lugar só para o texto do PDF).
-const PDF_LABEL_FIELDS: {
-  name: keyof OrderSettingsFormValues;
-  label: string;
-  description: string;
-  placeholder: string;
-}[] = [
-  {
-    name: "pdf_client_copy_label",
-    label: "Texto da via (barra da OS)",
-    description: 'Texto central da barra no topo do PDF (ex.: "VIA DO CLIENTE").',
-    placeholder: "VIA DO CLIENTE",
-  },
-  {
-    name: "pdf_signature_label",
-    label: "Texto da linha de assinatura",
-    description: "Rótulo ao lado da linha de assinatura, no rodapé do PDF.",
-    placeholder: "Assinatura do cliente na retirada do veículo:",
   },
 ];
 
@@ -114,16 +67,9 @@ function toFormValues(settings: OrderSettings): OrderSettingsFormValues {
   return {
     default_delivery_days: String(settings.default_delivery_days),
     default_payment_due_days: String(settings.default_payment_due_days),
-    warranty_terms: settings.warranty_terms,
     quote_terms: settings.quote_terms,
-    service_authorization_terms: settings.service_authorization_terms,
-    customer_acknowledgment_terms: settings.customer_acknowledgment_terms,
     default_os_notes: settings.default_os_notes,
-    pdf_footer_text: settings.pdf_footer_text,
     print_instructions: settings.print_instructions,
-    general_conditions: settings.general_conditions,
-    pdf_client_copy_label: settings.pdf_client_copy_label,
-    pdf_signature_label: settings.pdf_signature_label,
     notify_customer_by_email: settings.notify_customer_by_email,
     notify_statuses: settings.notify_statuses,
     notify_on_creation: settings.notify_on_creation,
@@ -459,32 +405,17 @@ function OrderSettingsForm({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Textos do PDF da OS</CardTitle>
+            <CardTitle className="text-base">Termos e textos padrão</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-xs text-muted-foreground">
-              Textos curtos que aparecem no PDF da OS. A ordem e quais blocos aparecem
-              são definidos no{" "}
+              Os textos que saem no <strong>PDF da OS</strong> (via, assinatura, garantia,
+              autorização, ciência, condições gerais e rodapé) agora são editados no{" "}
               <Link to="/settings/pdf-builder" className="underline">
                 Construtor de PDF da OS
               </Link>
               .
             </p>
-            {PDF_LABEL_FIELDS.map((field) => (
-              <div key={field.name} className="space-y-2">
-                <Label htmlFor={field.name}>{field.label}</Label>
-                <Input id={field.name} placeholder={field.placeholder} {...register(field.name)} />
-                <p className="text-xs text-muted-foreground">{field.description}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Termos e textos padrão</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
             {TERM_FIELDS.map((term) => (
               <div key={term.name} className="space-y-2">
                 <Label htmlFor={term.name}>{term.label}</Label>

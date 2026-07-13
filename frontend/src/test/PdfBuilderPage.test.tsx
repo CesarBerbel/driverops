@@ -7,12 +7,38 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Toaster } from "@/components/ui/sonner";
 import * as settingsApi from "@/features/settings/api";
 import { PdfBuilderPage } from "@/features/settings/pages/PdfBuilderPage";
-import type { PdfLayoutSettings } from "@/features/settings/types";
+import type { OrderSettings, PdfLayoutSettings } from "@/features/settings/types";
 
 vi.mock("@/features/settings/api");
 
 const auth = vi.hoisted(() => ({ user: { is_superuser: true } as { is_superuser: boolean } }));
 vi.mock("@/features/auth/useAuth", () => ({ useAuth: () => ({ user: auth.user }) }));
+
+function orderSettings(): OrderSettings {
+  return {
+    default_delivery_days: 7,
+    default_payment_due_days: 0,
+    warranty_terms: "Garantia padrão",
+    quote_terms: "Orçamento padrão",
+    service_authorization_terms: "Autorização padrão",
+    customer_acknowledgment_terms: "Ciência padrão",
+    default_os_notes: "",
+    pdf_footer_text: "Rodapé padrão",
+    print_instructions: "",
+    general_conditions: "",
+    pdf_client_copy_label: "VIA DO CLIENTE",
+    pdf_signature_label: "Assinatura do cliente:",
+    notify_customer_by_email: true,
+    notify_statuses: [],
+    notify_on_creation: false,
+    notify_on_payment: false,
+    require_diagnosis_before_approval: false,
+    require_approved_quote_for_execution: false,
+    require_checkin_before_execution: false,
+    require_payment_to_finish: false,
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+}
 
 function layout(): PdfLayoutSettings {
   return {
@@ -23,6 +49,7 @@ function layout(): PdfLayoutSettings {
       { type: "header", options: {} },
       { type: "os_bar", options: { show_number: true, show_emission: true } },
       { type: "customer", options: { fields: ["name", "phone", "email", "document"] } },
+      { type: "terms", options: { include: ["authorization", "warranty", "general", "acknowledgment"] } },
     ],
     catalog: [
       { type: "header", label: "Cabeçalho", description: "Logo.", options: [] },
@@ -53,6 +80,25 @@ function layout(): PdfLayoutSettings {
           },
         ],
       },
+      {
+        type: "terms",
+        label: "Termos",
+        description: "Termos do PDF.",
+        options: [
+          {
+            key: "include",
+            kind: "multi",
+            label: "Termos incluídos",
+            default: ["authorization", "warranty", "general", "acknowledgment"],
+            choices: [
+              ["authorization", "Autorização de serviço"],
+              ["warranty", "Garantia"],
+              ["general", "Condições gerais"],
+              ["acknowledgment", "Ciência do cliente"],
+            ],
+          },
+        ],
+      },
       { type: "spacer", label: "Espaçador", description: "Espaço vertical.", options: [] },
     ],
   };
@@ -75,26 +121,30 @@ describe("PdfBuilderPage", () => {
     auth.user = { is_superuser: true };
     vi.mocked(settingsApi.getPdfLayout).mockReset();
     vi.mocked(settingsApi.updatePdfLayout).mockReset();
-    vi.mocked(settingsApi.previewPdfLayout).mockReset();
+    vi.mocked(settingsApi.fetchPdfLayoutPreviewUrl).mockReset();
+    vi.mocked(settingsApi.getOrderSettings).mockReset();
+    vi.mocked(settingsApi.updateOrderSettings).mockReset();
+    vi.mocked(settingsApi.getOrderSettings).mockResolvedValue(orderSettings());
+    vi.mocked(settingsApi.updateOrderSettings).mockResolvedValue(orderSettings());
   });
 
-  it("lists the saved blocks in order", async () => {
+  it("lists the saved sections in order", async () => {
     vi.mocked(settingsApi.getPdfLayout).mockResolvedValue(layout());
     renderPage();
 
     expect(await screen.findByText("Cabeçalho")).toBeInTheDocument();
     expect(screen.getByText("Barra da OS")).toBeInTheDocument();
-    expect(screen.getByText(/Blocos do documento \(3\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Seções do documento \(4\)/)).toBeInTheDocument();
   });
 
-  it("removes a block and saves the remaining layout", async () => {
+  it("removes a section and saves the remaining layout", async () => {
     vi.mocked(settingsApi.getPdfLayout).mockResolvedValue(layout());
     vi.mocked(settingsApi.updatePdfLayout).mockResolvedValue(layout());
     const user = userEvent.setup();
     renderPage();
 
     await user.click(await screen.findByLabelText("Remover Cabeçalho"));
-    expect(screen.getByText(/Blocos do documento \(2\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Seções do documento \(3\)/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Salvar alterações/i }));
     await waitFor(() =>
@@ -103,20 +153,45 @@ describe("PdfBuilderPage", () => {
           blocks: [
             expect.objectContaining({ type: "os_bar" }),
             expect.objectContaining({ type: "customer" }),
+            expect.objectContaining({ type: "terms" }),
           ],
         }),
       ),
     );
   });
 
-  it("previews with the current (unsaved) layout", async () => {
+  it("edits a term inside the Termos section and saves it to order settings", async () => {
     vi.mocked(settingsApi.getPdfLayout).mockResolvedValue(layout());
-    vi.mocked(settingsApi.previewPdfLayout).mockResolvedValue(undefined);
+    vi.mocked(settingsApi.updatePdfLayout).mockResolvedValue(layout());
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(await screen.findByRole("button", { name: /Pré-visualizar/i }));
-    await waitFor(() => expect(settingsApi.previewPdfLayout).toHaveBeenCalled());
+    // O texto do termo é editado no próprio bloco "Termos".
+    const garantia = await screen.findByLabelText("Texto de Garantia");
+    expect(garantia).toHaveValue("Garantia padrão");
+    await user.clear(garantia);
+    await user.type(garantia, "Nova garantia");
+
+    await user.click(screen.getByRole("button", { name: /Salvar alterações/i }));
+    await waitFor(() =>
+      expect(settingsApi.updateOrderSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ warranty_terms: "Nova garantia" }),
+      ),
+    );
+  });
+
+  it("refreshes the inline preview with the current (unsaved) layout", async () => {
+    vi.mocked(settingsApi.getPdfLayout).mockResolvedValue(layout());
+    vi.mocked(settingsApi.fetchPdfLayoutPreviewUrl).mockResolvedValue("blob:mock-pdf");
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: /Atualizar/i }));
+    await waitFor(() => expect(settingsApi.fetchPdfLayoutPreviewUrl).toHaveBeenCalled());
+    // O PDF renderizado aparece embutido num iframe.
+    await waitFor(() =>
+      expect(screen.getByTitle("Prévia do PDF da OS")).toHaveAttribute("src", "blob:mock-pdf"),
+    );
   });
 
   it("shows a lock notice and no save action for non-superusers", async () => {
@@ -125,18 +200,18 @@ describe("PdfBuilderPage", () => {
     renderPage();
 
     expect(
-      await screen.findByText("Apenas superusuários podem alterar o layout do PDF."),
+      await screen.findByText("Apenas superusuários podem alterar o PDF da OS."),
     ).toBeInTheDocument();
-    // Espera os dados carregarem: pré-visualizar continua disponível (leitura).
+    // Espera os dados carregarem: atualizar a prévia continua disponível (leitura).
     expect(
-      await screen.findByRole("button", { name: /Pré-visualizar/i }),
+      await screen.findByRole("button", { name: /Atualizar/i }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Salvar alterações/i }),
     ).not.toBeInTheDocument();
   });
 
-  it("restores the default layout from the catalog (drops extra blocks)", async () => {
+  it("restores the default layout from the catalog (drops extra sections)", async () => {
     const withExtra = layout();
     withExtra.blocks = [...withExtra.blocks, { type: "spacer", options: {} }];
     vi.mocked(settingsApi.getPdfLayout).mockResolvedValue(withExtra);
@@ -144,12 +219,12 @@ describe("PdfBuilderPage", () => {
     renderPage();
 
     await waitFor(() =>
-      expect(screen.getByText(/Blocos do documento \(4\)/)).toBeInTheDocument(),
+      expect(screen.getByText(/Seções do documento \(5\)/)).toBeInTheDocument(),
     );
     await user.click(screen.getByRole("button", { name: /Restaurar padrão/i }));
-    // O padrão do catálogo tem header/os_bar/customer (sem o "spacer" extra).
-    expect(screen.getByText(/Blocos do documento \(3\)/)).toBeInTheDocument();
-    const region = screen.getByText(/Blocos do documento/).closest("div")!;
+    // O padrão do catálogo tem header/os_bar/customer/terms (sem o "spacer").
+    expect(screen.getByText(/Seções do documento \(4\)/)).toBeInTheDocument();
+    const region = screen.getByText(/Seções do documento/).closest("div")!;
     expect(within(region).queryByText("Espaçador")).not.toBeInTheDocument();
   });
 });

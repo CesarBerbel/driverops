@@ -192,11 +192,21 @@ def _term_html(text):
     return "<br/>".join(parts)
 
 
-def build_order_pdf_context(order, request=None, layout=None):
+def build_order_pdf_context(order, request=None, layout=None, texts=None):
     from .serializers import WorkOrderSerializer
 
     profile = WorkshopProfile.get_solo()
     os_settings = OrderSettings.get_solo()
+
+    # Textos do PDF (termos, rodapé, via, assinatura): editados no construtor de
+    # PDF, mas armazenados em OrderSettings. `texts` permite pré-visualizar
+    # alterações ainda não salvas; sem ele, usa o valor persistido.
+    text_overrides = texts or {}
+
+    def _os_text(field):
+        value = text_overrides.get(field)
+        return value if value is not None else getattr(os_settings, field)
+
     # Layout do PDF (blocos). `layout` (dict) permite pré-visualizar alterações
     # ainda não salvas; sem ele, usa o layout persistido. Sempre normalizado.
     if layout is not None:
@@ -356,22 +366,22 @@ def build_order_pdf_context(order, request=None, layout=None):
             {
                 "key": "authorization",
                 "title": "Autorização de serviço",
-                "text": os_settings.service_authorization_terms,
+                "text": _os_text("service_authorization_terms"),
             },
             {
                 "key": "warranty",
                 "title": "Garantia",
-                "text": os_settings.warranty_terms,
+                "text": _os_text("warranty_terms"),
             },
             {
                 "key": "general",
                 "title": "Condições gerais",
-                "text": os_settings.general_conditions,
+                "text": _os_text("general_conditions"),
             },
             {
                 "key": "acknowledgment",
                 "title": "Ciência do cliente",
-                "text": os_settings.customer_acknowledgment_terms,
+                "text": _os_text("customer_acknowledgment_terms"),
             },
         ]
         if (term["text"] or "").strip()
@@ -446,21 +456,22 @@ def build_order_pdf_context(order, request=None, layout=None):
         # Todos os termos aplicáveis à OS (só entram os preenchidos). O bloco
         # "Termos" do layout escolhe quais destes de fato aparecem.
         "terms": terms,
-        "footer_text": os_settings.pdf_footer_text,
-        # Textos curtos do PDF, editados em Configurações da OS (não no construtor).
-        "client_copy_label": os_settings.pdf_client_copy_label,
-        "signature_label": os_settings.pdf_signature_label,
+        "footer_text": _os_text("pdf_footer_text"),
+        # Textos curtos do PDF, editados no construtor de PDF (armazenados na OS).
+        "client_copy_label": _os_text("pdf_client_copy_label"),
+        "signature_label": _os_text("pdf_signature_label"),
     }
 
 
-def render_order_pdf(order, request=None, layout=None):
+def render_order_pdf(order, request=None, layout=None, texts=None):
     """Gera o PDF da OS (bytes). Nunca quebra por termo/logo ausente.
 
-    `layout` (dict opcional) permite renderizar com um layout ainda não salvo,
-    usado pela pré-visualização do construtor de PDF.
+    `layout` e `texts` (dicts opcionais) permitem renderizar com estrutura e/ou
+    textos ainda não salvos, usados pela pré-visualização do construtor de PDF.
     """
     html = render_to_string(
-        "orders/order_pdf.html", build_order_pdf_context(order, request, layout=layout)
+        "orders/order_pdf.html",
+        build_order_pdf_context(order, request, layout=layout, texts=texts),
     )
     buffer = BytesIO()
     pisa.CreatePDF(src=html, dest=buffer, encoding="utf-8")

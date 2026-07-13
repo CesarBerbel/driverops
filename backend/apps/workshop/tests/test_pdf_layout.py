@@ -2,7 +2,7 @@
 
 import pytest
 
-from apps.workshop.models import PdfLayoutSettings
+from apps.workshop.models import OrderSettings, PdfLayoutSettings
 from apps.workshop.pdf_blocks import default_pdf_blocks, normalize_blocks
 
 pytestmark = pytest.mark.django_db
@@ -130,6 +130,32 @@ def test_preview_renders_pdf_with_unsaved_layout(super_client):
     assert response.content[:5] == b"%PDF-"
     # O layout enviado não é salvo (continua o padrão).
     assert [b["type"] for b in PdfLayoutSettings.get_solo().blocks][0] == "header"
+
+
+def test_preview_reflects_unsaved_texts(super_client):
+    """A prévia usa os textos enviados (ainda não salvos) editados no construtor."""
+    from io import BytesIO
+
+    from pypdf import PdfReader
+
+    _make_order()
+    payload = {
+        "texts": {
+            "pdf_client_copy_label": "VIA PREVIA XYZ",
+            "warranty_terms": "GARANTIA PREVIA XYZ",
+        }
+    }
+    response = super_client.post(
+        "/api/pdf-layout/preview/", data=payload, content_type="application/json"
+    )
+    assert response.status_code == 200
+    text = "".join(
+        p.extract_text() or "" for p in PdfReader(BytesIO(response.content)).pages
+    )
+    assert "VIA PREVIA XYZ" in text
+    assert "GARANTIA PREVIA XYZ" in text
+    # Nada foi salvo: o texto persistido continua o padrão.
+    assert OrderSettings.get_solo().pdf_client_copy_label == "VIA DO CLIENTE"
 
 
 def test_preview_without_any_order_returns_404(super_client):

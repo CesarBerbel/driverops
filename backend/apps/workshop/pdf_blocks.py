@@ -181,6 +181,18 @@ BLOCK_CATALOG = [
 # Índices auxiliares.
 BLOCK_TYPES = {b["type"]: b for b in BLOCK_CATALOG}
 
+# Campos de texto do PDF da OS (armazenados em OrderSettings, mas editados no
+# construtor de PDF). Usados para a pré-visualização aceitar textos não salvos.
+PDF_TEXT_FIELDS = [
+    "pdf_client_copy_label",
+    "pdf_signature_label",
+    "warranty_terms",
+    "service_authorization_terms",
+    "customer_acknowledgment_terms",
+    "general_conditions",
+    "pdf_footer_text",
+]
+
 
 # Layout padrão -- reproduz exatamente o PDF atual da OS. É o valor inicial do
 # registro e o alvo do botão "Restaurar padrão".

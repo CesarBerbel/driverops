@@ -67,8 +67,9 @@ describe("OrderSettingsPage", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Prazo padrão de entrega")).toHaveValue("7"),
     );
-    expect(screen.getByLabelText("Termo de garantia")).toHaveValue("Garantia padrão");
     expect(screen.getByLabelText("Termo de orçamento")).toHaveValue("Orçamento padrão");
+    // Os textos do PDF da OS (garantia etc.) migraram para o Construtor de PDF.
+    expect(screen.queryByLabelText("Termo de garantia")).not.toBeInTheDocument();
   });
 
   it("saves the deadline as a number for a superuser", async () => {
