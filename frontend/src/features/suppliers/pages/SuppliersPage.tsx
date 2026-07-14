@@ -4,7 +4,18 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { AlertCircle, Info, Pencil, Plus, RotateCcw, Search, Trash2, Truck, X } from "lucide-react";
+import {
+  AlertCircle,
+  Info,
+  MessageCircle,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  Truck,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,8 +46,10 @@ import {
 import { Pagination } from "@/components/shared/Pagination";
 import { ResponsiveDataView } from "@/components/shared/ResponsiveDataView";
 import { extractErrorMessage } from "@/lib/api-client";
+import { formatPhone } from "@/lib/masks";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 import { deleteSupplier, listSuppliersPage, reactivateSupplier } from "../api";
 import { SupplierMobileCard } from "../components/SupplierMobileCard";
@@ -222,7 +235,7 @@ export function SuppliersPage() {
                 <TableHead>Nome/Razão social</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Documento</TableHead>
-                <TableHead>Telefone</TableHead>
+                <TableHead>Telefone / WhatsApp</TableHead>
                 <TableHead className="w-0 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -243,7 +256,21 @@ export function SuppliersPage() {
                   <TableCell className="text-muted-foreground">
                     {supplier.document || "—"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{supplier.phone || "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {supplier.whatsapp || supplier.phone ? (
+                      <a
+                        href={buildWhatsAppUrl(supplier.whatsapp || supplier.phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-success hover:underline"
+                      >
+                        <MessageCircle className="size-4" />
+                        {formatPhone(supplier.whatsapp || supplier.phone)}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button

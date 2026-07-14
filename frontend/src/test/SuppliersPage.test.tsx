@@ -97,6 +97,19 @@ describe("SuppliersPage", () => {
     expect(within(table).getByText("12345678000199")).toBeInTheDocument();
   });
 
+  it("shows a WhatsApp click-to-chat link for the supplier's number", async () => {
+    vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(
+      paged([supplier({ whatsapp: "12988887777" })]),
+    );
+    renderPage();
+
+    await screen.findByText("Fornecedor Ltda");
+    const links = screen.getAllByRole("link");
+    expect(
+      links.some((a) => a.getAttribute("href") === "https://wa.me/5512988887777"),
+    ).toBe(true);
+  });
+
   it("debounces the search box and queries by name/trade name/document", async () => {
     vi.mocked(suppliersApi.listSuppliersPage).mockResolvedValue(paged([supplier()]));
     const user = userEvent.setup();
