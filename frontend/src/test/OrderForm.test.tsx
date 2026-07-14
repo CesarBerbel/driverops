@@ -40,6 +40,8 @@ function orderSettings(days: number): OrderSettings {
     pdf_footer_text: "",
     print_instructions: "",
     general_conditions: "",
+    pdf_client_copy_label: "VIA DO CLIENTE",
+    pdf_signature_label: "Assinatura do cliente:",
     notify_customer_by_email: true,
     notify_statuses: ["ready", "finished"],
     notify_on_creation: false,
