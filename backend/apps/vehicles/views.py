@@ -1,12 +1,32 @@
 from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.permissions import HasModulePermission
 
-from .models import Vehicle
-from .serializers import DUPLICATE_PLATE_MESSAGE, VehicleSerializer
+from .models import Vehicle, VehicleBrand
+from .serializers import (
+    DUPLICATE_PLATE_MESSAGE,
+    VehicleBrandSerializer,
+    VehicleSerializer,
+)
+
+
+class VehicleBrandListView(ListAPIView):
+    """Marcas de carro para autocomplete (tabela auxiliar oculta).
+
+    Somente leitura e sem paginação -- a lista é curta e alimenta um datalist no
+    formulário do veículo. Qualquer usuário autenticado pode consultar; a marca
+    do veículo continua sendo texto livre (isto são só sugestões).
+    """
+
+    serializer_class = VehicleBrandSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    queryset = VehicleBrand.objects.filter(is_active=True)
 
 
 class VehicleViewSet(viewsets.ModelViewSet):

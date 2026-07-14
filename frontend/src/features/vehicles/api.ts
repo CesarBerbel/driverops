@@ -29,6 +29,13 @@ export function listVehiclesPage(
   return fetchPage<Vehicle>("/vehicles/", page, { search, status });
 }
 
+// Marcas conhecidas (tabela auxiliar oculta) para autocompletar o campo "Marca".
+// São só sugestões -- a marca do veículo continua sendo texto livre.
+export async function listVehicleBrands(): Promise<string[]> {
+  const { data } = await apiClient.get<{ name: string }[]>("/vehicle-brands/");
+  return data.map((b) => b.name);
+}
+
 export async function getVehicle(id: number): Promise<Vehicle> {
   const { data } = await apiClient.get<Vehicle>(`/vehicles/${id}/`);
   return data;

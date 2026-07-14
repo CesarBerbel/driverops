@@ -32,7 +32,7 @@ import { onlyDigits } from "@/lib/masks";
 import { CustomerFormSheet } from "@/features/customers/CustomerFormSheet";
 import type { Customer } from "@/features/customers/types";
 
-import { createVehicle, getVehicle, updateVehicle } from "./api";
+import { createVehicle, getVehicle, listVehicleBrands, updateVehicle } from "./api";
 import {
   DOORS_OPTIONS,
   FUEL_TYPE_OPTIONS,
@@ -233,6 +233,13 @@ function VehicleForm({
 
   const isModified = watch("is_modified");
 
+  // Sugestões de marca (autocomplete). Lista curta e estável -> cache longo.
+  const { data: brandOptions = [] } = useQuery({
+    queryKey: ["vehicle-brands"],
+    queryFn: listVehicleBrands,
+    staleTime: 1000 * 60 * 60,
+  });
+
   const mutation = useMutation({
     mutationFn: (values: VehicleFormValues) => {
       const payload = toPayload(values);
@@ -340,7 +347,13 @@ function VehicleForm({
 
             <div className="space-y-2">
               <Label htmlFor="brand">Marca</Label>
-              <Input id="brand" {...register("brand")} />
+              {/* Autocomplete de marcas conhecidas; segue aceitando texto livre. */}
+              <Input id="brand" list="vehicle-brand-options" {...register("brand")} />
+              <datalist id="vehicle-brand-options">
+                {brandOptions.map((brand) => (
+                  <option key={brand} value={brand} />
+                ))}
+              </datalist>
             </div>
 
             <div className="space-y-2">

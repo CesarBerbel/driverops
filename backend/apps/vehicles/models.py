@@ -95,3 +95,20 @@ class Vehicle(models.Model):
         if exclude_pk is not None:
             conflict = conflict.exclude(pk=exclude_pk)
         return conflict.exists()
+
+
+class VehicleBrand(models.Model):
+    """Tabela auxiliar (oculta) de marcas de carros conhecidas/comercializadas no
+    Brasil, usada apenas para autocompletar o campo "Marca" do veículo. NÃO
+    restringe o cadastro: a marca do veículo continua sendo texto livre -- estas
+    são só sugestões. Não tem tela de gestão; é populada por migração de dados.
+    """
+
+    name = models.CharField(max_length=60, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name

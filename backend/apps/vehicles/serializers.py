@@ -5,9 +5,16 @@ from rest_framework import serializers
 
 from apps.customers.utils import only_digits
 
-from .models import Vehicle
+from .models import Vehicle, VehicleBrand
 
 DUPLICATE_PLATE_MESSAGE = "Já existe um veículo ativo com esta placa."
+
+
+class VehicleBrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VehicleBrand
+        fields = ["name"]
+
 
 OLD_PLATE_RE = re.compile(r"^[A-Z]{3}[0-9]{4}$")
 MERCOSUL_PLATE_RE = re.compile(r"^[A-Z]{3}[0-9][A-Z][0-9]{2}$")

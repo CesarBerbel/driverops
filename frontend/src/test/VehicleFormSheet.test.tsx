@@ -60,6 +60,30 @@ describe("VehicleFormSheet", () => {
     vi.mocked(customersApi.createCustomer).mockReset();
     vi.mocked(customersApi.listCustomers).mockReset();
     vi.mocked(customersApi.listCustomers).mockResolvedValue([customer()]);
+    vi.mocked(vehiclesApi.listVehicleBrands).mockReset();
+    vi.mocked(vehiclesApi.listVehicleBrands).mockResolvedValue(["Chevrolet", "Fiat"]);
+  });
+
+  it("suggests known brands via a datalist but keeps the field free text", async () => {
+    const user = userEvent.setup();
+    renderSheet();
+
+    const brand = screen.getByLabelText("Marca");
+    expect(brand).toHaveAttribute("list", "vehicle-brand-options");
+
+    // As marcas conhecidas viram <option> no datalist de sugestões.
+    await waitFor(() =>
+      expect(
+        document.querySelector('#vehicle-brand-options option[value="Chevrolet"]'),
+      ).not.toBeNull(),
+    );
+    expect(
+      document.querySelector('#vehicle-brand-options option[value="Fiat"]'),
+    ).not.toBeNull();
+
+    // Segue aceitando uma marca fora da lista (texto livre).
+    await user.type(brand, "Marca Própria");
+    expect(brand).toHaveValue("Marca Própria");
   });
 
   it("requires a customer and a valid plate before submitting", async () => {
