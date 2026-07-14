@@ -357,12 +357,16 @@ def allowed_targets(current: str) -> list[str]:
 def _run_side_effects(order, old_status, action, actor):
     """Efeitos colaterais controlados de uma transição (transacional)."""
     from .notifications import maybe_notify_status_change
-    from .stock import deduct_stock_for_order
+    from .stock import deduct_stock_for_order, reverse_stock_for_order
 
     # Baixa de estoque ao finalizar (idempotente via WorkOrder.stock_deducted).
     if order.status == S.FINISHED and old_status != S.FINISHED:
         deduct_stock_for_order(order, actor)
         _set_default_payment_due(order)
+    # Estorno ao reabrir uma OS finalizada: devolve as peças ao estoque para que
+    # a re-finalização baixe do zero sobre as linhas (possivelmente) alteradas.
+    elif old_status == S.FINISHED and order.status != S.FINISHED:
+        reverse_stock_for_order(order, actor)
     # E-mail automático ao cliente nos marcos configurados (pronta/finalizada/...).
     maybe_notify_status_change(order, actor=actor)
 

@@ -41,6 +41,14 @@ def _move(client, order, status):
     )
 
 
+def _transition(client, order, action, **body):
+    return client.post(
+        f"/api/work-orders/{order.id}/transition/",
+        data={"action": action, **body},
+        content_type="application/json",
+    )
+
+
 def test_finishing_deducts_registered_parts(auth_client, user, customer, vehicle, part):
     _grant(user, "orders.finish")
     order = _order(customer, vehicle, status="ready")
@@ -119,6 +127,117 @@ def test_non_finish_transition_does_not_deduct(auth_client, customer, vehicle, p
     assert StockMovement.objects.filter(order=order).count() == 0
     order.refresh_from_db()
     assert order.stock_deducted is False
+
+
+def test_reopening_reverses_deduction(auth_client, user, customer, vehicle, part):
+    """Reabrir uma OS finalizada devolve as peças ao estoque e limpa o flag."""
+    _grant(user, "orders.finish")
+    _grant(user, "orders.reopen")
+    order = _order(customer, vehicle, status="ready")
+    WorkOrderPart.objects.create(order=order, part=part, quantity="2")
+    start = part.current_quantity
+
+    _move(auth_client, order, "finished")
+    part.refresh_from_db()
+    assert part.current_quantity == start - 2
+
+    resp = _transition(
+        auth_client,
+        order,
+        "reopen",
+        target_status="in_progress",
+        reason="Cliente retornou com o mesmo problema.",
+    )
+    assert resp.status_code == 200
+
+    part.refresh_from_db()
+    assert part.current_quantity == start  # peça devolvida ao saldo
+    order.refresh_from_db()
+    assert order.stock_deducted is False
+    reversal = StockMovement.objects.get(
+        part=part, order=order, kind=StockMovement.Kind.IN
+    )
+    assert reversal.quantity == 2
+    assert reversal.resulting_quantity == start
+
+
+def test_reopen_add_part_and_refinalize_deducts_new_total(
+    auth_client, user, customer, vehicle, part
+):
+    """Peça adicionada após a reabertura também dá baixa na re-finalização.
+
+    Regressão: antes, o flag `stock_deducted` permanecia True ao reabrir, então a
+    peça nova nunca saía do estoque.
+    """
+    _grant(user, "orders.finish")
+    _grant(user, "orders.reopen")
+    order = _order(customer, vehicle, status="ready")
+    WorkOrderPart.objects.create(order=order, part=part, quantity="2")
+    start = part.current_quantity
+
+    _move(auth_client, order, "finished")  # baixa 2
+    _transition(
+        auth_client, order, "reopen", target_status="in_progress", reason="Faltou peça."
+    )  # estorna 2 -> volta a `start`
+
+    # A oficina lança mais 3 unidades da mesma peça e refinaliza.
+    WorkOrderPart.objects.create(order=order, part=part, quantity="3")
+    _move(auth_client, order, "ready")
+    _move(auth_client, order, "finished")
+
+    part.refresh_from_db()
+    assert part.current_quantity == start - 5  # 2 originais + 3 novas
+    order.refresh_from_db()
+    assert order.stock_deducted is True
+    # OUT(2), IN(2) estorno, OUT(5) re-finalização agregada.
+    assert StockMovement.objects.filter(part=part, order=order).count() == 3
+
+
+def test_reopen_remove_part_and_refinalize_returns_stock(
+    auth_client, user, customer, vehicle, part
+):
+    """Peça removida após a reabertura volta ao estoque e não é rebaixada."""
+    _grant(user, "orders.finish")
+    _grant(user, "orders.reopen")
+    order = _order(customer, vehicle, status="ready")
+    line = WorkOrderPart.objects.create(order=order, part=part, quantity="2")
+    start = part.current_quantity
+
+    _move(auth_client, order, "finished")  # baixa 2
+    _transition(
+        auth_client,
+        order,
+        "reopen",
+        target_status="in_progress",
+        reason="Cliente recusou a peça.",
+    )  # estorna 2
+    line.delete()  # peça sai do orçamento
+    _move(auth_client, order, "ready")
+    _move(auth_client, order, "finished")
+
+    part.refresh_from_db()
+    assert part.current_quantity == start  # peça permaneceu no estoque
+    # Sem terceira saída: só OUT(2) e IN(2) de estorno.
+    assert (
+        StockMovement.objects.filter(
+            part=part, order=order, kind=StockMovement.Kind.OUT
+        ).count()
+        == 1
+    )
+
+
+def test_reverse_is_noop_when_not_deducted(customer, vehicle, part):
+    """Estornar uma OS que nunca baixou não faz nada."""
+    from apps.orders.stock import reverse_stock_for_order
+
+    order = _order(customer, vehicle, status="in_progress")
+    WorkOrderPart.objects.create(order=order, part=part, quantity="2")
+    start = part.current_quantity
+
+    assert reverse_stock_for_order(order, None) == []
+    part.refresh_from_db()
+    assert part.current_quantity == start
+    assert StockMovement.objects.filter(order=order).count() == 0
 
 
 def test_finishing_via_patch_is_rejected_and_does_not_deduct(
