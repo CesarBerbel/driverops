@@ -12,6 +12,24 @@ export async function login(email: string, password: string): Promise<User> {
   return data.user;
 }
 
+// Entrar com Google: envia o ID token do Google Identity Services; o backend
+// verifica e só autentica usuários já existentes (vínculo automático por e-mail).
+export async function googleLogin(credential: string): Promise<User> {
+  const { data } = await apiClient.post<{ user: User }>("/auth/google/", { credential });
+  return data.user;
+}
+
+// Vincular a conta Google do usuário logado (recebe o ID token do Google).
+export async function linkGoogle(credential: string): Promise<User> {
+  const { data } = await apiClient.post<User>("/users/me/link-google/", { credential });
+  return data;
+}
+
+export async function unlinkGoogle(): Promise<User> {
+  const { data } = await apiClient.delete<User>("/users/me/link-google/");
+  return data;
+}
+
 export async function logout(): Promise<void> {
   await apiClient.post("/auth/logout/");
 }

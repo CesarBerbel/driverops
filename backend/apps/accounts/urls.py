@@ -15,6 +15,7 @@ router.register("users", UserViewSet, basename="user")
 
 urlpatterns = [
     path("auth/login/", views.LoginView.as_view(), name="login"),
+    path("auth/google/", views.GoogleLoginView.as_view(), name="google_login"),
     path("auth/logout/", views.LogoutView.as_view(), name="logout"),
     path("auth/refresh/", views.RefreshView.as_view(), name="token_refresh"),
     path(
@@ -30,6 +31,11 @@ urlpatterns = [
     # Rotas literais ANTES do router para "me"/"change-password"/permissions não
     # caírem no detail (<pk>) do UserViewSet.
     path("users/me/", views.MeView.as_view(), name="me"),
+    path(
+        "users/me/link-google/",
+        views.GoogleLinkView.as_view(),
+        name="link_google",
+    ),
     path(
         "users/change-password/",
         views.ChangePasswordView.as_view(),

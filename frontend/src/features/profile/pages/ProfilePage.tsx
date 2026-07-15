@@ -16,7 +16,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { changePassword, updateProfile } from "@/features/auth/api";
+import { changePassword, linkGoogle, unlinkGoogle, updateProfile } from "@/features/auth/api";
+import {
+  GoogleSignInButton,
+  googleAuthEnabled,
+} from "@/features/auth/components/GoogleSignInButton";
 import { useAuth } from "@/features/auth/useAuth";
 import {
   changePasswordSchema,
@@ -60,6 +64,26 @@ export function ProfilePage() {
       toast.success("Senha alterada com sucesso.");
     },
     onError: (error) => toast.error(extractErrorMessage(error, "Não foi possível alterar a senha.")),
+  });
+
+  const linkGoogleMutation = useMutation({
+    mutationFn: linkGoogle,
+    onSuccess: async () => {
+      await refetch();
+      toast.success("Conta Google vinculada.");
+    },
+    onError: (error) =>
+      toast.error(extractErrorMessage(error, "Não foi possível vincular a conta Google.")),
+  });
+
+  const unlinkGoogleMutation = useMutation({
+    mutationFn: unlinkGoogle,
+    onSuccess: async () => {
+      await refetch();
+      toast.success("Conta Google desvinculada.");
+    },
+    onError: (error) =>
+      toast.error(extractErrorMessage(error, "Não foi possível desvincular a conta Google.")),
   });
 
   if (!user) return null;
@@ -133,6 +157,46 @@ export function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {googleAuthEnabled && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Conta Google</CardTitle>
+            <CardDescription>
+              Vincule sua conta Google para entrar com um clique, sem senha.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {user.google_linked ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Sua conta está <span className="font-medium text-foreground">vinculada</span> ao
+                  Google.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={unlinkGoogleMutation.isPending}
+                  onClick={() => unlinkGoogleMutation.mutate()}
+                >
+                  {unlinkGoogleMutation.isPending && <Loader2 className="animate-spin" />}
+                  Desvincular
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Sua conta ainda não está vinculada ao Google.
+                </p>
+                <GoogleSignInButton
+                  text="continue_with"
+                  onCredential={(credential) => linkGoogleMutation.mutate(credential)}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <form

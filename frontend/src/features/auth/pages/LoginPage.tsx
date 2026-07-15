@@ -13,10 +13,11 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/features/auth/useAuth";
 import { extractErrorMessage } from "@/lib/api-client";
 
+import { GoogleSignInButton, googleAuthEnabled } from "../components/GoogleSignInButton";
 import { loginSchema, type LoginFormValues } from "../schemas";
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -27,14 +28,32 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
 
+  function redirectAfterLogin() {
+    const from =
+      (location.state as { from?: { pathname: string } } | null)?.from?.pathname ??
+      "/dashboard";
+    navigate(from, { replace: true });
+  }
+
   async function onSubmit(values: LoginFormValues) {
     setServerError(null);
     try {
       await login(values.email, values.password);
-      const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/dashboard";
-      navigate(from, { replace: true });
+      redirectAfterLogin();
     } catch (error) {
       setServerError(extractErrorMessage(error, "Não foi possível entrar. Tente novamente."));
+    }
+  }
+
+  async function handleGoogleCredential(credential: string) {
+    setServerError(null);
+    try {
+      await loginWithGoogle(credential);
+      redirectAfterLogin();
+    } catch (error) {
+      setServerError(
+        extractErrorMessage(error, "Não foi possível entrar com o Google."),
+      );
     }
   }
 
@@ -96,6 +115,17 @@ export function LoginPage() {
               {isSubmitting ? <ButtonLoader label="Entrando..." /> : "Entrar"}
             </Button>
           </form>
+
+          {googleAuthEnabled && (
+            <div className="mt-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">ou</span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
+              <GoogleSignInButton onCredential={handleGoogleCredential} />
+            </div>
+          )}
         </CardContent>
       </Card>
 

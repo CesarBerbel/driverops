@@ -2,7 +2,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import * as React from "react";
 
-import { fetchMe, login as apiLogin, logout as apiLogout } from "./api";
+import {
+  fetchMe,
+  googleLogin as apiGoogleLogin,
+  login as apiLogin,
+  logout as apiLogout,
+} from "./api";
 import { AuthContext, type AuthContextValue } from "./auth-context";
 
 const ME_QUERY_KEY = ["auth", "me"];
@@ -48,6 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [queryClient],
   );
 
+  const loginWithGoogle = React.useCallback(
+    async (credential: string) => {
+      const loggedInUser = await apiGoogleLogin(credential);
+      queryClient.setQueryData(ME_QUERY_KEY, loggedInUser);
+      return loggedInUser;
+    },
+    [queryClient],
+  );
+
   const logout = React.useCallback(async () => {
     await apiLogout();
     queryClient.setQueryData(ME_QUERY_KEY, null);
@@ -58,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: Boolean(user),
     login,
+    loginWithGoogle,
     logout,
     refetch,
   };

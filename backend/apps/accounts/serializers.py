@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         source="get_technical_specialty_display", read_only=True, default=""
     )
     permissions = serializers.SerializerMethodField()
+    google_linked = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -35,11 +36,15 @@ class UserSerializer(serializers.ModelSerializer):
             "technical_specialty_display",
             "force_password_change",
             "permissions",
+            "google_linked",
         ]
         read_only_fields = fields
 
     def get_permissions(self, obj):
         return sorted(obj.effective_permission_codes())
+
+    def get_google_linked(self, obj):
+        return bool(obj.google_sub)
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):

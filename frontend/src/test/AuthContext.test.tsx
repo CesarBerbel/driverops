@@ -23,6 +23,7 @@ const USER: User = {
   technical_specialty_display: "",
   force_password_change: false,
   permissions: [],
+  google_linked: false,
 };
 
 // Minimal axios-error shape (axios.isAxiosError only checks `isAxiosError`).

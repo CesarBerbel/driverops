@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .cookies import clear_auth_cookies, set_auth_cookies
 from .emails import send_password_reset_email
+from .google import GoogleAuthError, google_login_enabled, verify_google_id_token
 from .permissions import IsSuperUser
 from .serializers import (
     ChangePasswordSerializer,
@@ -45,12 +46,109 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        refresh = RefreshToken.for_user(user)
-        response = Response(
-            {"user": UserSerializer(user).data}, status=status.HTTP_200_OK
+        return _login_response(user)
+
+
+def _login_response(user):
+    """Emite o par de tokens em cookies HttpOnly e devolve o usuário -- mesmo
+    contrato do login por e-mail/senha, reutilizado pelo login com Google."""
+    refresh = RefreshToken.for_user(user)
+    response = Response({"user": UserSerializer(user).data}, status=status.HTTP_200_OK)
+    set_auth_cookies(response, str(refresh.access_token), str(refresh))
+    return response
+
+
+class GoogleLoginView(APIView):
+    """Entrar com Google (ID token do Google Identity Services).
+
+    Só autentica usuários JÁ existentes: encontra pela conta Google vinculada
+    (``google_sub``) ou, na primeira vez, pelo e-mail VERIFICADO do Google que
+    bate com um usuário ativo -- e nesse caso vincula automaticamente. Nunca
+    cria conta nova.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    def post(self, request):
+        if not google_login_enabled():
+            return Response(
+                {"detail": "Login com Google não está disponível."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            info = verify_google_id_token(request.data.get("credential", ""))
+        except GoogleAuthError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = User.objects.filter(google_sub=info["sub"]).first()
+        if user is None:
+            # Vínculo automático por e-mail verificado que casa com um usuário ativo.
+            if not info["email_verified"]:
+                return Response(
+                    {"detail": "Seu e-mail do Google não está verificado."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            user = User.objects.filter(
+                email__iexact=info["email"], is_active=True
+            ).first()
+            if user is None:
+                return Response(
+                    {
+                        "detail": (
+                            "Não há uma conta com este e-mail. Peça ao "
+                            "administrador para cadastrar você primeiro."
+                        )
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            user.google_sub = info["sub"]
+            user.save(update_fields=["google_sub"])
+
+        if not user.is_active:
+            return Response(
+                {"detail": "Conta desativada."}, status=status.HTTP_403_FORBIDDEN
+            )
+        return _login_response(user)
+
+
+class GoogleLinkView(APIView):
+    """Vincular (POST) / desvincular (DELETE) a conta Google do usuário logado."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not google_login_enabled():
+            return Response(
+                {"detail": "Login com Google não está disponível."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        try:
+            info = verify_google_id_token(request.data.get("credential", ""))
+        except GoogleAuthError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        taken = (
+            User.objects.filter(google_sub=info["sub"])
+            .exclude(pk=request.user.pk)
+            .exists()
         )
-        set_auth_cookies(response, str(refresh.access_token), str(refresh))
-        return response
+        if taken:
+            return Response(
+                {"detail": "Esta conta Google já está vinculada a outro usuário."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        request.user.google_sub = info["sub"]
+        request.user.save(update_fields=["google_sub"])
+        return Response(UserSerializer(request.user).data)
+
+    def delete(self, request):
+        if request.user.google_sub:
+            request.user.google_sub = None
+            request.user.save(update_fields=["google_sub"])
+        return Response(UserSerializer(request.user).data)
 
 
 class LogoutView(APIView):

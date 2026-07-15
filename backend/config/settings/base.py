@@ -145,6 +145,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+# Client ID OAuth do Google (Google Cloud Console). Usado para VERIFICAR o
+# `aud` do ID token no login/vínculo com Google. Vazio => login com Google
+# desativado (o botão some no frontend e o endpoint responde 503).
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+
 # ---------------------------------------------------------------------------
 # DRF
 # ---------------------------------------------------------------------------

@@ -6,9 +6,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 
 const loginMock = vi.fn();
+const loginWithGoogleMock = vi.fn();
 
 vi.mock("@/features/auth/useAuth", () => ({
-  useAuth: () => ({ login: loginMock }),
+  useAuth: () => ({ login: loginMock, loginWithGoogle: loginWithGoogleMock }),
+}));
+
+// Simula o botão do Google Identity Services: um clique devolve um ID token.
+vi.mock("@/features/auth/components/GoogleSignInButton", () => ({
+  googleAuthEnabled: true,
+  GoogleSignInButton: ({ onCredential }: { onCredential: (c: string) => void }) => (
+    <button type="button" onClick={() => onCredential("google-token")}>
+      Entrar com Google
+    </button>
+  ),
 }));
 
 function renderLoginPage() {
@@ -25,6 +36,7 @@ function renderLoginPage() {
 describe("LoginPage", () => {
   beforeEach(() => {
     loginMock.mockReset();
+    loginWithGoogleMock.mockReset();
   });
 
   it("shows validation errors when submitted empty", async () => {
@@ -49,6 +61,17 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(screen.getByText("Dashboard")).toBeInTheDocument());
     expect(loginMock).toHaveBeenCalledWith("user@example.com", "StrongPass123");
+  });
+
+  it("signs in with Google and navigates to the dashboard", async () => {
+    loginWithGoogleMock.mockResolvedValue({ id: 1, email: "user@example.com" });
+    const user = userEvent.setup();
+    renderLoginPage();
+
+    await user.click(screen.getByRole("button", { name: "Entrar com Google" }));
+
+    await waitFor(() => expect(screen.getByText("Dashboard")).toBeInTheDocument());
+    expect(loginWithGoogleMock).toHaveBeenCalledWith("google-token");
   });
 
   it("shows an inline error when credentials are invalid", async () => {

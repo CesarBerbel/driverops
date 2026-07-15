@@ -11,4 +11,6 @@ export interface User {
   technical_specialty_display: string;
   force_password_change: boolean;
   permissions: string[];
+  // Conta vinculada ao Google (login com Google disponível para este usuário).
+  google_linked: boolean;
 }

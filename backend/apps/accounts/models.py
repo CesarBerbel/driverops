@@ -90,6 +90,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=20, choices=Specialty.choices, blank=True
     )
     force_password_change = models.BooleanField(default=False)
+    # ID estável do Google (claim "sub") quando a conta está vinculada ao Google.
+    # Único, mas opcional -- login por e-mail/senha continua funcionando. Vários
+    # usuários sem vínculo convivem porque NULL não entra na restrição de unicidade.
+    google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
     notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
