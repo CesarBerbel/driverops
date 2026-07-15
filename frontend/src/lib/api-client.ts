@@ -1,7 +1,19 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
+// URL base da API. Em DEV, usa sempre o MESMO host da página (localhost,
+// 127.0.0.1, IP da rede) apontando para a porta 8000 -- assim o cookie de sessão
+// (JWT HttpOnly, SameSite=Lax) é enviado, evitando o loop de "sempre volta pro
+// login" quando o front e a API ficam em hosts diferentes. Em produção (build),
+// usa VITE_API_URL (domínio próprio) ou o padrão local.
+function resolveApiBaseUrl(): string {
+  if (import.meta.env.DEV && typeof window !== "undefined" && window.location?.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:8000/api`;
+  }
+  return import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+}
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000/api",
+  baseURL: resolveApiBaseUrl(),
   withCredentials: true,
 });
 
