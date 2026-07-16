@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2, Paperclip, Pencil, Trash2, Upload } from "lucide-react";
+import { Camera, FileText, Loader2, Paperclip, Pencil, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -54,6 +54,7 @@ function formatDateTime(iso: string): string {
 export function OrderAttachments({ orderId }: { orderId: number }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const queryKey = ["work-orders", orderId, "attachments"];
 
   const [category, setCategory] = useState<AttachmentCategory>("other");
@@ -69,11 +70,18 @@ export function OrderAttachments({ orderId }: { orderId: number }) {
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadAttachment(orderId, file, { category, caption }),
-    onSuccess: async () => {
+    // Vários de uma vez: o mecânico costuma tirar/anexar N fotos seguidas.
+    mutationFn: async (files: File[]) => {
+      for (const file of files) {
+        await uploadAttachment(orderId, file, { category, caption });
+      }
+    },
+    onSuccess: async (_result, files) => {
       await invalidate();
       setCaption("");
-      toast.success("Arquivo anexado.");
+      toast.success(
+        files.length > 1 ? `${files.length} arquivos anexados.` : "Arquivo anexado.",
+      );
     },
     onError: (error) =>
       toast.error(extractErrorMessage(error, "Não foi possível anexar o arquivo.")),
@@ -105,8 +113,8 @@ export function OrderAttachments({ orderId }: { orderId: number }) {
   });
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (file) uploadMutation.mutate(file);
+    const files = Array.from(event.target.files ?? []);
+    if (files.length) uploadMutation.mutate(files);
     event.target.value = "";
   }
 
@@ -147,27 +155,52 @@ export function OrderAttachments({ orderId }: { orderId: number }) {
                 onChange={(event) => setCaption(event.target.value)}
               />
             </div>
+            {/* Câmera direta (celular): abre a câmera traseira. No desktop, o
+                capture é ignorado e vira um seletor de arquivo normal. */}
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              aria-label="Tirar foto"
+              onChange={handleFileChange}
+            />
             <input
               ref={inputRef}
               type="file"
               accept="image/*,application/pdf"
+              multiple
               className="hidden"
               aria-label="Selecionar arquivo"
               onChange={handleFileChange}
             />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={uploadMutation.isPending}
-              onClick={() => inputRef.current?.click()}
-            >
-              {uploadMutation.isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 sm:flex-none"
+                disabled={uploadMutation.isPending}
+                onClick={() => cameraRef.current?.click()}
+              >
+                {uploadMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Camera className="size-4" />
+                )}
+                Tirar foto
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 sm:flex-none"
+                disabled={uploadMutation.isPending}
+                onClick={() => inputRef.current?.click()}
+              >
                 <Upload className="size-4" />
-              )}
-              Anexar
-            </Button>
+                Anexar
+              </Button>
+            </div>
           </div>
         </Can>
       </CardHeader>
@@ -245,8 +278,9 @@ export function OrderAttachments({ orderId }: { orderId: number }) {
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <Paperclip className="size-6 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Nenhuma foto/anexo. Registre a entrada do veículo, avarias e o andamento do
-              serviço (imagem ou PDF, até 10 MB).
+              Nenhuma foto/anexo. Pelo celular, use <strong>Tirar foto</strong> para
+              registrar a entrada do veículo, avarias e o andamento do serviço (imagem ou
+              PDF, até 10 MB).
             </p>
           </div>
         )}

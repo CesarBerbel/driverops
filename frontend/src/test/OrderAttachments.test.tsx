@@ -78,6 +78,27 @@ describe("OrderAttachments", () => {
     });
   });
 
+  it("offers a camera capture input for taking photos on mobile", async () => {
+    renderAttachments();
+    await screen.findByText("foto.png");
+    const camera = screen.getByLabelText("Tirar foto");
+    expect(camera).toHaveAttribute("capture", "environment");
+    expect(camera).toHaveAttribute("accept", "image/*");
+  });
+
+  it("uploads several photos selected at once", async () => {
+    const user = userEvent.setup();
+    renderAttachments();
+    await screen.findByText("foto.png");
+    const input = screen.getByLabelText("Selecionar arquivo");
+    const files = [
+      new File(["a"], "f1.jpg", { type: "image/jpeg" }),
+      new File(["b"], "f2.jpg", { type: "image/jpeg" }),
+    ];
+    await user.upload(input, files);
+    await waitFor(() => expect(ordersApi.uploadAttachment).toHaveBeenCalledTimes(2));
+  });
+
   it("hides the upload controls and per-item actions for a view-only user", async () => {
     auth.user = { is_superuser: false, permissions: ["orders.view"] };
     renderAttachments();
