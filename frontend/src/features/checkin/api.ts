@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { compressImage } from "@/lib/imageCompression";
 
 import type { CheckIn, DamagePayload } from "./types";
 
@@ -51,7 +52,7 @@ export async function addGeneralPhoto(
   caption = "",
 ): Promise<CheckIn> {
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", await compressImage(file));
   form.append("category", category);
   form.append("caption", caption);
   const { data } = await apiClient.post<CheckIn>(`/check-ins/${id}/photos/`, form);
@@ -93,7 +94,7 @@ export async function deleteDamage(damageId: number): Promise<CheckIn> {
 
 export async function addDamagePhoto(damageId: number, file: File): Promise<CheckIn> {
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", await compressImage(file));
   const { data } = await apiClient.post<CheckIn>(`/check-in-damages/${damageId}/photos/`, form);
   return data;
 }

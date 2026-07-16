@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Can } from "@/features/auth/Can";
 import { extractErrorMessage } from "@/lib/api-client";
+import { compressImage } from "@/lib/imageCompression";
 
 import {
   attachmentUrl,
@@ -73,7 +74,9 @@ export function OrderAttachments({ orderId }: { orderId: number }) {
     // Vários de uma vez: o mecânico costuma tirar/anexar N fotos seguidas.
     mutationFn: async (files: File[]) => {
       for (const file of files) {
-        await uploadAttachment(orderId, file, { category, caption });
+        // Comprime fotos antes de enviar (PDF e afins passam inalterados).
+        const prepared = await compressImage(file);
+        await uploadAttachment(orderId, prepared, { category, caption });
       }
     },
     onSuccess: async (_result, files) => {

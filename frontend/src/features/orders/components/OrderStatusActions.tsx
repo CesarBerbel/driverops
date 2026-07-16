@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 
 import { getOrderTransitions, transitionOrder } from "../api";
 import type { OrderStatus, OrderTransition } from "../types";
@@ -96,12 +97,13 @@ export function OrderStatusActions({ orderId }: { orderId: number }) {
   return (
     <div className="rounded-md border bg-muted/20 p-3">
       <p className="mb-2 text-xs font-medium text-muted-foreground">Ações da OS</p>
-      <div className="flex flex-wrap items-center gap-2">
+      {/* No celular: botões empilhados em largura cheia (alvos de toque grandes,
+          pro mecânico no pátio). No desktop: compactos, em linha. */}
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
         {transitions.map((t) => (
           <Button
             key={t.action}
             type="button"
-            size="sm"
             variant={t.critical ? "outline" : "secondary"}
             disabled={!t.permitted || !t.available || mutation.isPending}
             title={
@@ -111,11 +113,11 @@ export function OrderStatusActions({ orderId }: { orderId: number }) {
                   ? undefined
                   : t.block_reason
             }
-            className={
-              t.action === "cancel" || t.action === "reject"
-                ? "text-destructive hover:text-destructive"
-                : undefined
-            }
+            className={cn(
+              "w-full justify-center sm:h-8 sm:w-auto",
+              (t.action === "cancel" || t.action === "reject") &&
+                "text-destructive hover:text-destructive",
+            )}
             onClick={() => run(t)}
           >
             {t.label}
